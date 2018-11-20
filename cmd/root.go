@@ -52,23 +52,27 @@ var RootCmd = &cobra.Command{
 backend implementation allowing users to create kubernetes nodes without running the kubelet.
 This allows users to schedule kubernetes workloads on nodes that aren't running Kubernetes.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
+		_ = ctx
+
+		clock := sim.Time{time.Now()}
+		nodes := []sim.Node{}
 
 		for _, nodeConfig := range nodeConfigs {
-			log.L.Infof("node %q started", nodeConfig.Name)
-			node := sim.NewNode(nodeConfig)
-			// TODO
-			_ = node
-			time.Sleep(1 * time.Second)
+			nodes = append(nodes, sim.NewNode(nodeConfig))
+			log.L.Infof("node %q created", nodeConfig.Name)
 		}
 
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
 		go func() {
 			<-sig
 			cancel()
 		}()
+
+		for _, node := range nodes {
+			node.UpdateState(clock)
+		}
 	},
 }
 

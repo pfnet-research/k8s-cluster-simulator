@@ -47,9 +47,10 @@ func NewNode(config NodeConfig) Node {
 	}
 }
 
-func (node *Node) update(clock Time) {
-	node.resourceUsage = v1.ResourceList{}
+func (node *Node) UpdateState(clock Time) {
+	log.L.Debugf("UpdateState(%v) called", clock)
 
+	node.resourceUsage = v1.ResourceList{}
 	node.pods.foreach(func(key string, pod simPod) bool {
 		if pod.isTerminated(clock) {
 			// pod.status = simPodTerminated
