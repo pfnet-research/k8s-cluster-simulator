@@ -1,0 +1,21 @@
+cluster:
+  nodes:
+  - name: node-0
+    capacity:
+      cpu: 4
+      memory: 8Gi
+      gpu: 1
+      pods: 2
+  - name: node-1
+    capacity:
+      cpu: 4
+      memory: 8Gi
+      gpu: 1
+      pods: 2
+apiPort: 10250
+metricsPort: 10255
+logLevel: debug
+taint:
+  key:    k8s-scheduler-simulator.io/kubelet
+  value:  simulator
+  effect: NoSchedule
