@@ -1,5 +1,10 @@
 package cmd
 
+import (
+	"k8s.io/api/core/v1"
+)
+
+// Config represents a simulator config by user
 type Config struct {
 	Cluster     ClusterConfig
 	APIPort     int
@@ -13,15 +18,9 @@ type ClusterConfig struct {
 }
 
 type NodeConfig struct {
-	Name     string
-	Capacity CapacityConfig
-}
-
-type CapacityConfig struct {
-	CPU    string
-	Memory string
-	GPU    string
-	Pods   string
+	Name            string
+	Capacity        map[v1.ResourceName]string
+	OperatingSystem string
 }
 
 type TaintConfig struct {

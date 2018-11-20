@@ -28,36 +28,41 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/ordovicia/kubernetes-scheduler-simulator/log"
+	"github.com/ordovicia/kubernetes-scheduler-simulator/sim"
 )
 
 var configFile string
 var config = Config{
-	Cluster:     ClusterConfig{Nodes: []NodeConfig{}},
-	APIPort:     10250,
-	MetricsPort: 10255,
-	LogLevel:    "info",
+	Cluster: ClusterConfig{Nodes: []NodeConfig{}},
 	Taint: TaintConfig{
-		Key:    "k8s-scheduler-simulator.io/kubelet",
+		Key:    "kubernetes-scheduler-simulator.io/kubelet",
 		Value:  "simulator",
 		Effect: "NoSchedule",
 	},
+	APIPort:     10250,
+	MetricsPort: 10255,
+	LogLevel:    "info",
 }
+var nodeConfigs []sim.NodeConfig
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "k8s-scheduler-simulator",
-	Short: "k8s-scheduler-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
+	Use:   "kubernetes-scheduler-simulator",
+	Short: "kubernetes-scheduler-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
 	Long: `FIXME: virtual-kubelet implements the Kubelet interface with a pluggable
 backend implementation allowing users to create kubernetes nodes without running the kubelet.
 This allows users to schedule kubernetes workloads on nodes that aren't running Kubernetes.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_, cancel := context.WithCancel(context.Background())
 
-		for _, node := range config.Cluster.Nodes {
-			log.L.Infof("node %q started", node.Name)
+		for _, nodeConfig := range nodeConfigs {
+			log.L.Infof("node %q started", nodeConfig.Name)
+			node := sim.NewNode(nodeConfig)
+			_ = node
 			time.Sleep(1 * time.Second)
 		}
 
@@ -80,12 +85,11 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(readConfig)
 	RootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (excluding file extension)")
 }
 
-// initConfig reads the config file.
-func initConfig() {
+func readConfig() {
 	// TODO: Do not try to read config when 'help' or 'version' subcommand is provided
 
 	viper.SetConfigName(configFile)
@@ -114,28 +118,58 @@ func initConfig() {
 	if err != nil {
 		logger.WithError(err).Fatal("Error building taint")
 	}
-	_ = taint // TODO
 
 	logger.Debugf("Config %+v", config)
+
+	for _, node := range config.Cluster.Nodes {
+		capacity, err := buildCapacity(node.Capacity)
+		if err != nil {
+			logger.WithError(err).Fatal("Error building capacity")
+		}
+
+		nodeConfig := sim.NodeConfig{
+			Name:            node.Name,
+			Capacity:        capacity,
+			OperatingSystem: node.OperatingSystem,
+			Taint:           *taint,
+		}
+
+		nodeConfigs = append(nodeConfigs, nodeConfig)
+	}
+
+	logger.Debugf("nodeConfigs: %+v", nodeConfigs)
 }
 
-// buildTaint builds a taint with the provided config.
-func buildTaint(config TaintConfig) (*corev1.Taint, error) {
-	var effect corev1.TaintEffect
+func buildTaint(config TaintConfig) (*v1.Taint, error) {
+	var effect v1.TaintEffect
 	switch config.Effect {
 	case "NoSchedule":
-		effect = corev1.TaintEffectNoSchedule
+		effect = v1.TaintEffectNoSchedule
 	case "NoExecute":
-		effect = corev1.TaintEffectNoExecute
+		effect = v1.TaintEffectNoExecute
 	case "PreferNoSchedule":
-		effect = corev1.TaintEffectPreferNoSchedule
+		effect = v1.TaintEffectPreferNoSchedule
 	default:
 		return nil, strongerrors.InvalidArgument(errors.Errorf("taint effect %q is not supported", config.Effect))
 	}
 
-	return &corev1.Taint{
+	return &v1.Taint{
 		Key:    config.Key,
 		Value:  config.Value,
 		Effect: effect,
 	}, nil
+}
+
+func buildCapacity(config map[v1.ResourceName]string) (v1.ResourceList, error) {
+	resourceList := v1.ResourceList{}
+
+	for key, value := range config {
+		quantity, err := resource.ParseQuantity(value)
+		if err != nil {
+			return nil, strongerrors.InvalidArgument(errors.Errorf("invalid %s value %q", key, value))
+		}
+		resourceList[key] = quantity
+	}
+
+	return resourceList, nil
 }
