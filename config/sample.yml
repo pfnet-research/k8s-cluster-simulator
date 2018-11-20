@@ -6,18 +6,24 @@ cluster:
       memory: 8Gi
       gpu: 1
       pods: 2
-    operatingSystem: simulated
+    labels:
+      beta.kubernetes.io/os: simulated
+    taints:
+      - key:    kubernetes-scheduler-simulator.io/kubelet
+        value:  simulator
+        effect: NoSchedule
   - name: node-1
     capacity:
       cpu: 8
       memory: 16Gi
       gpu: 2
       pods: 4
-    operatingSystem: simulated
-taint:
-  key:    kubernetes-scheduler-simulator.io/kubelet
-  value:  simulator
-  effect: NoSchedule
+    labels:
+      beta.kubernetes.io/os: simulated
+    taints:
+      - key:    kubernetes-scheduler-simulator.io/kubelet
+        value:  simulator
+        effect: NoSchedule
 apiPort: 10250
 metricsPort: 10255
 logLevel: debug

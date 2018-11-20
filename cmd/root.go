@@ -37,12 +37,7 @@ import (
 
 var configFile string
 var config = Config{
-	Cluster: ClusterConfig{Nodes: []NodeConfig{}},
-	Taint: TaintConfig{
-		Key:    "kubernetes-scheduler-simulator.io/kubelet",
-		Value:  "simulator",
-		Effect: "NoSchedule",
-	},
+	Cluster:     ClusterConfig{Nodes: []NodeConfig{}},
 	APIPort:     10250,
 	MetricsPort: 10255,
 	LogLevel:    "info",
@@ -62,6 +57,7 @@ This allows users to schedule kubernetes workloads on nodes that aren't running 
 		for _, nodeConfig := range nodeConfigs {
 			log.L.Infof("node %q started", nodeConfig.Name)
 			node := sim.NewNode(nodeConfig)
+			// TODO
 			_ = node
 			time.Sleep(1 * time.Second)
 		}
@@ -114,30 +110,48 @@ func readConfig() {
 	logger := log.L
 	log.L = logger
 
-	taint, err := buildTaint(config.Taint)
-	if err != nil {
-		logger.WithError(err).Fatal("Error building taint")
-	}
+	logger.Debugf("config: %+v", config)
 
-	logger.Debugf("Config %+v", config)
-
-	for _, node := range config.Cluster.Nodes {
-		capacity, err := buildCapacity(node.Capacity)
+	for _, nodeConfig := range config.Cluster.Nodes {
+		capacity, err := buildCapacity(nodeConfig.Capacity)
 		if err != nil {
 			logger.WithError(err).Fatal("Error building capacity")
 		}
 
+		taints := []v1.Taint{}
+		for _, taintConfig := range nodeConfig.Taints {
+			taint, err := buildTaint(taintConfig)
+			if err != nil {
+				logger.WithError(err).Fatal("Error building taint")
+			}
+			taints = append(taints, *taint)
+		}
+
 		nodeConfig := sim.NodeConfig{
-			Name:            node.Name,
-			Capacity:        capacity,
-			OperatingSystem: node.OperatingSystem,
-			Taint:           *taint,
+			Name:     nodeConfig.Name,
+			Capacity: capacity,
+			Labels:   nodeConfig.Labels,
+			Taints:   taints,
 		}
 
 		nodeConfigs = append(nodeConfigs, nodeConfig)
 	}
 
 	logger.Debugf("nodeConfigs: %+v", nodeConfigs)
+}
+
+func buildCapacity(config map[v1.ResourceName]string) (v1.ResourceList, error) {
+	resourceList := v1.ResourceList{}
+
+	for key, value := range config {
+		quantity, err := resource.ParseQuantity(value)
+		if err != nil {
+			return nil, strongerrors.InvalidArgument(errors.Errorf("invalid %s value %q", key, value))
+		}
+		resourceList[key] = quantity
+	}
+
+	return resourceList, nil
 }
 
 func buildTaint(config TaintConfig) (*v1.Taint, error) {
@@ -158,18 +172,4 @@ func buildTaint(config TaintConfig) (*v1.Taint, error) {
 		Value:  config.Value,
 		Effect: effect,
 	}, nil
-}
-
-func buildCapacity(config map[v1.ResourceName]string) (v1.ResourceList, error) {
-	resourceList := v1.ResourceList{}
-
-	for key, value := range config {
-		quantity, err := resource.ParseQuantity(value)
-		if err != nil {
-			return nil, strongerrors.InvalidArgument(errors.Errorf("invalid %s value %q", key, value))
-		}
-		resourceList[key] = quantity
-	}
-
-	return resourceList, nil
 }

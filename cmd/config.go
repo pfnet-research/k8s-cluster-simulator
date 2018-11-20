@@ -10,7 +10,6 @@ type Config struct {
 	APIPort     int
 	MetricsPort int
 	LogLevel    string
-	Taint       TaintConfig
 }
 
 type ClusterConfig struct {
@@ -18,13 +17,14 @@ type ClusterConfig struct {
 }
 
 type NodeConfig struct {
-	Name            string
-	Capacity        map[v1.ResourceName]string
-	OperatingSystem string
+	Name     string
+	Capacity map[v1.ResourceName]string
+	Labels   map[string]string
+	Taints   []TaintConfig
 }
 
 type TaintConfig struct {
-	Key    string
+	Key    string // TODO: force constraints
 	Value  string
 	Effect string
 }

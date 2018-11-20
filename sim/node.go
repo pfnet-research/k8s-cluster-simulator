@@ -32,10 +32,10 @@ type Node struct {
 }
 
 type NodeConfig struct {
-	Name            string
-	Capacity        v1.ResourceList
-	OperatingSystem string
-	Taint           v1.Taint
+	Name     string
+	Capacity v1.ResourceList
+	Labels   map[string]string
+	Taints   []v1.Taint
 }
 
 // NewNode creates a new node with the provided config.
