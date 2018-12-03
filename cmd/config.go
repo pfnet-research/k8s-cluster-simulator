@@ -19,7 +19,7 @@ type ClusterConfig struct {
 type NodeConfig struct {
 	Name     string
 	Capacity map[v1.ResourceName]string
-	Labels   map[string]string
+	Labels   map[string]string // TODO: force constraints
 	Taints   []TaintConfig
 }
 

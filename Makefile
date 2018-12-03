@@ -1,7 +1,6 @@
 IMPORT_PATH := github.com/ordovicia/kubernetes-simulator
 DOCKER_IMAGE := kubernetes-simulator
 exec := $(DOCKER_IMAGE)
-github_repo := ordovicia/kubernetes-simulator
 binary := kubernetes-simulator
 build_tags := "netgo osusergo $(VK_BUILD_TAGS)"
 

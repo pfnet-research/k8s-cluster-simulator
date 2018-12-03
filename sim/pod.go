@@ -8,7 +8,6 @@ import (
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // simPod represents a simulated pod.
@@ -72,8 +71,8 @@ func (pod *simPod) buildStatus(clock Time) v1.PodStatus {
 			Message: "Pod cannot be started due to exceeded capacity",
 		}
 	case simPodOk:
-		startTime := metav1.NewTime(pod.startClock.Time)
-		finishTime := metav1.NewTime(pod.finishClock().Time)
+		startTime := pod.startClock.ToMetaV1()
+		finishTime := pod.finishClock().ToMetaV1()
 
 		var phase v1.PodPhase
 		var containerState v1.ContainerState

@@ -9,8 +9,8 @@ cluster:
     labels:
       beta.kubernetes.io/os: simulated
     taints:
-      - key:    kubernetes-simulator.io/kubelet
-        value:  simulator
+      - key: kubernetes-simulator.io/kubelet
+        value: simulator
         effect: NoSchedule
   - name: node-1
     capacity:
@@ -21,8 +21,8 @@ cluster:
     labels:
       beta.kubernetes.io/os: simulated
     taints:
-      - key:    kubernetes-simulator.io/kubelet
-        value:  simulator
+      - key: kubernetes-simulator.io/kubelet
+        value: simulator
         effect: NoSchedule
 apiPort: 10250
 metricsPort: 10255

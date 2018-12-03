@@ -1,19 +1,3 @@
-// Copyright © 2017 The virtual-kubelet authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// Modification copyright @ 2018 <Name> <E-mail>
-
 package cmd
 
 import (
@@ -35,7 +19,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/sim"
 )
 
-var configFile string
+var configPath string
 var config = Config{
 	Cluster:     ClusterConfig{Nodes: []NodeConfig{}},
 	APIPort:     10250,
@@ -44,24 +28,25 @@ var config = Config{
 }
 var nodeConfigs []sim.NodeConfig
 
-// RootCmd represents the base command when called without any subcommands
-var RootCmd = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use:   "kubernetes-simulator",
 	Short: "kubernetes-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
-	Long: `FIXME: virtual-kubelet implements the Kubelet interface with a pluggable
-backend implementation allowing users to create kubernetes nodes without running the kubelet.
-This allows users to schedule kubernetes workloads on nodes that aren't running Kubernetes.`,
+	Long:  "FIXME: kubernetes-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		_ = ctx
 
-		clock := sim.Time{time.Now()}
+		clock := sim.NewTime(time.Now())
 		nodes := []sim.Node{}
 
 		for _, nodeConfig := range nodeConfigs {
 			nodes = append(nodes, sim.NewNode(nodeConfig))
 			log.L.Infof("node %q created", nodeConfig.Name)
 		}
+
+		// if err != nil {
+		// 	log.L.WithError(err).Fatal("Error initializing virtual kubelet")
+		// }
 
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
@@ -73,26 +58,29 @@ This allows users to schedule kubernetes workloads on nodes that aren't running 
 		for _, node := range nodes {
 			node.UpdateState(clock)
 		}
+
+		// if err := f.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
+		// 	log.L.Fatal(err)
+		// }
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute executes the rootCmd
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		log.G(context.TODO()).WithError(err).Fatal("Error executing root command")
+	if err := rootCmd.Execute(); err != nil {
+		log.L.WithError(err).Fatal("Error executing root command")
 	}
 }
 
 func init() {
-	cobra.OnInitialize(readConfig)
-	RootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (excluding file extension)")
+	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file (excluding file extension)")
 }
 
-func readConfig() {
+func initConfig() {
 	// TODO: Do not try to read config when 'help' or 'version' subcommand is provided
 
-	viper.SetConfigName(configFile)
+	viper.SetConfigName(configPath)
 	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
