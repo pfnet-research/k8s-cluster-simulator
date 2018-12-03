@@ -20,13 +20,6 @@ import (
 )
 
 var configPath string
-var config = Config{
-	Cluster:     ClusterConfig{Nodes: []NodeConfig{}},
-	APIPort:     10250,
-	MetricsPort: 10255,
-	LogLevel:    "info",
-}
-var nodeConfigs []sim.NodeConfig
 
 var rootCmd = &cobra.Command{
 	Use:   "kubernetes-simulator",
@@ -37,11 +30,21 @@ var rootCmd = &cobra.Command{
 		_ = ctx
 
 		clock := sim.NewTime(time.Now())
-		nodes := []sim.Node{}
 
-		for _, nodeConfig := range nodeConfigs {
-			nodes = append(nodes, sim.NewNode(nodeConfig))
-			log.L.Infof("node %q created", nodeConfig.Name)
+		config := initConfig()
+		nodes := [](*sim.Node){}
+
+		for _, config := range config.Cluster.Nodes {
+			log.L.Debugf("NodeConfig: %+v", config)
+
+			nodeConfig, err := buildNodeConfig(config)
+			if err != nil {
+				log.L.WithError(err).Fatal("Error building node config")
+			}
+
+			node := sim.NewNode(*nodeConfig)
+			nodes = append(nodes, &node)
+			log.L.Infof("Node %q created", nodeConfig.Name)
 		}
 
 		// if err != nil {
@@ -73,13 +76,10 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file (excluding file extension)")
 }
 
-func initConfig() {
-	// TODO: Do not try to read config when 'help' or 'version' subcommand is provided
-
+func initConfig() Config {
 	viper.SetConfigName(configPath)
 	viper.AddConfigPath(".")
 
@@ -87,6 +87,13 @@ func initConfig() {
 		log.G(context.TODO()).WithError(err).Fatal("Error reading config file")
 	} else {
 		log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
+	}
+
+	var config = Config{
+		Cluster:     ClusterConfig{Nodes: []NodeConfig{}},
+		APIPort:     10250,
+		MetricsPort: 10255,
+		LogLevel:    "info",
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
@@ -102,34 +109,32 @@ func initConfig() {
 	logger := log.L
 	log.L = logger
 
-	logger.Debugf("config: %+v", config)
+	logger.Debugf("Config: %+v", config)
 
-	for _, nodeConfig := range config.Cluster.Nodes {
-		capacity, err := buildCapacity(nodeConfig.Capacity)
-		if err != nil {
-			logger.WithError(err).Fatal("Error building capacity")
-		}
+	return config
+}
 
-		taints := []v1.Taint{}
-		for _, taintConfig := range nodeConfig.Taints {
-			taint, err := buildTaint(taintConfig)
-			if err != nil {
-				logger.WithError(err).Fatal("Error building taint")
-			}
-			taints = append(taints, *taint)
-		}
-
-		nodeConfig := sim.NodeConfig{
-			Name:     nodeConfig.Name,
-			Capacity: capacity,
-			Labels:   nodeConfig.Labels,
-			Taints:   taints,
-		}
-
-		nodeConfigs = append(nodeConfigs, nodeConfig)
+func buildNodeConfig(config NodeConfig) (*sim.NodeConfig, error) {
+	capacity, err := buildCapacity(config.Capacity)
+	if err != nil {
+		return nil, err
 	}
 
-	logger.Debugf("nodeConfigs: %+v", nodeConfigs)
+	taints := []v1.Taint{}
+	for _, taintConfig := range config.Taints {
+		taint, err := buildTaint(taintConfig)
+		if err != nil {
+			return nil, err
+		}
+		taints = append(taints, *taint)
+	}
+
+	return &sim.NodeConfig{
+		Name:     config.Name,
+		Capacity: capacity,
+		Labels:   config.Labels,
+		Taints:   taints,
+	}, nil
 }
 
 func buildCapacity(config map[v1.ResourceName]string) (v1.ResourceList, error) {
