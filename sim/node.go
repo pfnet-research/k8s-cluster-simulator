@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/api/core/v1"
 
-	"github.com/ordovicia/kubernetes-scheduler-simulator/log"
+	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
 // Node represents a simulated computing node.

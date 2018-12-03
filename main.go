@@ -16,7 +16,7 @@
 
 package main
 
-import "github.com/ordovicia/kubernetes-scheduler-simulator/cmd"
+import "github.com/ordovicia/kubernetes-simulator/cmd"
 
 func main() {
 	cmd.Execute()

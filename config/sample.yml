@@ -9,7 +9,7 @@ cluster:
     labels:
       beta.kubernetes.io/os: simulated
     taints:
-      - key:    kubernetes-scheduler-simulator.io/kubelet
+      - key:    kubernetes-simulator.io/kubelet
         value:  simulator
         effect: NoSchedule
   - name: node-1
@@ -21,7 +21,7 @@ cluster:
     labels:
       beta.kubernetes.io/os: simulated
     taints:
-      - key:    kubernetes-scheduler-simulator.io/kubelet
+      - key:    kubernetes-simulator.io/kubelet
         value:  simulator
         effect: NoSchedule
 apiPort: 10250

@@ -31,8 +31,8 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/ordovicia/kubernetes-scheduler-simulator/log"
-	"github.com/ordovicia/kubernetes-scheduler-simulator/sim"
+	"github.com/ordovicia/kubernetes-simulator/log"
+	"github.com/ordovicia/kubernetes-simulator/sim"
 )
 
 var configFile string
@@ -46,8 +46,8 @@ var nodeConfigs []sim.NodeConfig
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "kubernetes-scheduler-simulator",
-	Short: "kubernetes-scheduler-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
+	Use:   "kubernetes-simulator",
+	Short: "kubernetes-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
 	Long: `FIXME: virtual-kubelet implements the Kubelet interface with a pluggable
 backend implementation allowing users to create kubernetes nodes without running the kubelet.
 This allows users to schedule kubernetes workloads on nodes that aren't running Kubernetes.`,

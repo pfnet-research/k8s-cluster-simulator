@@ -1,8 +1,8 @@
-IMPORT_PATH := github.com/ordovicia/kubernetes-scheduler-simulator
-DOCKER_IMAGE := kubernetes-scheduler-simulator
+IMPORT_PATH := github.com/ordovicia/kubernetes-simulator
+DOCKER_IMAGE := kubernetes-simulator
 exec := $(DOCKER_IMAGE)
-github_repo := ordovicia/kubernetes-scheduler-simulator
-binary := kubernetes-scheduler-simulator
+github_repo := ordovicia/kubernetes-simulator
+binary := kubernetes-simulator
 build_tags := "netgo osusergo $(VK_BUILD_TAGS)"
 
 # comment this line out for quieter things
@@ -136,7 +136,7 @@ setup: clean
 
 VERSION          := $(shell git describe --tags --always --dirty="-dev")
 DATE             := $(shell date -u '+%Y-%m-%d-%H:%M UTC')
-VERSION_FLAGS    := -ldflags='-X "github.com/ordovicia/kubernetes-scheduler-simulator/cmd.Version=$(VERSION)" -X "github.com/ordovicia/kubernetes-scheduler-simulator/cmd.BuildTime=$(DATE)"'
+VERSION_FLAGS    := -ldflags='-X "github.com/ordovicia/kubernetes-simulator/cmd.Version=$(VERSION)" -X "github.com/ordovicia/kubernetes-simulator/cmd.BuildTime=$(DATE)"'
 
 # assuming go 1.9 here!!
 _allpackages = $(shell go list ./...)
