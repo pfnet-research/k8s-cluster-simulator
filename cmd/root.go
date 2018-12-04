@@ -29,7 +29,10 @@ var rootCmd = &cobra.Command{
 
 		clock := sim.NewTime(time.Now())
 
-		config := initConfig()
+		config, err := initConfig(configPath)
+		if err != nil {
+			log.L.WithError(err).Fatal("Error building node config")
+		}
 		nodes := [](*sim.Node){}
 
 		for _, config := range config.Cluster.Nodes {
@@ -74,15 +77,15 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file (excluding file extension)")
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file (exclusing file extension)")
 }
 
-func initConfig() Config {
-	viper.SetConfigName(configPath)
+func initConfig(path string) (*Config, error) {
+	viper.SetConfigName(path)
 	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.G(context.TODO()).WithError(err).Fatal("Error reading config file")
+		return nil, err
 	} else {
 		log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
 	}
@@ -95,12 +98,12 @@ func initConfig() Config {
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
-		log.G(context.TODO()).WithError(err).Fatal("Error decoding config")
+		return nil, err
 	}
 
 	level, err := log.ParseLevel(config.LogLevel)
 	if err != nil {
-		log.G(context.TODO()).WithField("logLevel", config.LogLevel).Fatal("log level is not supported")
+		return nil, strongerrors.InvalidArgument(errors.Errorf("log level %q not supported", level))
 	}
 	logrus.SetLevel(level)
 
