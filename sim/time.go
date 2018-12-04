@@ -21,10 +21,14 @@ func (t Time) ToMetaV1() metav1.Time {
 	return metav1.NewTime(t.inner)
 }
 
-func (t Time) sub(rhs Time) time.Duration {
+func (t Time) Sub(rhs Time) time.Duration {
 	return t.inner.Sub(rhs.inner)
 }
 
-func (t Time) add(dur time.Duration) Time {
+func (t Time) Add(dur time.Duration) Time {
 	return Time{inner: t.inner.Add(dur)}
+}
+
+func (t Time) String() string {
+	return t.inner.String()
 }

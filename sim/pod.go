@@ -27,7 +27,7 @@ const (
 
 // passedSeconds returns elapsed duration after the pod started in seconds.
 func (pod *simPod) passedSeconds(clock Time) int32 {
-	return int32(clock.sub(pod.startClock).Seconds())
+	return int32(clock.Sub(pod.startClock).Seconds())
 }
 
 // resourceUsage returns resource usage of the pod at the time it has run passedSeconds duration.
@@ -53,7 +53,7 @@ func (pod *simPod) totalSeconds() int32 {
 }
 
 func (pod *simPod) finishClock() Time {
-	return pod.startClock.add(time.Duration(pod.totalSeconds()) * time.Second)
+	return pod.startClock.Add(time.Duration(pod.totalSeconds()) * time.Second)
 }
 
 func (pod *simPod) isTerminated(clock Time) bool {
@@ -189,7 +189,7 @@ func (m *podMap) remove(key string) {
 	m.Delete(key)
 }
 
-// listpods returns an array of pods
+// listPods returns an array of pods
 func (m *podMap) listPods() []*v1.Pod {
 	pods := []*v1.Pod{}
 	m.foreach(func(_ string, pod simPod) bool {

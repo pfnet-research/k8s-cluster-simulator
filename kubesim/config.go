@@ -1,4 +1,4 @@
-package cmd
+package kubesim
 
 import (
 	"github.com/cpuguy83/strongerrors"
@@ -12,6 +12,7 @@ import (
 // Config represents a simulator config by user
 type Config struct {
 	Cluster     ClusterConfig
+	Tick        int
 	APIPort     int
 	MetricsPort int
 	LogLevel    string

@@ -24,6 +24,7 @@ cluster:
       - key: kubernetes-simulator.io/kubelet
         value: simulator
         effect: NoSchedule
+tick: 10  # seconds
 apiPort: 10250
 metricsPort: 10255
 logLevel: debug
