@@ -22,7 +22,6 @@ var rootCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
-		_ = ctx
 
 		kubesim, err := kubesim.NewKubeSim(configPath, nil)
 		if err != nil {

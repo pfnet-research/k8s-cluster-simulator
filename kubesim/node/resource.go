@@ -1,4 +1,4 @@
-package sim
+package node
 
 import (
 	"k8s.io/api/core/v1"

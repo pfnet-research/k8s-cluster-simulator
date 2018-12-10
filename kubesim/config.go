@@ -6,10 +6,10 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/ordovicia/kubernetes-simulator/sim"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 )
 
-// Config represents a simulator config by user
+// Config represents a simulator config by user.
 type Config struct {
 	Cluster     ClusterConfig
 	Tick        int
@@ -18,7 +18,7 @@ type Config struct {
 	LogLevel    string
 }
 
-type ClusterConfig struct {
+type ClusterConfig struct { // (publicized to be deserialized by viper)
 	Nodes []NodeConfig
 }
 
@@ -35,7 +35,7 @@ type TaintConfig struct {
 	Effect string
 }
 
-func buildNodeConfig(config NodeConfig) (*sim.NodeConfig, error) {
+func buildNodeConfig(config NodeConfig) (*node.Config, error) {
 	capacity, err := buildCapacity(config.Capacity)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func buildNodeConfig(config NodeConfig) (*sim.NodeConfig, error) {
 		taints = append(taints, *taint)
 	}
 
-	return &sim.NodeConfig{
+	return &node.Config{
 		Name:     config.Name,
 		Capacity: capacity,
 		Labels:   config.Labels,

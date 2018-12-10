@@ -8,14 +8,17 @@ import (
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/api/core/v1"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/log"
 	"github.com/ordovicia/kubernetes-simulator/scheduler"
-	"github.com/ordovicia/kubernetes-simulator/sim"
 )
 
 type KubeSim struct {
-	nodes     [](*sim.Node)
+	nodes     [](*node.Node)
+	pods      [](v1.Pod)
 	scheduler scheduler.Scheduler
 	tick      int
 }
@@ -32,7 +35,7 @@ func NewKubeSim(configPath string, scheduler scheduler.Scheduler) (*KubeSim, err
 		return nil, errors.Errorf("error configuring: %s", err.Error())
 	}
 
-	nodes := [](*sim.Node){}
+	nodes := [](*node.Node){}
 	for _, config := range config.Cluster.Nodes {
 		log.L.Debugf("NodeConfig: %+v", config)
 
@@ -41,7 +44,7 @@ func NewKubeSim(configPath string, scheduler scheduler.Scheduler) (*KubeSim, err
 			return nil, errors.Errorf("error building node config: %s", err.Error())
 		}
 
-		node := sim.NewNode(*nodeConfig)
+		node := node.NewNode(*nodeConfig)
 		nodes = append(nodes, &node)
 		log.L.Debugf("Node %q created", nodeConfig.Name)
 	}
@@ -55,11 +58,15 @@ func NewKubeSim(configPath string, scheduler scheduler.Scheduler) (*KubeSim, err
 	return &kubesim, nil
 }
 
+// func (k *KubeSim) SubmitPod(pod v1.Pod) {
+// }
+
+// Run executes the main loop
 func (k *KubeSim) Run(ctx context.Context) error {
-	tick := make(chan sim.Time)
+	tick := make(chan clock.Clock)
 
 	go func() {
-		clock := sim.NewTime(time.Now())
+		clock := clock.NewClock(time.Now())
 		for {
 			clock = clock.Add(time.Duration(k.tick) * time.Second)
 			tick <- clock
