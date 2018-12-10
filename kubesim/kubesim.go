@@ -16,15 +16,18 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/scheduler"
 )
 
+// KubeSim represents a kubernetes cluster simulator
 type KubeSim struct {
-	nodes     [](*node.Node)
-	pods      [](v1.Pod)
-	scheduler scheduler.Scheduler
-	tick      int
+	nodes [](*node.Node)
+	pods  [](v1.Pod)
+	tick  int
+
+	filters []scheduler.Filter
+	scorers []scheduler.Scorer
 }
 
 // NewKubeSim creates a new KubeSim with config from configPath and scheduler
-func NewKubeSim(configPath string, scheduler scheduler.Scheduler) (*KubeSim, error) {
+func NewKubeSim(configPath string) (*KubeSim, error) {
 	config, err := readConfig(configPath)
 	if err != nil {
 		return nil, errors.Errorf("error reading config: %s", err.Error())
@@ -50,12 +53,23 @@ func NewKubeSim(configPath string, scheduler scheduler.Scheduler) (*KubeSim, err
 	}
 
 	kubesim := KubeSim{
-		nodes:     nodes,
-		scheduler: scheduler,
-		tick:      config.Tick,
+		nodes:   nodes,
+		tick:    config.Tick,
+		filters: [](scheduler.Filter){},
+		scorers: [](scheduler.Scorer){},
 	}
 
 	return &kubesim, nil
+}
+
+// RegisterFilter registers a new filter plugin to this KubeSim
+func (k *KubeSim) RegisterFilter(filter scheduler.Filter) {
+	k.filters = append(k.filters, filter)
+}
+
+// RegisterScorer registers a new scorer plugin to this KubeSim
+func (k *KubeSim) RegisterScorer(scorer scheduler.Scorer) {
+	k.scorers = append(k.scorers, scorer)
 }
 
 // func (k *KubeSim) SubmitPod(pod v1.Pod) {
@@ -89,9 +103,8 @@ func readConfig(path string) (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
-	} else {
-		log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
 	}
+	log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
 
 	var config = Config{
 		Cluster:     ClusterConfig{Nodes: []NodeConfig{}},

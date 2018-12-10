@@ -23,7 +23,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		kubesim, err := kubesim.NewKubeSim(configPath, nil)
+		kubesim, err := kubesim.NewKubeSim(configPath)
 		if err != nil {
 			log.G(context.TODO()).WithError(err).Fatal("Error creating KubeSim: %s", err.Error())
 		}
