@@ -10,7 +10,7 @@ import (
 
 // Pod represents a simulated pod.
 type Pod struct {
-	pod        *v1.Pod
+	v1         *v1.Pod
 	spec       spec
 	startClock clock.Clock
 	status     Status
@@ -26,7 +26,7 @@ const (
 	OverCapacity
 )
 
-// NewPod creates a pod with the pod definition, the starting time, and the status.
+// NewPod creates a pod with the v1.Pod definition, the starting time, and the status.
 // Returns error if it fails to parse the simulation spec of the pod.
 func NewPod(pod *v1.Pod, startClock clock.Clock, status Status) (*Pod, error) {
 	spec, err := parseSpec(pod)
@@ -38,9 +38,9 @@ func NewPod(pod *v1.Pod, startClock clock.Clock, status Status) (*Pod, error) {
 	return &p, nil
 }
 
-// ToV1 returns definition of this pod.
+// ToV1 returns v1.Pod definition of this pod.
 func (pod *Pod) ToV1() *v1.Pod {
-	return pod.pod
+	return pod.v1
 }
 
 // ResourceUsage returns resource usage of the pod at the time clock.
@@ -130,7 +130,7 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 			},
 		}
 
-		for _, container := range pod.ToV1().Spec.Containers {
+		for _, container := range pod.v1.Spec.Containers {
 			status.ContainerStatuses = append(status.ContainerStatuses, v1.ContainerStatus{
 				Name:         container.Name,
 				Image:        container.Image,
