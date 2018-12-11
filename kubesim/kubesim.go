@@ -18,8 +18,8 @@ import (
 
 // KubeSim represents a kubernetes cluster simulator
 type KubeSim struct {
-	nodes [](*node.Node)
-	pods  [](v1.Pod)
+	nodes []*node.Node
+	pods  podQueue
 	tick  int
 
 	filters []scheduler.Filter
@@ -38,7 +38,7 @@ func NewKubeSim(configPath string) (*KubeSim, error) {
 		return nil, errors.Errorf("error configuring: %s", err.Error())
 	}
 
-	nodes := [](*node.Node){}
+	nodes := []*node.Node{}
 	for _, config := range config.Cluster.Nodes {
 		log.L.Debugf("NodeConfig: %+v", config)
 
@@ -54,9 +54,10 @@ func NewKubeSim(configPath string) (*KubeSim, error) {
 
 	kubesim := KubeSim{
 		nodes:   nodes,
+		pods:    podQueue{},
 		tick:    config.Tick,
-		filters: [](scheduler.Filter){},
-		scorers: [](scheduler.Scorer){},
+		filters: []scheduler.Filter{},
+		scorers: []scheduler.Scorer{},
 	}
 
 	return &kubesim, nil
@@ -72,8 +73,10 @@ func (k *KubeSim) RegisterScorer(scorer scheduler.Scorer) {
 	k.scorers = append(k.scorers, scorer)
 }
 
-// func (k *KubeSim) SubmitPod(pod v1.Pod) {
-// }
+// SubmitPod appends the pod to this KubeSim.
+func (k *KubeSim) SubmitPod(pod v1.Pod) {
+	k.pods.append(pod)
+}
 
 // Run executes the main loop
 func (k *KubeSim) Run(ctx context.Context) error {
@@ -93,8 +96,26 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			return ctx.Err()
 		case clock := <-tick:
 			log.L.Debugf("Clock %s", clock.String())
+			if err := k.scheduleOne(); err != nil {
+				return err
+			}
 		}
 	}
+}
+
+func (k *KubeSim) scheduleOne() error {
+	pod, err := k.pods.pop()
+	if err == errNoPod {
+		return nil
+	}
+
+	_ = pod
+	// for _, filter := range k.filters {
+	// }
+
+	// TODO
+
+	return nil
 }
 
 func readConfig(path string) (*Config, error) {
