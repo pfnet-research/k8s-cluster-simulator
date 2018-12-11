@@ -14,10 +14,13 @@ type Map struct {
 
 // Load returns the pod associated with the key.
 // If the pod does not exist, the second return value will be false.
+func (m *Map) Load(key string) (*Pod, bool) {
+	p, ok := m.inner.Load(key)
 	if !ok {
-		return Pod{}, false
+		return nil, false
 	}
-	return pod.(Pod), true
+	pod := p.(Pod)
+	return &pod, true
 }
 
 // Store stores a new pair of key and pod.

@@ -154,7 +154,7 @@ func (node *Node) getSimPod(namespace, name string) (*pod.Pod, error) {
 		return nil, nil
 	}
 
-	return &pod, nil
+	return pod, nil
 }
 
 // buildKey builds a key for the provided pod.
