@@ -91,8 +91,13 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 
 		var phase v1.PodPhase
 		var containerState v1.ContainerState
-
-		if pod.IsTerminated(clock) {
+		if pod.IsRunning(clock) {
+			phase = v1.PodRunning
+			containerState = v1.ContainerState{
+				Running: &v1.ContainerStateRunning{
+					StartedAt: startTime,
+				}}
+		} else {
 			phase = v1.PodSucceeded
 			containerState = v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
@@ -101,12 +106,6 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 					Message:    "All containers in the pod have voluntarily terminated",
 					StartedAt:  startTime,
 					FinishedAt: finishTime,
-				}}
-		} else {
-			phase = v1.PodRunning
-			containerState = v1.ContainerState{
-				Running: &v1.ContainerStateRunning{
-					StartedAt: startTime,
 				}}
 		}
 
@@ -150,7 +149,6 @@ func (pod *Pod) passedSeconds(clock clock.Clock) int32 {
 	if pod.status != Ok {
 		return 0
 	}
-
 	return int32(clock.Sub(pod.startClock).Seconds())
 }
 

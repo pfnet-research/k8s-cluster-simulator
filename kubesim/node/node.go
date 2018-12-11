@@ -34,21 +34,6 @@ func NewNode(config Config) Node {
 	}
 }
 
-// UpdateState updates the state of this node.
-func (node *Node) UpdateState(clock clock.Clock) {
-	log.L.Debugf("Node %q: UpdateState(%v) called", node.config.Name, clock)
-
-	node.resourceUsage = v1.ResourceList{}
-	node.pods.Range(func(key string, pod pod.Pod) bool {
-		if pod.IsTerminated(clock) {
-			// TODO
-		} else {
-			node.resourceUsage = sumResourceList(node.resourceUsage, pod.ResourceUsage(clock))
-		}
-		return true
-	})
-}
-
 // CreatePod accepts the definition of a pod and try to start it.
 // The pod will fail to be scheduled if there is not sufficient resources.
 func (node *Node) CreatePod(clock clock.Clock, podDef *v1.Pod) error {
@@ -120,6 +105,22 @@ func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.P
 // TODO
 // func (node *Node) NodeConditions(clock clock.Clock) []v1.NodeCondition {
 // }
+
+// updateState updates the state of this node.
+// TODO
+func (node *Node) updateState(clock clock.Clock) {
+	log.L.Debugf("Node %q: UpdateState(%v) called", node.config.Name, clock)
+
+	node.resourceUsage = v1.ResourceList{}
+	node.pods.Range(func(key string, pod pod.Pod) bool {
+		if pod.IsTerminated(clock) {
+			// TODO
+		} else {
+			node.resourceUsage = sumResourceList(node.resourceUsage, pod.ResourceUsage(clock))
+		}
+		return true
+	})
+}
 
 func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
