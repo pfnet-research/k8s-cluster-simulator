@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 
 		kubesim, err := kubesim.NewKubeSim(configPath)
 		if err != nil {
-			log.G(context.TODO()).WithError(err).Fatal("Error creating KubeSim: %s", err.Error())
+			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
 
 		sig := make(chan os.Signal, 1)
