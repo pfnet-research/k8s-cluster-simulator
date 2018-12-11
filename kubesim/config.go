@@ -5,8 +5,9 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
 // Config represents a simulator config by user.
@@ -39,7 +40,7 @@ type TaintConfig struct {
 
 // buildNode builds a *v1.Node with the provided node config.
 func buildNode(config NodeConfig) (*v1.Node, error) {
-	capacity, err := buildCapacity(config.Capacity)
+	capacity, err := util.BuildResourceList(config.Capacity)
 	if err != nil {
 		return nil, err
 	}
@@ -76,20 +77,6 @@ func buildNode(config NodeConfig) (*v1.Node, error) {
 	}
 
 	return &node, nil
-}
-
-func buildCapacity(config map[v1.ResourceName]string) (v1.ResourceList, error) {
-	resourceList := v1.ResourceList{}
-
-	for key, value := range config {
-		quantity, err := resource.ParseQuantity(value)
-		if err != nil {
-			return nil, strongerrors.InvalidArgument(errors.Errorf("invalid %s value %q", key, value))
-		}
-		resourceList[key] = quantity
-	}
-
-	return resourceList, nil
 }
 
 func buildTaint(config TaintConfig) (*v1.Taint, error) {
