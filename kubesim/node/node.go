@@ -12,24 +12,39 @@ import (
 
 // Node represents a simulated computing node.
 type Node struct {
-	v1            *v1.Node
-	pods          pod.Map
-	resourceUsage v1.ResourceList
+	v1   *v1.Node
+	pods pod.Map
 }
 
 // NewNode creates a new node with the v1.Node definition.
 func NewNode(node *v1.Node) Node {
 	return Node{
-		v1:            node,
-		pods:          pod.Map{},
-		resourceUsage: v1.ResourceList{},
+		v1:   node,
+		pods: pod.Map{},
 	}
 }
 
-// ToV1 returns v1.Node definition of this node.
-func (node *Node) ToV1() *v1.Node {
-	// TODO
-	return node.v1
+// ToV1 returns v1.Node representation of this node.
+func (node *Node) ToV1(clock clock.Clock) (*v1.Node, error) {
+	// TODO: update condition
+
+	allocatable := node.v1.Status.Capacity
+	var err error
+
+	node.pods.Range(func(key string, pod pod.Pod) bool {
+		allocatable, err = diffResourceList(allocatable, pod.ResourceUsage(clock))
+		if err != nil {
+			return false
+		}
+		return true
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	node.v1.Status.Allocatable = allocatable
+	return node.v1, nil
 }
 
 // CreatePod accepts the definition of a pod and try to start it.
@@ -103,22 +118,6 @@ func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.P
 // TODO
 // func (node *Node) NodeConditions(clock clock.Clock) []v1.NodeCondition {
 // }
-
-// updateState updates the state of this node.
-// TODO
-func (node *Node) updateState(clock clock.Clock) {
-	log.L.Debugf("Node %q: UpdateState(%v) called", node.v1.Name, clock)
-
-	node.resourceUsage = v1.ResourceList{}
-	node.pods.Range(func(key string, pod pod.Pod) bool {
-		if pod.IsTerminated(clock) {
-			// TODO
-		} else {
-			node.resourceUsage = sumResourceList(node.resourceUsage, pod.ResourceUsage(clock))
-		}
-		return true
-	})
-}
 
 func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}

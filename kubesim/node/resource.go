@@ -1,21 +1,43 @@
 package node
 
 import (
+	"errors"
+
 	"k8s.io/api/core/v1"
 )
 
+// sumResourceList returns the sum of two resource lists.
 func sumResourceList(r1, r2 v1.ResourceList) v1.ResourceList {
 	sum := r1
 	for r2Key := range r2 {
 		if r2Val, ok := sum[r2Key]; ok {
-			k := sum[r2Key]
-			k.Add(r2Val)
-			sum[r2Key] = k
+			r1Val := sum[r2Key]
+			r1Val.Add(r2Val)
+			sum[r2Key] = r1Val
 		} else {
 			sum[r2Key] = r2Val
 		}
 	}
 	return sum
+}
+
+var errDiffResourceNotGe = errors.New("resource list is not greater equal")
+
+// diffResourceList returns a difference between two resource lists.
+// r1 must be greater or equal than r2, otherwise errDiffResourceNotGe will be returned.
+func diffResourceList(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
+	if !greaterEqual(r1, r2) {
+		return v1.ResourceList{}, errDiffResourceNotGe
+	}
+
+	diff := r1
+	for r2Key := range r2 {
+		r2Val, _ := diff[r2Key]
+		r1Val := diff[r2Key]
+		r1Val.Sub(r2Val)
+		diff[r2Key] = r1Val
+	}
+	return diff, nil
 }
 
 // getResourceRequest extracts total requested resource of the pod.
