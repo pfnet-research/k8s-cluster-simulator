@@ -60,7 +60,7 @@ type MyScorer struct {
     // ..
 }
 
-func (s *MyScorer) Score(pod *v1.Pod, nodes []*v1.Node) (hostPriorities *NodeScoreList, weight int, err error) {
+func (s *MyScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores *NodeScoreList, weight int, err error) {
     // ..
 }
 

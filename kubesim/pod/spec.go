@@ -24,9 +24,9 @@ func parseSpec(pod *v1.Pod) (spec, error) {
 		ResourceUsage v1.ResourceList `json:"resourceUsage"`
 	}
 
-	specAnnot, ok := pod.ObjectMeta.Annotations["spec"]
+	specAnnot, ok := pod.ObjectMeta.Annotations["simSpec"]
 	if !ok {
-		return nil, strongerrors.InvalidArgument(errors.Errorf("spec not defined"))
+		return nil, strongerrors.InvalidArgument(errors.Errorf("simSpec annotation not defined"))
 	}
 
 	specJSON := []specPhaseJSON{}
