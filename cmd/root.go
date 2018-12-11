@@ -13,6 +13,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
+// configPath is the path of the config file, defaulting to "sample/config"
 var configPath string
 
 var rootCmd = &cobra.Command{
@@ -23,7 +24,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		kubesim, err := kubesim.NewKubeSim(configPath)
+		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath)
 		if err != nil {
 			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
@@ -41,7 +42,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-// Execute executes the rootCmd
+// Execute executes the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		log.L.WithError(err).Fatal("Error executing root command")
@@ -49,5 +50,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "config file (exclusing file extension)")
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config/sample", "config file (exclusing file extension)")
 }

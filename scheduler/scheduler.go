@@ -4,6 +4,7 @@ import (
 	"k8s.io/api/core/v1"
 )
 
+// Filter plugin interface
 type Filter interface {
 	// Filter filters out nodes that cannot run the pod.
 	//
@@ -15,7 +16,6 @@ type Filter interface {
 
 // NodeScore represents the score of scheduling to a particular node.
 // Higher score means higher priority.
-// TODO: use "k8s.io/kubernetes/pkg/scheduler/api".HostPriority
 type NodeScore struct {
 	// Name of the nodnode.
 	Node string
@@ -26,6 +26,7 @@ type NodeScore struct {
 // NodeScoreList declares a []NodeScore type.
 type NodeScoreList []NodeScore
 
+// Scorer plugin interface
 type Scorer interface {
 	// Score ranks nodes that have passed the filtering stage.
 	//

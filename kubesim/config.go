@@ -3,6 +3,7 @@ package kubesim
 import (
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,17 +26,18 @@ type NodeConfig struct {
 	Namespace   string
 	Name        string
 	Capacity    map[v1.ResourceName]string
-	Labels      map[string]string // TODO: force constraints
+	Labels      map[string]string
 	Annotations map[string]string
 	Taints      []TaintConfig
 }
 
 type TaintConfig struct {
-	Key    string // TODO: force constraints
+	Key    string
 	Value  string
 	Effect string
 }
 
+// buildNode builds a *v1.Node with the provided node config.
 func buildNode(config NodeConfig) (*v1.Node, error) {
 	capacity, err := buildCapacity(config.Capacity)
 	if err != nil {
@@ -69,7 +71,7 @@ func buildNode(config NodeConfig) (*v1.Node, error) {
 		Status: v1.NodeStatus{
 			Capacity:    capacity,
 			Allocatable: capacity,
-			Conditions:  buildNodeCondition(metav1.Now()), // TODO: config time
+			Conditions:  buildNodeCondition(metav1.Now()),
 		},
 	}
 
@@ -111,8 +113,6 @@ func buildTaint(config TaintConfig) (*v1.Taint, error) {
 }
 
 func buildNodeCondition(clock metav1.Time) []v1.NodeCondition {
-	// TODO
-
 	return []v1.NodeCondition{
 		{
 			Type:               v1.NodeReady,

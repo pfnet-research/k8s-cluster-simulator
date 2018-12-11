@@ -98,3 +98,70 @@ func main() {
     }
 }
 ```
+
+## Supported `v1.Node` fields
+
+```go
+v1.Node{
+    TypeMeta: metav1.TypeMeta{
+        Kind:       "Node",
+        APIVersion: "v1",
+    },
+    ObjectMeta: metav1.ObjectMeta{
+        Name:        // all determined by config
+        Namespace:   // 
+        Labels:      // 
+        Annotations: // 
+    },
+    Spec: v1.NodeSpec{
+        Unschedulable: false,
+        Taints:        // determined by config
+    },
+    Status: v1.NodeStatus{
+        Capacity:    // determined by config
+        Allocatable: // simulated
+        Conditions:  []v1.NodeCondition{
+            {
+                Type:               v1.NodeReady,
+                Status:             v1.ConditionTrue,
+                LastHeartbeatTime:  // clock
+                LastTransitionTime: // clock
+                Reason:             "KubeletReady",
+                Message:            "kubelet is ready.",
+            },
+            {
+                Type:               "OutOfDisk",
+                Status:             v1.ConditionFalse,
+                LastHeartbeatTime:  // clock,
+                LastTransitionTime: // clock,
+                Reason:             "KubeletHasSufficientDisk",
+                Message:            "kubelet has sufficient disk space available",
+            },
+            {
+                Type:               "MemoryPressure",
+                Status:             v1.ConditionFalse,
+                LastHeartbeatTime:  // clock,
+                LastTransitionTime: // clock,
+                Reason:             "KubeletHasSufficientMemory",
+                Message:            "kubelet has sufficient memory available",
+            },
+            {
+                Type:               "DiskPressure",
+                Status:             v1.ConditionFalse,
+                LastHeartbeatTime:  // clock,
+                LastTransitionTime: // clock,
+                Reason:             "KubeletHasNoDiskPressure",
+                Message:            "kubelet has no disk pressure",
+            },
+            {
+                Type:               "NetworkUnavailable",
+                Status:             v1.ConditionFalse,
+                LastHeartbeatTime:  // clock,
+                LastTransitionTime: // clock,
+                Reason:             "RouteCreated",
+                Message:            "RouteController created a route",
+            },
+        },
+    },
+}
+```

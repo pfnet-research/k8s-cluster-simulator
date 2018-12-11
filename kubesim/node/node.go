@@ -1,6 +1,7 @@
 package node
 
 import (
+	"errors"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -26,8 +27,6 @@ func NewNode(node *v1.Node) Node {
 
 // ToV1 returns v1.Node representation of this node.
 func (node *Node) ToV1(clock clock.Clock) (*v1.Node, error) {
-	// TODO: update condition
-
 	allocatable := node.v1.Status.Capacity
 	var err error
 
@@ -115,10 +114,8 @@ func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.P
 	return &status, nil
 }
 
-// TODO
-// func (node *Node) NodeConditions(clock clock.Clock) []v1.NodeCondition {
-// }
-
+// totalResourceRequest calculates the total resource request (not usage) of running pods at the
+// time clock.
 func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
@@ -130,6 +127,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	return total
 }
 
+// runningPodsNum returns the number of running pods at the time clock.
 func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	num := int64(0)
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
@@ -141,6 +139,8 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	return num
 }
 
+// getSimPod returns a *pod.Pod by name that was accepted on this node.
+// The returned pod may have failed to be scheduled.
 func (node *Node) getSimPod(namespace, name string) (*pod.Pod, error) {
 	key, err := buildKeyFromNames(namespace, name)
 	if err != nil {
@@ -158,16 +158,17 @@ func (node *Node) getSimPod(namespace, name string) (*pod.Pod, error) {
 // buildKey builds a key for the provided pod.
 func buildKey(pod *v1.Pod) (string, error) {
 	if pod.ObjectMeta.Namespace == "" {
-		return "", fmt.Errorf("pod namespace not found")
+		return "", errors.New("pod namespace not found")
 	}
 
 	if pod.ObjectMeta.Name == "" {
-		return "", fmt.Errorf("pod name not found")
+		return "", errors.New("pod name not found")
 	}
 
 	return buildKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 }
 
+// buildKeyFromNames builds a key from the namespace and pod name.
 func buildKeyFromNames(namespace string, name string) (string, error) {
 	return fmt.Sprintf("%s-%s", namespace, name), nil
 }

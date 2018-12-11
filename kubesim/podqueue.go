@@ -7,13 +7,14 @@ import (
 	"k8s.io/api/core/v1"
 )
 
+// podQueue stores pods in a queue.
+// It wraps []v1.Pod for thread-safetiness.
 type podQueue struct {
 	queue []v1.Pod
 	lock  sync.Mutex
 }
 
-var errNoPod = errors.New("No pod queued")
-
+// append pushed a pod to this queue.
 func (q *podQueue) append(pod v1.Pod) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
@@ -21,8 +22,11 @@ func (q *podQueue) append(pod v1.Pod) {
 	q.queue = append(q.queue, pod)
 }
 
-// pop pops a pod from this podQueue.
-// If this podQueue is empty, errNoPod will be returned.
+// errNoPod may be returned from pop().
+var errNoPod = errors.New("No pod queued")
+
+// pop pops a pod from this queue.
+// If this queue is empty, errNoPod will be returned.
 func (q *podQueue) pop() (*v1.Pod, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()

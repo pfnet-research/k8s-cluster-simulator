@@ -7,7 +7,7 @@ import (
 )
 
 // Map stores a map associating "key" with *v1.Pod.
-// It wraps sync.Map for type-safety.
+// It wraps sync.Map for type-safetiness.
 type Map struct {
 	inner sync.Map
 }
