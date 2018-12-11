@@ -12,40 +12,38 @@ import (
 
 // Node represents a simulated computing node.
 type Node struct {
-	config        Config
+	v1            *v1.Node
 	pods          pod.Map
 	resourceUsage v1.ResourceList
 }
 
-// Config represents configuration of this node.
-type Config struct {
-	Name     string
-	Capacity v1.ResourceList
-	Labels   map[string]string // TODO
-	Taints   []v1.Taint        // TODO
-}
-
-// NewNode creates a new node with the config.
-func NewNode(config Config) Node {
+// NewNode creates a new node with the v1.Node definition.
+func NewNode(node *v1.Node) Node {
 	return Node{
-		config:        config,
+		v1:            node,
 		pods:          pod.Map{},
 		resourceUsage: v1.ResourceList{},
 	}
 }
 
+// ToV1 returns v1.Node definition of this node.
+func (node *Node) ToV1() *v1.Node {
+	// TODO
+	return node.v1
+}
+
 // CreatePod accepts the definition of a pod and try to start it.
 // The pod will fail to be scheduled if there is not sufficient resources.
-func (node *Node) CreatePod(clock clock.Clock, podDef *v1.Pod) error {
-	log.L.Debugf("Node %q: CreatePod(%v, %q) called", node.config.Name, clock, podDef.Name)
+func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
+	log.L.Debugf("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
 
-	key, err := buildKey(podDef)
+	key, err := buildKey(v1Pod)
 	if err != nil {
 		return err
 	}
 
-	newTotalReq := sumResourceList(node.totalResourceRequest(clock), getResourceRequest(podDef))
-	cap := node.config.Capacity
+	newTotalReq := sumResourceList(node.totalResourceRequest(clock), getResourceRequest(v1Pod))
+	cap := node.v1.Status.Capacity
 	var podStatus pod.Status
 	if !greaterEqual(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
 		podStatus = pod.OverCapacity
@@ -53,7 +51,7 @@ func (node *Node) CreatePod(clock clock.Clock, podDef *v1.Pod) error {
 		podStatus = pod.Ok
 	}
 
-	simPod, err := pod.NewPod(podDef, clock, podStatus)
+	simPod, err := pod.NewPod(v1Pod, clock, podStatus)
 	if err != nil {
 		return err
 	}
@@ -65,7 +63,7 @@ func (node *Node) CreatePod(clock clock.Clock, podDef *v1.Pod) error {
 // GetPod returns a pod by name that was accepted on this node.
 // The returned pod may have failed to be scheduled.
 func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
-	log.L.Debugf("Node %q: GetPod(%v, %q, %q) called", node.config.Name, clock, namespace, name)
+	log.L.Debugf("Node %q: GetPod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
 	pod, err := node.getSimPod(namespace, name)
 	if err != nil {
@@ -81,13 +79,13 @@ func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, er
 // GetPodList returns the list of all pods that were accepted on this node.
 // Each of the returned pods may have failed to be scheduled.
 func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
-	log.L.Debugf("Node %q: GetPodList(%v) called", node.config.Name, clock)
+	log.L.Debugf("Node %q: GetPodList(%v) called", node.v1.Name, clock)
 	return node.pods.ListPods()
 }
 
 // GetPodStatus returns the status of the pod by name.
 func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
-	log.L.Debugf("Node %q: GetPodStatus(%v, %q, %q) called", node.config.Name, clock, namespace, name)
+	log.L.Debugf("Node %q: GetPodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
 	pod, err := node.getSimPod(namespace, name)
 	if err != nil {
@@ -109,7 +107,7 @@ func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.P
 // updateState updates the state of this node.
 // TODO
 func (node *Node) updateState(clock clock.Clock) {
-	log.L.Debugf("Node %q: UpdateState(%v) called", node.config.Name, clock)
+	log.L.Debugf("Node %q: UpdateState(%v) called", node.v1.Name, clock)
 
 	node.resourceUsage = v1.ResourceList{}
 	node.pods.Range(func(key string, pod pod.Pod) bool {

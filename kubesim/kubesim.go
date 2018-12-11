@@ -42,14 +42,14 @@ func NewKubeSim(configPath string) (*KubeSim, error) {
 	for _, config := range config.Cluster.Nodes {
 		log.L.Debugf("NodeConfig: %+v", config)
 
-		nodeConfig, err := buildNodeConfig(config)
+		nodeV1, err := buildNode(config)
 		if err != nil {
 			return nil, errors.Errorf("error building node config: %s", err.Error())
 		}
 
-		node := node.NewNode(*nodeConfig)
-		nodes = append(nodes, &node)
-		log.L.Debugf("Node %q created", nodeConfig.Name)
+		n := node.NewNode(nodeV1)
+		nodes = append(nodes, &n)
+		log.L.Debugf("Node %q created", nodeV1.Name)
 	}
 
 	kubesim := KubeSim{

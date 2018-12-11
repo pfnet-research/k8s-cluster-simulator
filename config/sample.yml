@@ -1,10 +1,15 @@
+logLevel: debug
+tick: 10  # seconds
+apiPort: 10250
+metricsPort: 10255
 cluster:
   nodes:
-  - name: node-0
+  - namespace: default
+    name: node-0
     capacity:
       cpu: 4
       memory: 8Gi
-      gpu: 1
+      nvidia.com/gpu: 1
       pods: 2
     labels:
       beta.kubernetes.io/os: simulated
@@ -12,11 +17,12 @@ cluster:
       - key: kubernetes-simulator.io/kubelet
         value: simulator
         effect: NoSchedule
-  - name: node-1
+  - namespace: default
+    name: node-0
     capacity:
       cpu: 8
       memory: 16Gi
-      gpu: 2
+      nvidia.com/gpu: 2
       pods: 4
     labels:
       beta.kubernetes.io/os: simulated
@@ -24,7 +30,3 @@ cluster:
       - key: kubernetes-simulator.io/kubelet
         value: simulator
         effect: NoSchedule
-tick: 10  # seconds
-apiPort: 10250
-metricsPort: 10255
-logLevel: debug
