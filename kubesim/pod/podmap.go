@@ -12,18 +12,20 @@ type Map struct {
 	inner sync.Map
 }
 
-func (m *Map) Load(key string) (Pod, bool) {
-	pod, ok := m.inner.Load(key)
+// Load returns the pod associated with the key.
+// If the pod does not exist, the second return value will be false.
 	if !ok {
 		return Pod{}, false
 	}
 	return pod.(Pod), true
 }
 
+// Store stores a new pair of key and pod.
 func (m *Map) Store(key string, pod Pod) {
 	m.inner.Store(key, pod)
 }
 
+// Delete deletes a pod associated with the key.
 func (m *Map) Delete(key string) {
 	m.inner.Delete(key)
 }

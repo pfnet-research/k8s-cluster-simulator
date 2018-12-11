@@ -8,10 +8,10 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-// Spec represents pod's resource usage spec of each execution phase.
+// spec represents pod's resource usage spec of each execution phase.
 type spec []specPhase
 
-// SpecPhase represents a pod's resource usage spec in an execution phase.
+// specPhase represents a pod's resource usage spec in an execution phase.
 type specPhase struct {
 	seconds       int32
 	resourceUsage v1.ResourceList
@@ -30,8 +30,7 @@ func parseSpec(pod *v1.Pod) (spec, error) {
 	}
 
 	specJSON := []specPhaseJSON{}
-	err := json.Unmarshal([](byte)(specAnnot), &specJSON)
-	if err != nil {
+	if err := json.Unmarshal([](byte)(specAnnot), &specJSON); err != nil {
 		return nil, err
 	}
 
