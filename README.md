@@ -44,6 +44,29 @@ type Scorer interface {
 
 .. and others not defined yet.
 
+## How to specify the resource usage of each pod
+
+Embed a yaml in the annotation field of the pod. 
+
+e.g.
+
+```yaml
+metadata:
+  name: nginx-sim
+  annotations:
+    simSpec: |
+- seconds: 5
+  resourceUsage:
+    cpu: 1
+    memory: 2Gi
+    nvidia.com/gpu: 0
+- seconds: 10
+  resourceUsage:
+    cpu: 2
+    memory: 4Gi
+    nvidia.com/gpu: 1`
+```
+
 ## Usage
 
 ```go
