@@ -81,7 +81,7 @@ func main() {
             pod := // ..
             kubesim.SubmitPod(pod)
         }
-    }
+    }()
 
     // Run the main loop, which invokes scheduler plugins and schedules submitted pods to a selected node
     if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {

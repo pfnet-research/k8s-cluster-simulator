@@ -11,9 +11,6 @@ type Filter interface {
 	// Scheduler runs filter plugins per node in the same order that they are registered,
 	// but scheduler may run these filter function for multiple nodes in parallel.
 	// So these plugins must use synchronization when they modify state.
-	//
-	// Scheduler stops running the remaining filter functions for a node once one of these filters
-	// fails for the node.
 	Filter(pod *v1.Pod, nodes [](*v1.Node)) (filteredNodes [](*v1.Node), err error)
 }
 
