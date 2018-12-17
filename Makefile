@@ -1,7 +1,5 @@
-IMPORT_PATH := github.com/ordovicia/kubernetes-simulator
+# IMPORT_PATH := github.com/ordovicia/kubernetes-simulator
 DOCKER_IMAGE := kubernetes-simulator
-exec := $(DOCKER_IMAGE)
-binary := kubernetes-simulator
 build_tags := "netgo osusergo $(VK_BUILD_TAGS)"
 
 # comment this line out for quieter things
@@ -11,18 +9,18 @@ V := 1 # When V is set, print commands and build progress.
 IGNORED_PACKAGES := /vendor/
 
 .PHONY: all
-all: test build
+all: test example
 
-.PHONY: safebuild
-# safebuild builds inside a docker container with no clingons from your $GOPATH
-safebuild:
-	@echo "Building..."
-	$Q docker build --build-arg BUILD_TAGS=$(build_tags) -t $(DOCKER_IMAGE):$(VERSION) .
+# .PHONY: safebuild
+# # safebuild builds inside a docker container with no clingons from your $GOPATH
+# safebuild:
+# 	@echo "Building..."
+# 	$Q docker build --build-arg BUILD_TAGS=$(build_tags) -t $(DOCKER_IMAGE):$(VERSION) .
 
-.PHONY: build
-build: authors
-	@echo "Building..."
-	$Q CGO_ENABLED=0 go build -a --tags $(build_tags) -ldflags '-extldflags "-static"' -o bin/$(binary) $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)
+.PHONY: example
+example: authors
+	@echo "Building examples/main..."
+	$Q CGO_ENABLED=0 go build -o bin/main examples/main.go
 
 .PHONY: tags
 tags:
@@ -33,11 +31,6 @@ tags:
 release: build $(GOPATH)/bin/goreleaser
 	goreleaser
 
-
-### Code not in the repository root? Another binary? Add to the path like this.
-# .PHONY: otherbin
-# otherbin: .GOPATH/.ok
-#   $Q go install $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/otherbin
 
 ##### ^^^^^^ EDIT ABOVE ^^^^^^ #####
 
@@ -135,7 +128,6 @@ setup: clean
 
 VERSION          := $(shell git describe --tags --always --dirty="-dev")
 DATE             := $(shell date -u '+%Y-%m-%d-%H:%M UTC')
-VERSION_FLAGS    := -ldflags='-X "github.com/ordovicia/kubernetes-simulator/cmd.Version=$(VERSION)" -X "github.com/ordovicia/kubernetes-simulator/cmd.BuildTime=$(DATE)"'
 
 # assuming go 1.9 here!!
 _allpackages = $(shell go list ./...)
