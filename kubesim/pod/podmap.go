@@ -6,7 +6,7 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-// Map stores a map associating "key" with *v1.Pod.
+// Map stores a map associating "key" with Pod.
 // It wraps sync.Map for type-safetiness.
 type Map struct {
 	inner sync.Map
