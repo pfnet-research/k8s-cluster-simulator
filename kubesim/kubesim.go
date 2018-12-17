@@ -189,7 +189,7 @@ func (k *KubeSim) scheduleOneScore(pod *v1.Pod, nodes []*v1.Node) (nodeSelected 
 
 	nodeSelected, ok := k.nodes[scoreMaxNode]
 	if !ok {
-		return nil, strongerrors.NotFound(errors.Errorf("node %q not found", nodeSelected))
+		return nil, strongerrors.NotFound(errors.Errorf("node %q not found", scoreMaxNode))
 	}
 
 	return nodeSelected, nil
