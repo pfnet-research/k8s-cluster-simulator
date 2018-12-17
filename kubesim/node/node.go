@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/api/core/v1"
 
+	"github.com/cpuguy83/strongerrors"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
 	"github.com/ordovicia/kubernetes-simulator/log"
@@ -79,12 +80,9 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
 	log.L.Debugf("Node %q: GetPod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
-	pod, err := node.getSimPod(namespace, name)
-	if err != nil {
-		return nil, err
-	}
+	pod := node.getSimPod(namespace, name)
 	if pod == nil {
-		return nil, nil
+		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
 	}
 
 	return pod.ToV1(), nil
@@ -101,16 +99,12 @@ func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
 func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
 	log.L.Debugf("Node %q: GetPodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
-	pod, err := node.getSimPod(namespace, name)
-	if err != nil {
-		return nil, err
-	}
+	pod := node.getSimPod(namespace, name)
 	if pod == nil {
-		return nil, nil
+		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
 	}
 
 	status := pod.BuildStatus(clock)
-
 	return &status, nil
 }
 
@@ -141,34 +135,30 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 
 // getSimPod returns a *pod.Pod by name that was accepted on this node.
 // The returned pod may have failed to be scheduled.
-func (node *Node) getSimPod(namespace, name string) (*pod.Pod, error) {
-	key, err := buildKeyFromNames(namespace, name)
-	if err != nil {
-		return nil, err
-	}
-
+func (node *Node) getSimPod(namespace, name string) *pod.Pod {
+	key := buildKeyFromNames(namespace, name)
 	pod, ok := node.pods.Load(key)
 	if !ok {
-		return nil, nil
+		return nil
 	}
 
-	return pod, nil
+	return pod
 }
 
 // buildKey builds a key for the provided pod.
 func buildKey(pod *v1.Pod) (string, error) {
 	if pod.ObjectMeta.Namespace == "" {
-		return "", errors.New("pod namespace not found")
+		return "", strongerrors.InvalidArgument(errors.New("Empty pod namespace"))
 	}
 
 	if pod.ObjectMeta.Name == "" {
-		return "", errors.New("pod name not found")
+		return "", strongerrors.InvalidArgument(errors.New("Empty pod name"))
 	}
 
-	return buildKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+	return buildKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name), nil
 }
 
 // buildKeyFromNames builds a key from the namespace and pod name.
-func buildKeyFromNames(namespace string, name string) (string, error) {
-	return fmt.Sprintf("%s-%s", namespace, name), nil
+func buildKeyFromNames(namespace string, name string) string {
+	return fmt.Sprintf("%s-%s", namespace, name)
 }
