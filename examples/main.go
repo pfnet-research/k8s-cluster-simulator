@@ -16,14 +16,51 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/scheduler"
 )
 
+// Filter
 type myFilter struct{}
 
-func (f *myFilter) Filter(pod *v1.Pod, node *v1.Node) (ok bool, err error) { return true, nil }
+func (f *myFilter) Filter(pod *v1.Pod, node *v1.Node) (ok bool, err error) {
+	resourceReq := v1.ResourceList{}
+	for _, container := range pod.Spec.Containers {
+		resourceReq = resourceSum(resourceReq, container.Resources.Requests)
+	}
+	return resourceGE(node.Status.Allocatable, resourceReq), nil
+}
 
+func resourceSum(r1, r2 v1.ResourceList) v1.ResourceList {
+	sum := r1
+	for r2Key := range r2 {
+		if r2Val, ok := sum[r2Key]; ok {
+			r1Val := sum[r2Key]
+			r1Val.Add(r2Val)
+			sum[r2Key] = r1Val
+		} else {
+			sum[r2Key] = r2Val
+		}
+	}
+	return sum
+}
+
+func resourceGE(r1, r2 v1.ResourceList) bool {
+	for r2Key, r2Val := range r2 {
+		if r1Val, ok := r1[r2Key]; !ok {
+			return false
+		} else if r1Val.Cmp(r2Val) <= 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// Scorer
 type myScorer struct{}
 
 func (s *myScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores []scheduler.NodeScore, weight int, err error) {
-	return []scheduler.NodeScore{}, 0, nil
+	scores = []scheduler.NodeScore{}
+	for _, node := range nodes {
+		scores = append(scores, scheduler.NodeScore{Node: node.Name, Score: 1})
+	}
+	return scores, 1, nil
 }
 
 func main() {
