@@ -111,7 +111,7 @@ func main() {
         // Continuously submit new pods to the cluster
         for {
             pod := // ..
-            kubesim.SubmitPod(pod)
+            kubesim.PodQueue() <- pod
         }
     }()
 

@@ -18,9 +18,9 @@ import (
 
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
-	nodes []*node.Node
-	pods  podQueue
-	tick  int
+	nodes    []*node.Node
+	podQueue chan v1.Pod
+	tick     int
 
 	filters []scheduler.Filter
 	scorers []scheduler.Scorer
@@ -48,11 +48,11 @@ func NewKubeSim(config *Config) (*KubeSim, error) {
 	}
 
 	kubesim := KubeSim{
-		nodes:   nodes,
-		pods:    podQueue{},
-		tick:    config.Tick,
-		filters: []scheduler.Filter{},
-		scorers: []scheduler.Scorer{},
+		nodes:    nodes,
+		podQueue: make(chan v1.Pod),
+		tick:     config.Tick,
+		filters:  []scheduler.Filter{},
+		scorers:  []scheduler.Scorer{},
 	}
 
 	return &kubesim, nil
@@ -78,9 +78,9 @@ func (k *KubeSim) RegisterScorer(scorer scheduler.Scorer) {
 	k.scorers = append(k.scorers, scorer)
 }
 
-// SubmitPod appends the pod to this KubeSim.
-func (k *KubeSim) SubmitPod(pod v1.Pod) {
-	k.pods.append(pod)
+// PodQueue returns the channel of this KubeSim for submitting pods.
+func (k *KubeSim) PodQueue() chan v1.Pod {
+	return k.podQueue
 }
 
 // Run executes the main loop, which invokes scheduler plugins and schedules queued pods to a
@@ -102,21 +102,17 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			return ctx.Err()
 		case clock := <-tick:
 			// log.L.Debugf("Clock %s", clock.String())
-			if err := k.scheduleOne(); err != nil {
+			if err := k.scheduleOne(clock); err != nil {
 				return err
 			}
-			_ = clock
 		}
 	}
 }
 
-func (k *KubeSim) scheduleOne() error {
-	pod, err := k.pods.pop()
-	if err == errNoPod {
-		return nil
-	}
-
+func (k *KubeSim) scheduleOne(clock clock.Clock) error {
+	pod := <-k.podQueue
 	_ = pod
+	_ = clock
 	// for _, filter := range k.filters {
 	// }
 
