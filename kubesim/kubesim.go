@@ -109,30 +109,37 @@ func (k *KubeSim) Run(ctx context.Context) error {
 	}
 }
 
+// scheduleOne try to schedule one pod at the front of queue, or return immediately if no pod is in
+// the queue.
 func (k *KubeSim) scheduleOne(clock clock.Clock) error {
-	pod := <-k.podQueue
+	select {
+	case pod := <-k.podQueue:
+		log.L.Debugf("Trying to schedule pod %v", pod)
 
-	nodes := []*v1.Node{}
-	for _, node := range k.nodes {
-		n, err := node.ToV1(clock)
+		nodes := []*v1.Node{}
+		for _, node := range k.nodes {
+			n, err := node.ToV1(clock)
+			if err != nil {
+				return err
+			}
+			nodes = append(nodes, n)
+		}
+
+		if err := k.scheduleOneFilter(&pod, nodes); err != nil {
+			return err
+		}
+
+		nodeSelected, err := k.scheduleOneScore(&pod, nodes)
 		if err != nil {
 			return err
 		}
-		nodes = append(nodes, n)
-	}
+		log.L.Debugf("Selected node %v", nodeSelected)
 
-	if err := k.scheduleOneFilter(&pod, nodes); err != nil {
-		return err
-	}
-
-	nodeSelected, err := k.scheduleOneScore(&pod, nodes)
-	if err != nil {
-		return err
-	}
-	log.L.Debugf("Selected node %v", nodeSelected)
-
-	if err := nodeSelected.CreatePod(clock, &pod); err != nil {
-		return err
+		if err := nodeSelected.CreatePod(clock, &pod); err != nil {
+			return err
+		}
+	default:
+		// skip
 	}
 
 	return nil
