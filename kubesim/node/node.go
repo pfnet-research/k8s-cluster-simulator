@@ -45,10 +45,10 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 		return err
 	}
 
-	newTotalReq := sumResourceList(node.totalResourceRequest(clock), getResourceRequest(v1Pod))
+	newTotalReq := resourceListSum(node.totalResourceRequest(clock), getResourceReq(v1Pod))
 	cap := node.v1.Status.Capacity
 	var podStatus pod.Status
-	if !greaterEqual(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
+	if !resourceListGE(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
 		podStatus = pod.OverCapacity
 	} else {
 		podStatus = pod.Ok
@@ -103,7 +103,7 @@ func (node *Node) updateAllocatable(clock clock.Clock) error {
 	var err error
 
 	node.pods.Range(func(key string, pod pod.Pod) bool {
-		allocatable, err = diffResourceList(allocatable, pod.ResourceUsage(clock))
+		allocatable, err = resourceListDiff(allocatable, pod.ResourceUsage(clock))
 		if err != nil {
 			return false
 		}
@@ -124,7 +124,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		if pod.IsRunning(clock) {
-			total = sumResourceList(total, getResourceRequest(pod.ToV1()))
+			total = resourceListSum(total, getResourceReq(pod.ToV1()))
 		}
 		return true
 	})
