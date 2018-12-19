@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 
+	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/log"
-	"github.com/ordovicia/kubernetes-simulator/scheduler"
 )
 
 // KubeSim represents a kubernetes cluster simulator.
@@ -22,9 +22,9 @@ type KubeSim struct {
 	pods  podQueue
 	tick  int
 
-	submitters []scheduler.Submitter
-	filters    []scheduler.Filter
-	scorers    []scheduler.Scorer
+	submitters []api.Submitter
+	filters    []api.Filter
+	scorers    []api.Scorer
 }
 
 // NewKubeSim creates a new KubeSim with the config.
@@ -52,8 +52,8 @@ func NewKubeSim(config *Config) (*KubeSim, error) {
 		nodes:   nodes,
 		pods:    podQueue{},
 		tick:    config.Tick,
-		filters: []scheduler.Filter{},
-		scorers: []scheduler.Scorer{},
+		filters: []api.Filter{},
+		scorers: []api.Scorer{},
 	}
 
 	return &kubesim, nil
@@ -70,17 +70,17 @@ func NewKubeSimFromConfigPath(configPath string) (*KubeSim, error) {
 }
 
 // RegisterSubmitter registers a new submitter plugin to this KubeSim.
-func (k *KubeSim) RegisterSubmitter(submitter scheduler.Submitter) {
+func (k *KubeSim) RegisterSubmitter(submitter api.Submitter) {
 	k.submitters = append(k.submitters, submitter)
 }
 
 // RegisterFilter registers a new filter plugin to this KubeSim.
-func (k *KubeSim) RegisterFilter(filter scheduler.Filter) {
+func (k *KubeSim) RegisterFilter(filter api.Filter) {
 	k.filters = append(k.filters, filter)
 }
 
 // RegisterScorer registers a new scorer plugin to this KubeSim.
-func (k *KubeSim) RegisterScorer(scorer scheduler.Scorer) {
+func (k *KubeSim) RegisterScorer(scorer api.Scorer) {
 	k.scorers = append(k.scorers, scorer)
 }
 

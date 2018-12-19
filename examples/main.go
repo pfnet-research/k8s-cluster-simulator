@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/api/core/v1"
 
+	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/log"
-	"github.com/ordovicia/kubernetes-simulator/scheduler"
 )
 
 // Submitter
@@ -63,10 +63,10 @@ func resourceGE(r1, r2 v1.ResourceList) bool {
 // Scorer
 type myScorer struct{}
 
-func (s *myScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores []scheduler.NodeScore, weight int, err error) {
-	scores = []scheduler.NodeScore{}
+func (s *myScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores []api.NodeScore, weight int, err error) {
+	scores = []api.NodeScore{}
 	for _, node := range nodes {
-		scores = append(scores, scheduler.NodeScore{Node: node.Name, Score: 1})
+		scores = append(scores, api.NodeScore{Node: node.Name, Score: 1})
 	}
 	return scores, 1, nil
 }
