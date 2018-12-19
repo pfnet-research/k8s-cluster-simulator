@@ -5,16 +5,24 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/api/core/v1"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/log"
 	"github.com/ordovicia/kubernetes-simulator/scheduler"
 )
+
+// Submitter
+type mySubmitter struct{}
+
+func (s *mySubmitter) Submit(clock clock.Clock, nodes []*v1.Node) (pods []*v1.Pod, err error) {
+	// TODO
+	return []*v1.Pod{}, nil
+}
 
 // Filter
 type myFilter struct{}
@@ -89,6 +97,10 @@ var rootCmd = &cobra.Command{
 			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
 
+		// Register submitter
+		submitter := mySubmitter{}
+		kubesim.RegisterSubmitter(&submitter)
+
 		// Register plugins
 		filter := myFilter{}
 		kubesim.RegisterFilter(&filter)
@@ -104,24 +116,8 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
-		// Continuously submit pods
-		go submitPods(ctx)
-
 		if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
 			log.L.Fatal(err)
 		}
 	},
-}
-
-func submitPods(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			// pod := ..
-			// kubesim.PodQueue() <- pod
-			time.Sleep(1 * time.Second)
-		}
-	}
 }

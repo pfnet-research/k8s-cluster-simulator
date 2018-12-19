@@ -22,8 +22,9 @@ type KubeSim struct {
 	pods  podQueue
 	tick  int
 
-	filters []scheduler.Filter
-	scorers []scheduler.Scorer
+	submitters []scheduler.Submitter
+	filters    []scheduler.Filter
+	scorers    []scheduler.Scorer
 }
 
 // NewKubeSim creates a new KubeSim with the config.
@@ -68,6 +69,11 @@ func NewKubeSimFromConfigPath(configPath string) (*KubeSim, error) {
 	return NewKubeSim(config)
 }
 
+// RegisterSubmitter registers a new submitter plugin to this KubeSim.
+func (k *KubeSim) RegisterSubmitter(submitter scheduler.Submitter) {
+	k.submitters = append(k.submitters, submitter)
+}
+
 // RegisterFilter registers a new filter plugin to this KubeSim.
 func (k *KubeSim) RegisterFilter(filter scheduler.Filter) {
 	k.filters = append(k.filters, filter)
@@ -97,32 +103,53 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			return ctx.Err()
 		case clock := <-tick:
 			log.L.Debugf("Clock %s", clock.String())
-			if err := k.scheduleOne(clock); err != nil {
+
+			// convert []*node.Node to []*v1.Node
+			nodes := []*v1.Node{}
+			for _, node := range k.nodes {
+				n, err := node.ToV1(clock)
+				if err != nil {
+					return err
+				}
+				nodes = append(nodes, n)
+			}
+
+			if err := k.submit(clock, nodes); err != nil {
 				return err
 			}
-			_ = clock
+
+			if err := k.scheduleOne(clock, nodes); err != nil {
+				return err
+			}
 		}
 	}
 }
 
+// submit appends all pods submitted from submitters.
+func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
+	for _, submitter := range k.submitters {
+		pods, err := submitter.Submit(clock, nodes)
+		if err != nil {
+			return err
+		}
+
+		for _, pod := range pods {
+			k.pods.append(pod)
+		}
+	}
+
+	return nil
+}
+
 // scheduleOne try to schedule one pod at the front of queue, or return immediately if no pod is in
 // the queue.
-func (k *KubeSim) scheduleOne(clock clock.Clock) error {
+func (k *KubeSim) scheduleOne(clock clock.Clock, nodes []*v1.Node) error {
 	pod, err := k.pods.pop()
 	if err == errNoPod {
 		return nil
 	}
 
 	log.L.Debugf("Trying to schedule pod %v", pod)
-
-	nodes := []*v1.Node{}
-	for _, node := range k.nodes {
-		n, err := node.ToV1(clock)
-		if err != nil {
-			return err
-		}
-		nodes = append(nodes, n)
-	}
 
 	if err := k.scheduleOneFilter(pod, nodes); err != nil {
 		return err

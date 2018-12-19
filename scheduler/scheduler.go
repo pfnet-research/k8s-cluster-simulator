@@ -2,7 +2,13 @@ package scheduler
 
 import (
 	"k8s.io/api/core/v1"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
+
+type Submitter interface {
+	Submit(clock clock.Clock, nodes []*v1.Node) (pods []*v1.Pod, err error)
+}
 
 // Filter plugin interface
 type Filter interface {
