@@ -8,10 +8,9 @@ import (
 
 // resourceListSum returns the sum of two resource lists.
 func resourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
-	sum := r1
-	for r2Key := range r2 {
-		if r2Val, ok := sum[r2Key]; ok {
-			r1Val := sum[r2Key]
+	sum := r1.DeepCopy()
+	for r2Key, r2Val := range r2 {
+		if r1Val, ok := sum[r2Key]; ok {
 			r1Val.Add(r2Val)
 			sum[r2Key] = r1Val
 		} else {
@@ -31,9 +30,8 @@ func resourceListDiff(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
 		return v1.ResourceList{}, errResourceListDiffNotGE
 	}
 
-	diff := r1
-	for r2Key := range r2 {
-		r2Val, _ := diff[r2Key]
+	diff := r1.DeepCopy()
+	for r2Key, r2Val := range r2 {
 		r1Val := diff[r2Key]
 		r1Val.Sub(r2Val)
 		diff[r2Key] = r1Val
@@ -55,7 +53,7 @@ func resourceListGE(r1, r2 v1.ResourceList) bool {
 	for r2Key, r2Val := range r2 {
 		if r1Val, ok := r1[r2Key]; !ok {
 			return false
-		} else if r1Val.Cmp(r2Val) <= 0 {
+		} else if r1Val.Cmp(r2Val) < 0 {
 			return false
 		}
 	}
