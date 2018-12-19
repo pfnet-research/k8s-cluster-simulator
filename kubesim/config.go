@@ -1,9 +1,10 @@
 package kubesim
 
 import (
+	"time"
+
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
-
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -12,8 +13,9 @@ import (
 
 // Config represents a simulator config by user.
 type Config struct {
-	LogLevel string
-	Tick     int
+	LogLevel   string
+	Tick       int
+	StartClock string
 	// APIPort     int
 	// MetricsPort int
 	Cluster ClusterConfig
@@ -39,7 +41,7 @@ type TaintConfig struct {
 }
 
 // buildNode builds a *v1.Node with the provided node config.
-func buildNode(config NodeConfig) (*v1.Node, error) {
+func buildNode(config NodeConfig, startClock string) (*v1.Node, error) {
 	capacity, err := util.BuildResourceList(config.Capacity)
 	if err != nil {
 		return nil, err
@@ -52,6 +54,14 @@ func buildNode(config NodeConfig) (*v1.Node, error) {
 			return nil, err
 		}
 		taints = append(taints, *taint)
+	}
+
+	clock := time.Now()
+	if startClock != "" {
+		clock, err = time.Parse(time.RFC3339, startClock)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	node := v1.Node{
@@ -72,7 +82,7 @@ func buildNode(config NodeConfig) (*v1.Node, error) {
 		Status: v1.NodeStatus{
 			Capacity:    capacity,
 			Allocatable: capacity,
-			Conditions:  buildNodeCondition(metav1.Now()),
+			Conditions:  buildNodeCondition(metav1.NewTime(clock)),
 		},
 	}
 

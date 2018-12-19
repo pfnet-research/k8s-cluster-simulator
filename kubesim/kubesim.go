@@ -34,10 +34,10 @@ func NewKubeSim(config *Config) (*KubeSim, error) {
 	}
 
 	nodes := map[string]*node.Node{}
-	for _, config := range config.Cluster.Nodes {
-		log.L.Debugf("NodeConfig: %+v", config)
+	for _, nodeConfig := range config.Cluster.Nodes {
+		log.L.Debugf("NodeConfig: %+v", nodeConfig)
 
-		nodeV1, err := buildNode(config)
+		nodeV1, err := buildNode(nodeConfig, config.StartClock)
 		if err != nil {
 			return nil, errors.Errorf("error building node config: %s", err.Error())
 		}
@@ -213,10 +213,12 @@ func readConfig(path string) (*Config, error) {
 	log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
 
 	var config = Config{
-		Cluster: ClusterConfig{Nodes: []NodeConfig{}},
+		LogLevel:   "info",
+		Tick:       10,
+		StartClock: "",
 		// APIPort:     10250,
 		// MetricsPort: 10255,
-		LogLevel: "info",
+		Cluster: ClusterConfig{Nodes: []NodeConfig{}},
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {

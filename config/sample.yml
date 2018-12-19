@@ -1,7 +1,17 @@
+# Optional (Default: info)
 logLevel: debug
-tick: 10  # seconds
+
+# Interval seconds for scheduling and updating the cluster.
+# Optional (Default: 10)
+tick: 10  
+
 # apiPort: 10250
 # metricsPort: 10255
+
+# Start time at which the simulation starts in RFC3339 format.
+# Optional (Default: now)
+startClock: 2018-12-19T11:57:11+09:00 
+
 cluster:
   nodes:
   - namespace: default
