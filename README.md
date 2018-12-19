@@ -21,7 +21,7 @@ metadata:
   annotations:
     simSpec: |
 - seconds: 5        # a phase
-  resourceUsage:    # resource usage, not request nor limit
+  resourceUsage:    # resource usage (not request nor limit)
     cpu: 1
     memory: 2Gi
     nvidia.com/gpu: 0
@@ -29,7 +29,7 @@ metadata:
   resourceUsage:    
     cpu: 2
     memory: 4Gi
-    nvidia.com/gpu: 1`
+    nvidia.com/gpu: 1
 ```
 
 ## Supported `v1.Node` fields
