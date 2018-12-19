@@ -18,9 +18,9 @@ import (
 
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
-	nodes    map[string]*node.Node
-	podQueue chan v1.Pod
-	tick     int
+	nodes map[string]*node.Node
+	pods  podQueue
+	tick  int
 
 	filters []scheduler.Filter
 	scorers []scheduler.Scorer
@@ -48,11 +48,11 @@ func NewKubeSim(config *Config) (*KubeSim, error) {
 	}
 
 	kubesim := KubeSim{
-		nodes:    nodes,
-		podQueue: make(chan v1.Pod),
-		tick:     config.Tick,
-		filters:  []scheduler.Filter{},
-		scorers:  []scheduler.Scorer{},
+		nodes:   nodes,
+		pods:    podQueue{},
+		tick:    config.Tick,
+		filters: []scheduler.Filter{},
+		scorers: []scheduler.Scorer{},
 	}
 
 	return &kubesim, nil
@@ -78,11 +78,6 @@ func (k *KubeSim) RegisterScorer(scorer scheduler.Scorer) {
 	k.scorers = append(k.scorers, scorer)
 }
 
-// PodQueue returns the channel of this KubeSim for submitting pods.
-func (k *KubeSim) PodQueue() chan v1.Pod {
-	return k.podQueue
-}
-
 // Run executes the main loop, which invokes scheduler plugins and schedules queued pods to a
 // selected node.
 func (k *KubeSim) Run(ctx context.Context) error {
@@ -105,6 +100,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			if err := k.scheduleOne(clock); err != nil {
 				return err
 			}
+			_ = clock
 		}
 	}
 }
@@ -112,34 +108,34 @@ func (k *KubeSim) Run(ctx context.Context) error {
 // scheduleOne try to schedule one pod at the front of queue, or return immediately if no pod is in
 // the queue.
 func (k *KubeSim) scheduleOne(clock clock.Clock) error {
-	select {
-	case pod := <-k.podQueue:
-		log.L.Debugf("Trying to schedule pod %v", pod)
+	pod, err := k.pods.pop()
+	if err == errNoPod {
+		return nil
+	}
 
-		nodes := []*v1.Node{}
-		for _, node := range k.nodes {
-			n, err := node.ToV1(clock)
-			if err != nil {
-				return err
-			}
-			nodes = append(nodes, n)
-		}
+	log.L.Debugf("Trying to schedule pod %v", pod)
 
-		if err := k.scheduleOneFilter(&pod, nodes); err != nil {
-			return err
-		}
-
-		nodeSelected, err := k.scheduleOneScore(&pod, nodes)
+	nodes := []*v1.Node{}
+	for _, node := range k.nodes {
+		n, err := node.ToV1(clock)
 		if err != nil {
 			return err
 		}
-		log.L.Debugf("Selected node %v", nodeSelected)
+		nodes = append(nodes, n)
+	}
 
-		if err := nodeSelected.CreatePod(clock, &pod); err != nil {
-			return err
-		}
-	default:
-		// skip
+	if err := k.scheduleOneFilter(pod, nodes); err != nil {
+		return err
+	}
+
+	nodeSelected, err := k.scheduleOneScore(pod, nodes)
+	if err != nil {
+		return err
+	}
+	log.L.Debugf("Selected node %v", nodeSelected)
+
+	if err := nodeSelected.CreatePod(clock, pod); err != nil {
+		return err
 	}
 
 	return nil
