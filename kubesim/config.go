@@ -12,11 +12,11 @@ import (
 
 // Config represents a simulator config by user.
 type Config struct {
-	LogLevel    string
-	Tick        int
-	APIPort     int
-	MetricsPort int
-	Cluster     ClusterConfig
+	LogLevel string
+	Tick     int
+	// APIPort     int
+	// MetricsPort int
+	Cluster ClusterConfig
 }
 
 type ClusterConfig struct { // publicized for deserialization by viper

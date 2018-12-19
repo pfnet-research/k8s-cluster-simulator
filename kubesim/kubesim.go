@@ -213,10 +213,10 @@ func readConfig(path string) (*Config, error) {
 	log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
 
 	var config = Config{
-		Cluster:     ClusterConfig{Nodes: []NodeConfig{}},
-		APIPort:     10250,
-		MetricsPort: 10255,
-		LogLevel:    "info",
+		Cluster: ClusterConfig{Nodes: []NodeConfig{}},
+		// APIPort:     10250,
+		// MetricsPort: 10255,
+		LogLevel: "info",
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {

@@ -1,7 +1,7 @@
 logLevel: debug
 tick: 10  # seconds
-apiPort: 10250
-metricsPort: 10255
+# apiPort: 10250
+# metricsPort: 10255
 cluster:
   nodes:
   - namespace: default
