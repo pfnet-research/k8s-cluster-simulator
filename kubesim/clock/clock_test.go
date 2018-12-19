@@ -5,7 +5,19 @@ import (
 	"time"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestClockToMetaV1(t *testing.T) {
+	now := time.Now()
+
+	actual := metav1.NewTime(now)
+	expected := clock.NewClock(now).ToMetaV1()
+
+	if actual != expected {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
 
 func TestClockAdd(t *testing.T) {
 	tm, _ := time.Parse(time.RFC3339, "2018-01-01T00:00:00+09:00")
