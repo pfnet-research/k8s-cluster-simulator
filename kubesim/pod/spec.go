@@ -31,12 +31,12 @@ func parseSpec(pod *v1.Pod) (spec, error) {
 // parseSpec parses the YAML into spec.
 func parseSpecYAML(specYAML string) (spec, error) {
 	type specPhaseYAML struct {
-		Seconds       int32
-		ResourceUsage map[v1.ResourceName]string
+		Seconds       int32                      `yaml:"seconds"`
+		ResourceUsage map[v1.ResourceName]string `yaml:"resourceUsage"`
 	}
 
 	specUnmarshalled := []specPhaseYAML{}
-	if err := yaml.Unmarshal([](byte)(specYAML), &specUnmarshalled); err != nil {
+	if err := yaml.Unmarshal([]byte(specYAML), &specUnmarshalled); err != nil {
 		return nil, err
 	}
 
