@@ -27,12 +27,8 @@ func NewNode(node *v1.Node) Node {
 }
 
 // ToV1 returns v1.Node representation of this node.
-func (node *Node) ToV1(clock clock.Clock) (*v1.Node, error) {
-	if err := node.updateAllocatable(clock); err != nil {
-		return nil, err
-	}
-
-	return node.v1, nil
+func (node *Node) ToV1() *v1.Node {
+	return node.v1
 }
 
 // CreatePod accepts the definition of a pod and try to start it.
@@ -94,28 +90,6 @@ func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.P
 
 	status := pod.BuildStatus(clock)
 	return &status, nil
-}
-
-// updateAllocatable calculates and updates the amount of allocatable resource of this node at the
-// time clock.
-func (node *Node) updateAllocatable(clock clock.Clock) error {
-	allocatable := node.v1.Status.Capacity
-	var err error
-
-	node.pods.Range(func(key string, pod pod.Pod) bool {
-		allocatable, err = resourceListDiff(allocatable, pod.ResourceUsage(clock))
-		if err != nil {
-			return false
-		}
-		return true
-	})
-
-	if err != nil {
-		return err
-	}
-
-	node.v1.Status.Allocatable = allocatable
-	return nil
 }
 
 // totalResourceRequest calculates the total resource request (not usage) of running pods at the

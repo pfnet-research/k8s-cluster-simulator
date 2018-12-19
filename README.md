@@ -52,7 +52,7 @@ v1.Node{
     },
     Status: v1.NodeStatus{
         Capacity:    // determined by config
-        Allocatable: // simulated
+        Allocatable: // same as Capacity
         Conditions:  []v1.NodeCondition{
             {
                 Type:               v1.NodeReady,

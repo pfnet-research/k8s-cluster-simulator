@@ -107,11 +107,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			// convert []*node.Node to []*v1.Node
 			nodes := []*v1.Node{}
 			for _, node := range k.nodes {
-				n, err := node.ToV1(clock)
-				if err != nil {
-					return err
-				}
-				nodes = append(nodes, n)
+				nodes = append(nodes, node.ToV1())
 			}
 
 			if err := k.submit(clock, nodes); err != nil {
