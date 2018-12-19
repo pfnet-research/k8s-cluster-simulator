@@ -2,14 +2,14 @@
 
 ## Usage
 
-See [examples/main.go](examples/main.go)
+See [examples/main.go](examples/main.go).
 
-## Scheduler interface
+## Pod submitter and scheduler interface
 
-See [scheduler/scheduler.go](scheduler/scheduler.go).
-Currently only a subset of the interface is defined.
+See [api/submitter.go](api/submitter.go) and [api/scheduler.go](api/scheduler.go).
+For the scheduler interface, currently only a subset of the interface is defined.
 
-Note that this interface is a draft, subject to change.
+Note that these interfaces are drafts, subject to change.
 
 ## How to specify the resource usage of each pod
 
@@ -20,13 +20,13 @@ metadata:
   name: nginx-sim
   annotations:
     simSpec: |
-- seconds: 5    # a phase
-  resourceUsage:
+- seconds: 5        # a phase
+  resourceUsage:    # resource usage, not request nor limit
     cpu: 1
     memory: 2Gi
     nvidia.com/gpu: 0
-- seconds: 10   # another phase that follows the previous one
-  resourceUsage:
+- seconds: 10       # another phase that follows the previous one
+  resourceUsage:    
     cpu: 2
     memory: 4Gi
     nvidia.com/gpu: 1`
