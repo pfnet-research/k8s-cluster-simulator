@@ -145,7 +145,7 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, nodes []*v1.Node) error {
 		return nil
 	}
 
-	// log.L.Debugf("Trying to schedule pod %v", pod)
+	log.L.Tracef("Trying to schedule pod %v", pod)
 
 	if err := k.scheduleOneFilter(pod, nodes); err != nil {
 		return err
@@ -155,7 +155,7 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, nodes []*v1.Node) error {
 	if err != nil {
 		return err
 	}
-	// log.L.Debugf("Selected node %v", nodeSelected)
+	log.L.Tracef("Selected node %v", nodeSelected)
 
 	if err := nodeSelected.CreatePod(clock, pod); err != nil {
 		return err
@@ -166,7 +166,7 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, nodes []*v1.Node) error {
 
 func (k *KubeSim) scheduleOneFilter(pod *v1.Pod, nodes []*v1.Node) error {
 	for _, filter := range k.filters {
-		// log.L.Debugf("Filtering nodes %v", nodes)
+		log.L.Tracef("Filtering nodes %v", nodes)
 
 		nodesOk := []*v1.Node{}
 		for _, node := range nodes {
@@ -180,7 +180,7 @@ func (k *KubeSim) scheduleOneFilter(pod *v1.Pod, nodes []*v1.Node) error {
 		}
 		nodes = nodesOk
 
-		// log.L.Debugf("Filtered nodes %v", nodes)
+		log.L.Tracef("Filtered nodes %v", nodes)
 	}
 
 	return nil
@@ -190,7 +190,7 @@ func (k *KubeSim) scheduleOneScore(pod *v1.Pod, nodes []*v1.Node) (nodeSelected 
 	nodeScore := make(map[string]int)
 
 	for _, scorer := range k.scorers {
-		// log.L.Debugf("Scoring nodes %v", nodes)
+		log.L.Tracef("Scoring nodes %v", nodes)
 
 		scores, weight, err := scorer.Score(pod, nodes)
 		if err != nil {
@@ -201,7 +201,7 @@ func (k *KubeSim) scheduleOneScore(pod *v1.Pod, nodes []*v1.Node) (nodeSelected 
 			nodeScore[score.Host] += score.Score * weight
 		}
 
-		// log.L.Debugf("Scored nodes %v", nodeScore)
+		log.L.Tracef("Scored nodes %v", nodeScore)
 	}
 
 	scoreMax := -1
