@@ -1,6 +1,5 @@
-# IMPORT_PATH := github.com/ordovicia/kubernetes-simulator
-DOCKER_IMAGE := kubernetes-simulator
-build_tags := "netgo osusergo $(VK_BUILD_TAGS)"
+# DOCKER_IMAGE := kubernetes-simulator
+# build_tags := "netgo osusergo $(VK_BUILD_TAGS)"
 
 # comment this line out for quieter things
 V := 1 # When V is set, print commands and build progress.
@@ -18,7 +17,8 @@ all: test example
 # 	$Q docker build --build-arg BUILD_TAGS=$(build_tags) -t $(DOCKER_IMAGE):$(VERSION) .
 
 .PHONY: example
-example: authors
+# example: authors
+example:
 	@echo "Building examples/main..."
 	$Q CGO_ENABLED=0 go build -o bin/main examples/main.go
 
