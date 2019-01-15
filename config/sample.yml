@@ -1,17 +1,18 @@
-# Optional (Default: info)
+# Optional (default: info)
 logLevel: debug
 
 # Interval seconds for scheduling and updating the cluster.
-# Optional (Default: 10)
-tick: 10  
+# Optional (default: 10)
+tick: 10
 
 # apiPort: 10250
 # metricsPort: 10255
 
 # Start time at which the simulation starts in RFC3339 format.
-# Optional (Default: now)
-startClock: 2018-12-19T11:57:11+09:00 
+# Optional (default: now)
+startClock: 2019-01-01T00:00:00+09:00
 
+# Cluster configration
 cluster:
   nodes:
   - namespace: default
@@ -23,10 +24,6 @@ cluster:
       pods: 2
     labels:
       beta.kubernetes.io/os: simulated
-    taints:
-      - key: kubernetes-simulator.io/kubelet
-        value: simulator
-        effect: NoSchedule
   - namespace: default
     name: node-1
     capacity:
@@ -36,7 +33,3 @@ cluster:
       pods: 4
     labels:
       beta.kubernetes.io/os: simulated
-    taints:
-      - key: kubernetes-simulator.io/kubelet
-        value: simulator
-        effect: NoSchedule
