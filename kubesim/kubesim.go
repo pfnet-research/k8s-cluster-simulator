@@ -198,7 +198,7 @@ func (k *KubeSim) scheduleOneScore(pod *v1.Pod, nodes []*v1.Node) (nodeSelected 
 		}
 
 		for _, score := range scores {
-			nodeScore[score.Node] += score.Score * weight
+			nodeScore[score.Host] += score.Score * weight
 		}
 
 		// log.L.Debugf("Scored nodes %v", nodeScore)

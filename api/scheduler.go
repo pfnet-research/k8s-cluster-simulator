@@ -2,6 +2,8 @@ package api
 
 import (
 	"k8s.io/api/core/v1"
+
+	sched "k8s.io/kubernetes/pkg/scheduler/api"
 )
 
 // Filter plugin interface
@@ -15,15 +17,6 @@ type Filter interface {
 	// Scheduler stops running the remaining filter functions for a node once one of these filters
 	// fails for the node.
 	Filter(pod *v1.Pod, node *v1.Node) (ok bool, err error)
-}
-
-// NodeScore represents the score of scheduling to a particular node.
-// Higher score means higher priority.
-type NodeScore struct {
-	// Name of the node.
-	Node string
-	// Score associated with the node.
-	Score int
 }
 
 // Scorer plugin interface
@@ -40,5 +33,5 @@ type Scorer interface {
 	//
 	// These functions can never block scheduling.
 	// In case of an error they should return zero for the Node being ranked.
-	Score(pod *v1.Pod, nodes []*v1.Node) (scores []NodeScore, weight int, err error)
+	Score(pod *v1.Pod, nodes []*v1.Node) (scores sched.HostPriorityList, weight int, err error)
 }

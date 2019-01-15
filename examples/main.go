@@ -12,8 +12,8 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sched "k8s.io/kubernetes/pkg/scheduler/api"
 
-	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/log"
@@ -146,10 +146,10 @@ func (f *myFilter) Filter(pod *v1.Pod, node *v1.Node) (ok bool, err error) {
 // Scorer
 type myScorer struct{}
 
-func (s *myScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores []api.NodeScore, weight int, err error) {
-	scores = []api.NodeScore{}
+func (s *myScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores sched.HostPriorityList, weight int, err error) {
 	for _, node := range nodes {
-		scores = append(scores, api.NodeScore{Node: node.Name, Score: 1})
+		scores = append(scores, sched.HostPriority{Host: node.Name, Score: 1})
 	}
+
 	return scores, 1, nil
 }
