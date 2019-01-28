@@ -21,14 +21,14 @@ func (c Clock) ToMetaV1() metav1.Time {
 	return metav1.NewTime(c.inner)
 }
 
-// Sub calculates the duration from rhs to this Clock.
-func (c Clock) Sub(rhs Clock) time.Duration {
-	return c.inner.Sub(rhs.inner)
-}
-
 // Add calculates the clock ahead of this Clock by the duration.
 func (c Clock) Add(dur time.Duration) Clock {
 	return Clock{inner: c.inner.Add(dur)}
+}
+
+// Sub calculates the duration from rhs to this Clock.
+func (c Clock) Sub(rhs Clock) time.Duration {
+	return c.inner.Sub(rhs.inner)
 }
 
 // String converts this Clock to a string.

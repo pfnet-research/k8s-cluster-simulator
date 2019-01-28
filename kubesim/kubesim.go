@@ -141,7 +141,7 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 // the queue.
 func (k *KubeSim) scheduleOne(clock clock.Clock, nodes []*v1.Node) error {
 	pod, err := k.pods.pop()
-	if err == errNoPod {
+	if err == errEmptyPodQueue {
 		return nil
 	}
 

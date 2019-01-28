@@ -13,14 +13,14 @@ Note that these interfaces are drafts, subject to change.
 
 ## How to specify the resource usage of each pod
 
-Embed a yaml in the annotation field of the pod. e.g.
+Embed a YAML in the annotation field of the pod. e.g.
 
 ```yaml
 metadata:
   name: nginx-sim
   annotations:
     simSpec: |
-- seconds: 5        # a phase
+- seconds: 5        # a execution phase of this pod
   resourceUsage:    # resource usage (not request nor limit)
     cpu: 1
     memory: 2Gi

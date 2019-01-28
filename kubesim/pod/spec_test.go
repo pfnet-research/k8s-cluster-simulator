@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"reflect"
 	"testing"
 
 	"k8s.io/api/core/v1"
@@ -8,28 +9,12 @@ import (
 )
 
 func specPhaseNE(sp1, sp2 specPhase) bool {
-	if sp1.seconds != sp2.seconds {
-		return true
-	}
-
-	r1 := sp1.resourceUsage
-	r2 := sp2.resourceUsage
-
-	if len(r1) != len(r2) {
-		return true
-	}
-	for r1Key, r1Val := range r1 {
-		r2Val := r2[r1Key]
-		if r1Val.Value() != r2Val.Value() {
-			return true
-		}
-	}
-
-	return false
+	return sp1.seconds != sp2.seconds ||
+		!reflect.DeepEqual(sp1.resourceUsage, sp2.resourceUsage)
 }
 
 func TestParseSpecYAML(t *testing.T) {
-	str := `
+	yamlStr := `
 - seconds: 5
   resourceUsage:
     cpu: 1
@@ -42,7 +27,7 @@ func TestParseSpecYAML(t *testing.T) {
     nvidia.com/gpu: 1
 `
 
-	actual, err := parseSpecYAML(str)
+	actual, err := parseSpecYAML(yamlStr)
 	if err != nil {
 		t.Errorf("error %s", err.Error())
 	}
@@ -71,5 +56,22 @@ func TestParseSpecYAML(t *testing.T) {
 
 	if specPhaseNE(expected, actual[1]) {
 		t.Errorf("got: %v\nwant: %v", actual[1], expected)
+	}
+
+	yamlStrInvalid := `
+- seconds: 5
+  resourceUsage:
+    cpu: 1
+    memory: 2Gi
+    nvidia.com/gpu: 0
+- seconds: 10
+  resourceUsagi:
+    cpu: 2
+    memory: 4Gi
+    nvidia.com/gpu: 1
+`
+	actual, err = parseSpecYAML(yamlStrInvalid)
+	if err != errInvalidResourceUsageField {
+		t.Errorf("got: %v\nwant: errInvalidResourceUsageField", actual)
 	}
 }

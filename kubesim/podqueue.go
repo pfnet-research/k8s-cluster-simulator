@@ -22,17 +22,17 @@ func (q *podQueue) append(pod *v1.Pod) {
 	q.queue = append(q.queue, pod)
 }
 
-// errNoPod may be returned from pop().
-var errNoPod = errors.New("No pod queued")
+// errEmptyPodQueue may be returned from pop().
+var errEmptyPodQueue = errors.New("No pod queued")
 
 // pop pops a pod from this queue.
-// If this queue is empty, errNoPod will be returned.
+// If this queue is empty, errEmptyPodQueue will be returned.
 func (q *podQueue) pop() (*v1.Pod, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
 	if len(q.queue) == 0 {
-		return nil, errNoPod
+		return nil, errEmptyPodQueue
 	}
 
 	var pod *v1.Pod

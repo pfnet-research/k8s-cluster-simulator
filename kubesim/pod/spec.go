@@ -18,6 +18,9 @@ type specPhase struct {
 	resourceUsage v1.ResourceList
 }
 
+// errInvalidResourceUsageField may be returned from parseSpec().
+var errInvalidResourceUsageField = errors.New("Invalid spec.resoruceUsage field")
+
 // parseSpec parses the pod's "spec" annotation into spec.
 func parseSpec(pod *v1.Pod) (spec, error) {
 	specAnnot, ok := pod.ObjectMeta.Annotations["simSpec"]
@@ -42,9 +45,13 @@ func parseSpecYAML(specYAML string) (spec, error) {
 
 	spec := spec{}
 	for _, phase := range specUnmarshalled {
+		if phase.ResourceUsage == nil {
+			return nil, errInvalidResourceUsageField
+		}
+
 		resourceUsage, err := util.BuildResourceList(phase.ResourceUsage)
 		if err != nil {
-			return spec, err
+			return nil, err
 		}
 		spec = append(spec, specPhase{
 			seconds:       phase.Seconds,

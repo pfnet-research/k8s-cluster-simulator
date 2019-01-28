@@ -28,13 +28,13 @@ func TestBuildResourceList(t *testing.T) {
 		t.Errorf("got: %#v\nwant: %#v", actual, expected)
 	}
 
-	rsrc = map[v1.ResourceName]string{
+	rsrcInvalid := map[v1.ResourceName]string{
 		"cpu":    "1",
 		"memory": "2Gi",
 		"foo":    "bar",
 	}
 
-	actual, err := util.BuildResourceList(rsrc)
+	actual, err := util.BuildResourceList(rsrcInvalid)
 	if err == nil {
 		t.Errorf("got: %v\nwant: error", actual)
 	}

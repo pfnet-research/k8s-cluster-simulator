@@ -52,10 +52,10 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 	passedSeconds := pod.passedSeconds(clock)
 	phaseSecondsAcc := int32(0)
 	for _, phase := range pod.spec {
-		if passedSeconds < phaseSecondsAcc+phase.seconds {
+		phaseSecondsAcc += phase.seconds
+		if passedSeconds < phaseSecondsAcc {
 			return phase.resourceUsage
 		}
-		phaseSecondsAcc += phase.seconds
 	}
 
 	// unreachable
@@ -161,6 +161,7 @@ func (pod *Pod) totalSeconds() int32 {
 	return phaseSecondsTotal
 }
 
+// finishClock returns the clock at which this pod finishes
 func (pod *Pod) finishClock() clock.Clock {
 	return pod.startClock.Add(time.Duration(pod.totalSeconds()) * time.Second)
 }
