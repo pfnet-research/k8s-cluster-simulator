@@ -12,6 +12,7 @@ import (
 
 	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -28,17 +29,17 @@ type KubeSim struct {
 }
 
 // NewKubeSim creates a new KubeSim with the config.
-func NewKubeSim(config *Config) (*KubeSim, error) {
-	log.G(context.TODO()).Debugf("Config: %+v", *config)
-	if err := configure(config); err != nil {
+func NewKubeSim(conf *config.Config) (*KubeSim, error) {
+	log.G(context.TODO()).Debugf("Config: %+v", *conf)
+	if err := configure(conf); err != nil {
 		return nil, errors.Errorf("error configuring: %s", err.Error())
 	}
 
 	nodes := map[string]*node.Node{}
-	for _, nodeConfig := range config.Cluster.Nodes {
-		log.L.Debugf("NodeConfig: %+v", nodeConfig)
+	for _, nodeConf := range conf.Cluster.Nodes {
+		log.L.Debugf("NodeConfig: %+v", nodeConf)
 
-		nodeV1, err := buildNode(nodeConfig, config.StartClock)
+		nodeV1, err := config.BuildNode(nodeConf, conf.StartClock)
 		if err != nil {
 			return nil, errors.Errorf("error building node config: %s", err.Error())
 		}
@@ -51,7 +52,7 @@ func NewKubeSim(config *Config) (*KubeSim, error) {
 	kubesim := KubeSim{
 		nodes:   nodes,
 		pods:    podQueue{},
-		tick:    config.Tick,
+		tick:    conf.Tick,
 		filters: []api.Filter{},
 		scorers: []api.Scorer{},
 	}
@@ -59,14 +60,14 @@ func NewKubeSim(config *Config) (*KubeSim, error) {
 	return &kubesim, nil
 }
 
-// NewKubeSimFromConfigPath creates a new KubeSim with config from configPath (excluding file path).
-func NewKubeSimFromConfigPath(configPath string) (*KubeSim, error) {
-	config, err := readConfig(configPath)
+// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path).
+func NewKubeSimFromConfigPath(confPath string) (*KubeSim, error) {
+	conf, err := readConfig(confPath)
 	if err != nil {
 		return nil, errors.Errorf("error reading config: %s", err.Error())
 	}
 
-	return NewKubeSim(config)
+	return NewKubeSim(conf)
 }
 
 // RegisterSubmitter registers a new submitter plugin to this KubeSim.
@@ -224,7 +225,7 @@ func (k *KubeSim) scheduleOneScore(pod *v1.Pod, nodes []*v1.Node) (nodeSelected 
 }
 
 // readConfig reads and parses a config from the path (excluding file extension).
-func readConfig(path string) (*Config, error) {
+func readConfig(path string) (*config.Config, error) {
 	viper.SetConfigName(path)
 	viper.AddConfigPath(".")
 
@@ -233,24 +234,24 @@ func readConfig(path string) (*Config, error) {
 	}
 	log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
 
-	var config = Config{
+	var conf = config.Config{
 		LogLevel:   "info",
 		Tick:       10,
 		StartClock: "",
 		// APIPort:     10250,
 		// MetricsPort: 10255,
-		Cluster: ClusterConfig{Nodes: []NodeConfig{}},
+		Cluster: config.ClusterConfig{Nodes: []config.NodeConfig{}},
 	}
 
-	if err := viper.Unmarshal(&config); err != nil {
+	if err := viper.Unmarshal(&conf); err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	return &conf, nil
 }
 
-func configure(config *Config) error {
-	level, err := log.ParseLevel(config.LogLevel)
+func configure(conf *config.Config) error {
+	level, err := log.ParseLevel(conf.LogLevel)
 	if err != nil {
 		return strongerrors.InvalidArgument(errors.Errorf("%s: log level %q not supported", err.Error(), level))
 	}

@@ -1,4 +1,4 @@
-package kubesim
+package config
 
 import (
 	"time"
@@ -40,8 +40,8 @@ type TaintConfig struct {
 	Effect string
 }
 
-// buildNode builds a *v1.Node with the provided node config.
-func buildNode(config NodeConfig, startClock string) (*v1.Node, error) {
+// BuildNode builds a *v1.Node with the provided node config.
+func BuildNode(config NodeConfig, startClock string) (*v1.Node, error) {
 	capacity, err := util.BuildResourceList(config.Capacity)
 	if err != nil {
 		return nil, err
