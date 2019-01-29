@@ -34,10 +34,6 @@
   version = "0.2.1"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/ordovicia/kubernetes-simulator"
-
-[[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.1"
 
@@ -56,6 +52,14 @@
 [[constraint]]
   branch = "master"
   name = "k8s.io/api"
+
+[[constraint]]
+  branch = "master"
+  name = "k8s.io/apimachinery"
+
+[[constraint]]
+  name = "k8s.io/kubernetes"
+  version = "1.13.2"
 
 [prune]
   go-tests = true

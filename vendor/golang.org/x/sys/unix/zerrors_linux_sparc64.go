@@ -1797,6 +1797,8 @@ const (
 	SECCOMP_MODE_STRICT                  = 0x1
 	SECURITYFS_MAGIC                     = 0x73636673
 	SELINUX_MAGIC                        = 0xf97cff8c
+	SFD_CLOEXEC                          = 0x400000
+	SFD_NONBLOCK                         = 0x4000
 	SHUT_RD                              = 0x0
 	SHUT_RDWR                            = 0x2
 	SHUT_WR                              = 0x1
@@ -1958,6 +1960,17 @@ const (
 	SO_DETACH_FILTER                     = 0x1b
 	SO_DOMAIN                            = 0x1029
 	SO_DONTROUTE                         = 0x10
+	SO_EE_CODE_TXTIME_INVALID_PARAM      = 0x1
+	SO_EE_CODE_TXTIME_MISSED             = 0x2
+	SO_EE_CODE_ZEROCOPY_COPIED           = 0x1
+	SO_EE_ORIGIN_ICMP                    = 0x2
+	SO_EE_ORIGIN_ICMP6                   = 0x3
+	SO_EE_ORIGIN_LOCAL                   = 0x1
+	SO_EE_ORIGIN_NONE                    = 0x0
+	SO_EE_ORIGIN_TIMESTAMPING            = 0x4
+	SO_EE_ORIGIN_TXSTATUS                = 0x4
+	SO_EE_ORIGIN_TXTIME                  = 0x6
+	SO_EE_ORIGIN_ZEROCOPY                = 0x5
 	SO_ERROR                             = 0x1007
 	SO_GET_FILTER                        = 0x1a
 	SO_INCOMING_CPU                      = 0x33
