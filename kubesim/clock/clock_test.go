@@ -20,14 +20,12 @@ func TestClockToMetaV1(t *testing.T) {
 }
 
 func TestClockAdd(t *testing.T) {
-	tm, _ := time.Parse(time.RFC3339, "2018-01-01T00:00:00+09:00")
-	clk := clock.NewClock(tm)
+	now := time.Now()
+	clk := clock.NewClock(now)
 
 	dur, _ := time.ParseDuration("12h30m15s")
 	actual := clk.Add(dur)
-
-	tm2, _ := time.Parse(time.RFC3339, "2018-01-01T12:30:15+09:00")
-	expected := clock.NewClock(tm2)
+	expected := clock.NewClock(now.Add(dur))
 
 	if actual != expected {
 		t.Errorf("got: %v\nwant: %v", actual, expected)
