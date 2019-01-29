@@ -11,7 +11,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
-// Config represents a simulator config by user.
+// Config represents a simulator config specified by user.
 type Config struct {
 	LogLevel   string
 	Tick       int
@@ -21,7 +21,7 @@ type Config struct {
 	Cluster ClusterConfig
 }
 
-type ClusterConfig struct { // publicized for deserialization by viper
+type ClusterConfig struct {
 	Nodes []NodeConfig
 }
 
@@ -34,7 +34,7 @@ type NodeConfig struct {
 	Taints      []TaintConfig
 }
 
-type TaintConfig struct {
+type TaintConfig struct { // publicized for deserialization by viper
 	Key    string
 	Value  string
 	Effect string
