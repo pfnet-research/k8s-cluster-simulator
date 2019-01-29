@@ -1,5 +1,7 @@
 # Kubernetes cluster simulator for schedulers
 
+[![Build Status](https://travis-ci.com/ordovicia/kubernetes-simulator.svg?branch=master)](https://travis-ci.com/ordovicia/kubernetes-simulator)
+
 ## Usage
 
 See [examples/main.go](examples/main.go).
@@ -26,7 +28,7 @@ metadata:
     memory: 2Gi
     nvidia.com/gpu: 0
 - seconds: 10       # another phase that follows the previous one
-  resourceUsage:    
+  resourceUsage:
     cpu: 2
     memory: 4Gi
     nvidia.com/gpu: 1
