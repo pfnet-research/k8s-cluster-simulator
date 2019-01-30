@@ -20,7 +20,7 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var (

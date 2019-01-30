@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
