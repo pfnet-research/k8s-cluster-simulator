@@ -41,7 +41,7 @@ release: build $(GOPATH)/bin/goreleaser
 deps: setup
 	@echo "Ensuring Dependencies..."
 	$Q go env
-	$Q dep ensure
+	$Q glide up --strip-vendor
 
 docker:
 	@echo "Docker Build..."
@@ -120,7 +120,7 @@ setup: clean
 	mkdir -p cover
 	mkdir -p bin
 	mkdir -p test
-	go get -u github.com/golang/dep/cmd/dep
+	go get -u github.com/Masterminds/glide
 	go get github.com/wadey/gocovmerge
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/mitchellh/gox
