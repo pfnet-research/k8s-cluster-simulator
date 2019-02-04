@@ -1,7 +1,7 @@
 package api
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	sched "k8s.io/kubernetes/pkg/scheduler/api"
 )

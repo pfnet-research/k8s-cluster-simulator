@@ -3,7 +3,7 @@ package pod
 import (
 	"sync"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // Map stores a map associating "key" with Pod.

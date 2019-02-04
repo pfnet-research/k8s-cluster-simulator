@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/api/core/v1"
-
 	"github.com/cpuguy83/strongerrors"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
 	"github.com/ordovicia/kubernetes-simulator/log"
@@ -144,5 +144,5 @@ func buildKey(pod *v1.Pod) (string, error) {
 
 // buildKeyFromNames builds a key from the namespace and pod name.
 func buildKeyFromNames(namespace string, name string) string {
-	return fmt.Sprintf("%s-%s", namespace, name)
+	return fmt.Sprintf("%s/%s", namespace, name)
 }
