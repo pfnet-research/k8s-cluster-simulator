@@ -5,6 +5,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 	"k8s.io/kubernetes/pkg/scheduler/api"
 	"k8s.io/kubernetes/pkg/scheduler/core"
 
@@ -16,18 +18,31 @@ import (
 // It mimics "k8s.io/pkg/Scheduler/Scheduler/core".genericScheduler, which implements
 // "k8s.io/pkg/Scheduler/Scheduler/core".ScheduleAlgorithm
 type Scheduler struct {
-	nodeMap       map[string]*v1.Node
-	extenders     []Extender
+	nodeMap map[string]*v1.Node
+
+	predicates   map[string]predicates.FitPredicate
+	prioritizers []priorities.PriorityConfig
+
+	extenders []Extender
+
 	lastNodeIndex uint64
 }
 
 // NewScheduler creates new Scheduler with the nodes.
 func NewScheduler(nodeMap map[string]*v1.Node) Scheduler {
 	return Scheduler{
-		nodeMap:       nodeMap,
-		extenders:     []Extender{},
-		lastNodeIndex: 0,
+		nodeMap: nodeMap,
 	}
+}
+
+// AddPredicate adds an predicate plugin to this Scheduler.
+func (sched *Scheduler) AddPredicate(name string, predicate predicates.FitPredicate) {
+	sched.predicates[name] = predicate
+}
+
+// AddPrioritizer adds an prioritizer plugin to this Scheduler.
+func (sched *Scheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
+	sched.prioritizers = append(sched.prioritizers, prioritizer)
 }
 
 // AddExtender adds an extender to this Scheduler.
@@ -84,6 +99,11 @@ func (sched *Scheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister) (
 func (sched *Scheduler) filter(pod *v1.Pod, nodes []*v1.Node) ([]*v1.Node, core.FailedPredicateMap, error) {
 	failedPredicateMap := core.FailedPredicateMap{}
 
+	for _, predicate := range sched.predicates {
+		// TODO
+		_ = predicate
+	}
+
 	for _, extender := range sched.extenders {
 		var err error
 		nodes, err = extender.filter(pod, nodes, sched.nodeMap, failedPredicateMap)
@@ -101,6 +121,11 @@ func (sched *Scheduler) filter(pod *v1.Pod, nodes []*v1.Node) ([]*v1.Node, core.
 
 func (sched *Scheduler) prioritize(pod *v1.Pod, nodes []*v1.Node) api.HostPriorityList {
 	prioMap := map[string]int{}
+
+	for _, prioritizer := range sched.prioritizers {
+		// TODO
+		_ = prioritizer
+	}
 
 	for _, extender := range sched.extenders {
 		extender.prioritize(pod, nodes, prioMap)
