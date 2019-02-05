@@ -4,7 +4,7 @@
 
 ## Usage
 
-See [examples/main.go](examples/main.go).
+See [examples/main.go](examples/main.go) and [examples/config_sample.yml](examples/config_sample.yml).
 
 ## Pod submitter and scheduler interface
 
