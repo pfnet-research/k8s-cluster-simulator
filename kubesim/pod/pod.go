@@ -74,7 +74,7 @@ func (pod *Pod) IsTerminated(clock clock.Clock) bool {
 	return pod.status == Ok && pod.passedSeconds(clock) >= pod.totalSeconds()
 }
 
-// BuildStatus builds a status of this pod at the clock.
+// BuildStatus builds a status of this Pod at the clock.
 func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 	var status v1.PodStatus
 

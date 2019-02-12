@@ -37,7 +37,6 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 	}
 
 	nodes := map[string]*node.Node{}
-	nodesV1 := map[string]*v1.Node{}
 	for _, nodeConf := range conf.Cluster.Nodes {
 		log.L.Debugf("NodeConfig: %+v", nodeConf)
 
@@ -48,7 +47,6 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 		n := node.NewNode(nodeV1)
 		nodes[nodeV1.Name] = &n
-		nodesV1[nodeV1.Name] = n.ToV1()
 
 		log.L.Debugf("Node %q created", nodeV1.Name)
 	}
@@ -57,7 +55,7 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 		nodes:     nodes,
 		pods:      podQueue{},
 		tick:      conf.Tick,
-		scheduler: scheduler.NewScheduler(nodesV1),
+		scheduler: scheduler.NewScheduler(),
 	}
 
 	return &kubesim, nil
@@ -112,7 +110,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				continue
 			}
 
-			if err := k.scheduleOne(clock, pod, nodes); err != nil {
+			if err := k.scheduleOne(clock, pod); err != nil {
 				return err
 			}
 		}
@@ -134,10 +132,10 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 	return nil
 }
 
-func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod, nodes []*v1.Node) error {
+func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 	log.L.Tracef("Trying to schedule pod %v", pod)
 
-	result, err := k.scheduler.Schedule(pod, k)
+	result, err := k.scheduler.Schedule(pod, k, k.nodes)
 	if _, ok := err.(*core.FitError); ok {
 		log.L.Trace("Pod does not fit in any node")
 		return nil

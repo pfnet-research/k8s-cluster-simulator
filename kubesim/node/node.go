@@ -6,6 +6,7 @@ import (
 
 	"github.com/cpuguy83/strongerrors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
@@ -29,6 +30,13 @@ func NewNode(node *v1.Node) Node {
 // ToV1 returns v1.Node representation of this node.
 func (node *Node) ToV1() *v1.Node {
 	return node.v1
+}
+
+// ToNodeInfo creates nodeinfo.NodeInfo object from this node.
+func (node *Node) ToNodeInfo() *nodeinfo.NodeInfo {
+	nodeInfo := nodeinfo.NewNodeInfo(node.pods.ListPods()...)
+	nodeInfo.SetNode(node.ToV1())
+	return nodeInfo
 }
 
 // CreatePod accepts the definition of a pod and try to start it.
@@ -73,7 +81,7 @@ func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, er
 	return pod.ToV1(), nil
 }
 
-// GetPodList returns a list of all pods that were accepted on this node.
+// GetPodList returns the list of all pods that were accepted on this node.
 // Each of the returned pods may have failed to be scheduled.
 func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
 	log.L.Debugf("Node %q: GetPodList(%v) called", node.v1.Name, clock)
