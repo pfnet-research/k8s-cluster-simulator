@@ -13,7 +13,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
-// dummyPredicateMetadata implements predicates.DummyPredicateMetadata
+// dummyPredicateMetadata implements predicates.PredicateMetadata.
 type dummyPredicateMetadata struct{}
 type dummyPriorityMetadata struct{}
 
@@ -30,6 +30,7 @@ func pluginPredicate(
 	nodeMap map[string]*node.Node,
 	failedPredicateMap core.FailedPredicateMap,
 	errs errors.MessageCountMap) (filteredNodes []*v1.Node) {
+
 	log.L.Tracef("Predicating nodes %v", nodes)
 	for _, node := range nodes {
 		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeMap[node.Name].ToNodeInfo())
@@ -56,6 +57,7 @@ func pluginPrioritize(
 	filteredNodes []*v1.Node,
 	nodeMap map[string]*node.Node,
 	errs []error) api.HostPriorityList {
+
 	log.L.Tracef("Plugin %q: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))

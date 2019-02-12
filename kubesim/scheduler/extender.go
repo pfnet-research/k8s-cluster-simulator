@@ -43,6 +43,7 @@ func (ext *Extender) filter(
 	nodes []*v1.Node,
 	nodeMap map[string]*v1.Node,
 	failedPredicateMap core.FailedPredicateMap) ([]*v1.Node, error) {
+
 	if ext.Filter == nil {
 		return nodes, nil
 	}
