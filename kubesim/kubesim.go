@@ -211,7 +211,7 @@ func configLog(logLevel string) error {
 
 // List implements "k8s.io/pkg/scheduler/algorithm".NodeLister
 func (k *KubeSim) List() ([]*v1.Node, error) {
-	nodes := []*v1.Node{}
+	nodes := make([]*v1.Node, 0, len(k.nodes))
 	for _, node := range k.nodes {
 		nodes = append(nodes, node.ToV1())
 	}
