@@ -96,11 +96,11 @@ func (k *KubeSim) Scheduler() *scheduler.Scheduler {
 
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
 func (k *KubeSim) Run(ctx context.Context) error {
-	tick := make(chan clock.Clock)
+	tick := make(chan clock.Clock, 1)
 	go func() {
 		for {
-			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
 			tick <- k.clock
+			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
 		}
 	}()
 
@@ -217,4 +217,3 @@ func configLog(logLevel string) error {
 
 	return nil
 }
-
