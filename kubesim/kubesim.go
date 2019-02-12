@@ -128,6 +128,15 @@ func (k *KubeSim) Run(ctx context.Context) error {
 	}
 }
 
+// List implements "k8s.io/pkg/scheduler/algorithm".NodeLister
+func (k *KubeSim) List() ([]*v1.Node, error) {
+	nodes := make([]*v1.Node, 0, len(k.nodes))
+	for _, node := range k.nodes {
+		nodes = append(nodes, node.ToV1())
+	}
+	return nodes, nil
+}
+
 func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 	for _, submitter := range k.submitters {
 		pods, err := submitter.Submit(clock, nodes)
@@ -209,11 +218,3 @@ func configLog(logLevel string) error {
 	return nil
 }
 
-// List implements "k8s.io/pkg/scheduler/algorithm".NodeLister
-func (k *KubeSim) List() ([]*v1.Node, error) {
-	nodes := make([]*v1.Node, 0, len(k.nodes))
-	for _, node := range k.nodes {
-		nodes = append(nodes, node.ToV1())
-	}
-	return nodes, nil
-}
