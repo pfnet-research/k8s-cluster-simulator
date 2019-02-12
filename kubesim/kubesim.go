@@ -9,11 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/kubernetes/pkg/scheduler/core"
 
 	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -24,8 +26,7 @@ type KubeSim struct {
 	tick  int
 
 	submitters []api.Submitter
-	filters    []api.Filter
-	scorers    []api.Scorer
+	scheduler  scheduler.Scheduler
 }
 
 // NewKubeSim creates a new KubeSim with the config.
@@ -36,6 +37,7 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 	}
 
 	nodes := map[string]*node.Node{}
+	nodesV1 := map[string]*v1.Node{}
 	for _, nodeConf := range conf.Cluster.Nodes {
 		log.L.Debugf("NodeConfig: %+v", nodeConf)
 
@@ -46,15 +48,16 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 		n := node.NewNode(nodeV1)
 		nodes[nodeV1.Name] = &n
+		nodesV1[nodeV1.Name] = n.ToV1()
+
 		log.L.Debugf("Node %q created", nodeV1.Name)
 	}
 
 	kubesim := KubeSim{
-		nodes:   nodes,
-		pods:    podQueue{},
-		tick:    conf.Tick,
-		filters: []api.Filter{},
-		scorers: []api.Scorer{},
+		nodes:     nodes,
+		pods:      podQueue{},
+		tick:      conf.Tick,
+		scheduler: scheduler.NewScheduler(nodesV1),
 	}
 
 	return &kubesim, nil
@@ -75,18 +78,12 @@ func (k *KubeSim) RegisterSubmitter(submitter api.Submitter) {
 	k.submitters = append(k.submitters, submitter)
 }
 
-// RegisterFilter registers a new filter plugin to this KubeSim.
-func (k *KubeSim) RegisterFilter(filter api.Filter) {
-	k.filters = append(k.filters, filter)
+// Scheduler retuns *scheduler.Scheduler of this Kubesim
+func (k *KubeSim) Scheduler() *scheduler.Scheduler {
+	return &k.scheduler
 }
 
-// RegisterScorer registers a new scorer plugin to this KubeSim.
-func (k *KubeSim) RegisterScorer(scorer api.Scorer) {
-	k.scorers = append(k.scorers, scorer)
-}
-
-// Run executes the main loop, which invokes scheduler plugins and schedules queued pods to a
-// selected node.
+// Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
 func (k *KubeSim) Run(ctx context.Context) error {
 	tick := make(chan clock.Clock)
 
@@ -105,24 +102,23 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		case clock := <-tick:
 			log.L.Debugf("Clock %s", clock.String())
 
-			// convert []*node.Node to []*v1.Node
-			nodes := []*v1.Node{}
-			for _, node := range k.nodes {
-				nodes = append(nodes, node.ToV1())
-			}
-
+			nodes, _ := k.List()
 			if err := k.submit(clock, nodes); err != nil {
 				return err
 			}
 
-			if err := k.scheduleOne(clock, nodes); err != nil {
+			pod, err := k.pods.pop()
+			if err == errEmptyPodQueue {
+				continue
+			}
+
+			if err := k.scheduleOne(clock, pod, nodes); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-// submit appends all pods submitted from submitters.
 func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 	for _, submitter := range k.submitters {
 		pods, err := submitter.Submit(clock, nodes)
@@ -138,90 +134,31 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 	return nil
 }
 
-// scheduleOne try to schedule one pod at the front of queue, or return immediately if no pod is in
-// the queue.
-func (k *KubeSim) scheduleOne(clock clock.Clock, nodes []*v1.Node) error {
-	pod, err := k.pods.pop()
-	if err == errEmptyPodQueue {
-		return nil
-	}
-
+func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod, nodes []*v1.Node) error {
 	log.L.Tracef("Trying to schedule pod %v", pod)
 
-	if err := k.scheduleOneFilter(pod, nodes); err != nil {
-		return err
+	result, err := k.scheduler.Schedule(pod, k)
+	if _, ok := err.(*core.FitError); ok {
+		log.L.Trace("Pod does not fit in any node")
+		return nil
 	}
-
-	nodeSelected, err := k.scheduleOneScore(pod, nodes)
 	if err != nil {
 		return err
 	}
-	log.L.Tracef("Selected node %v", nodeSelected)
 
-	if err := nodeSelected.CreatePod(clock, pod); err != nil {
+	nodeName := result.SuggestedHost
+	log.L.Tracef("Selected node %q", nodeName)
+
+	node, ok := k.nodes[nodeName]
+	if !ok {
+		return errors.Errorf("No node named %q", nodeName)
+	}
+
+	if err := node.CreatePod(clock, pod); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (k *KubeSim) scheduleOneFilter(pod *v1.Pod, nodes []*v1.Node) error {
-	for _, filter := range k.filters {
-		log.L.Tracef("Filtering nodes %v", nodes)
-
-		nodesOk := []*v1.Node{}
-		for _, node := range nodes {
-			ok, err := filter.Filter(pod, node)
-			if err != nil {
-				return err
-			}
-			if ok {
-				nodesOk = append(nodesOk, node)
-			}
-		}
-		nodes = nodesOk
-
-		log.L.Tracef("Filtered nodes %v", nodes)
-	}
-
-	return nil
-}
-
-func (k *KubeSim) scheduleOneScore(pod *v1.Pod, nodes []*v1.Node) (nodeSelected *node.Node, err error) {
-	nodeScore := make(map[string]int)
-
-	for _, scorer := range k.scorers {
-		log.L.Tracef("Scoring nodes %v", nodes)
-
-		scores, weight, err := scorer.Score(pod, nodes)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, score := range scores {
-			nodeScore[score.Host] += score.Score * weight
-		}
-
-		log.L.Tracef("Scored nodes %v", nodeScore)
-	}
-
-	scoreMax := -1
-	scoreMaxNode := ""
-	for node, score := range nodeScore {
-		if score > scoreMax {
-			scoreMaxNode = node
-			scoreMax = score
-		}
-	}
-
-	nodeSelected, ok := k.nodes[scoreMaxNode]
-	if !ok {
-		return nil, strongerrors.NotFound(errors.Errorf("node %q not found", scoreMaxNode))
-	}
-
-	pod.Spec.NodeName = scoreMaxNode
-
-	return nodeSelected, nil
 }
 
 // readConfig reads and parses a config from the path (excluding file extension).
@@ -261,4 +198,13 @@ func configure(conf *config.Config) error {
 	log.L = logger
 
 	return nil
+}
+
+// List implements "k8s.io/pkg/scheduler/algorithm".NodeLister
+func (k *KubeSim) List() ([]*v1.Node, error) {
+	nodes := []*v1.Node{}
+	for _, node := range k.nodes {
+		nodes = append(nodes, node.ToV1())
+	}
+	return nodes, nil
 }

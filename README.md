@@ -8,7 +8,7 @@ See [examples/main.go](examples/main.go) and [examples/config_sample.yml](exampl
 
 ## Pod submitter and scheduler interface
 
-See [api/submitter.go](api/submitter.go) and [api/scheduler.go](api/scheduler.go).
+See [api/submitter.go](api/submitter.go) and [kubesim/scheduler/scheduler.go](kubesim/scheduler/scheduler.go).
 For the scheduler interface, currently only a subset of the interface is defined.
 
 Note that these interfaces are drafts, subject to change.

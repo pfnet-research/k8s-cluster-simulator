@@ -12,10 +12,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	sched "k8s.io/kubernetes/pkg/scheduler/api"
+	"k8s.io/kubernetes/pkg/scheduler/api"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -45,16 +46,20 @@ var rootCmd = &cobra.Command{
 			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
 
-		// Register submitter
+		// Register a submitter
 		submitter := mySubmitter{}
 		kubesim.RegisterSubmitter(&submitter)
 
-		// Register plugins
-		filter := myFilter{}
-		kubesim.RegisterFilter(&filter)
-
-		scorer := myScorer{}
-		kubesim.RegisterScorer(&scorer)
+		// Add an extender
+		kubesim.Scheduler().AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filter,
+				Prioritize:       prioritize,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
 
 		// SIGINT calcels submitPods() and kubesim.Run()
 		sig := make(chan os.Signal, 1)
@@ -136,20 +141,20 @@ func (s *mySubmitter) Submit(clock clock.Clock, nodes []*v1.Node) (pods []*v1.Po
 	return []*v1.Pod{}, nil
 }
 
-// Filter
-type myFilter struct{}
-
-func (f *myFilter) Filter(pod *v1.Pod, node *v1.Node) (ok bool, err error) {
-	return true, nil
+func filter(args api.ExtenderArgs) api.ExtenderFilterResult {
+	return api.ExtenderFilterResult{
+		Nodes:       &v1.NodeList{},
+		NodeNames:   args.NodeNames,
+		FailedNodes: api.FailedNodesMap{},
+		Error:       "",
+	}
 }
 
-// Scorer
-type myScorer struct{}
-
-func (s *myScorer) Score(pod *v1.Pod, nodes []*v1.Node) (scores sched.HostPriorityList, weight int, err error) {
-	for _, node := range nodes {
-		scores = append(scores, sched.HostPriority{Host: node.Name, Score: 1})
+func prioritize(args api.ExtenderArgs) api.HostPriorityList {
+	priorities := api.HostPriorityList{}
+	for _, name := range *args.NodeNames {
+		priorities = append(priorities, api.HostPriority{Host: name, Score: 1})
 	}
 
-	return scores, 1, nil
+	return priorities
 }
