@@ -11,7 +11,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
-// Config represents a simulator config specified by user.
+// Config represents a user-specified simulator config.
 type Config struct {
 	LogLevel   string
 	Tick       int
@@ -34,13 +34,14 @@ type NodeConfig struct {
 	Taints      []TaintConfig
 }
 
-type TaintConfig struct { // publicized for deserialization by viper
+type TaintConfig struct { // made public for the deserialization by viper
 	Key    string
 	Value  string
 	Effect string
 }
 
 // BuildNode builds a *v1.Node with the provided node config.
+// Returns error if the parsing fails.
 func BuildNode(config NodeConfig, startClock string) (*v1.Node, error) {
 	capacity, err := util.BuildResourceList(config.Capacity)
 	if err != nil {

@@ -14,7 +14,7 @@ type podQueue struct {
 	lock  sync.Mutex
 }
 
-// append pushed a pod to this queue.
+// append pushes a pod to this podQueue.
 func (q *podQueue) append(pod *v1.Pod) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
@@ -22,11 +22,11 @@ func (q *podQueue) append(pod *v1.Pod) {
 	q.queue = append(q.queue, pod)
 }
 
-// errEmptyPodQueue may be returned from pop().
+// errEmptyPodQueue is returned from pop.
 var errEmptyPodQueue = errors.New("No pod queued")
 
-// pop pops a pod from this queue.
-// If this queue is empty, errEmptyPodQueue will be returned.
+// pop pops a pod from this podQueue.
+// If this podQueue is empty, errEmptyPodQueue will be returned.
 func (q *podQueue) pop() (*v1.Pod, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()

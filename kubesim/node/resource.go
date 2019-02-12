@@ -20,7 +20,7 @@ func resourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 	return sum
 }
 
-// errResourceListDiffNotGE may be returned from diffResourceList().
+// errResourceListDiffNotGE is returned from diffResourceList.
 var errResourceListDiffNotGE = errors.New("resource list is not greater equal")
 
 // resourceListDiff returns a difference between two resource lists.

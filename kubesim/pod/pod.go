@@ -16,13 +16,13 @@ type Pod struct {
 	status     Status
 }
 
-// Status represents status of a pod.
+// Status represents status of a Pod.
 type Status int
 
 const (
-	// Ok means that the pod is successfully scheduled to a node
+	// Ok indicates that the Pod is successfully scheduled to a node.
 	Ok Status = iota
-	// OverCapacity means that the pod is failed to start due to capacity over
+	// OverCapacity indicates that the Pod is failed to start due to capacity over.
 	OverCapacity
 )
 
@@ -38,12 +38,12 @@ func NewPod(pod *v1.Pod, startClock clock.Clock, status Status) (*Pod, error) {
 	return &p, nil
 }
 
-// ToV1 returns v1.Pod definition of this pod.
+// ToV1 returns v1.Pod representation of this pod.
 func (pod *Pod) ToV1() *v1.Pod {
 	return pod.v1
 }
 
-// ResourceUsage returns resource usage of the pod at the time clock.
+// ResourceUsage returns resource usage of the pod at the clock.
 func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 	if !pod.IsRunning(clock) {
 		return v1.ResourceList{}
@@ -161,7 +161,7 @@ func (pod *Pod) totalSeconds() int32 {
 	return phaseSecondsTotal
 }
 
-// finishClock returns the clock at which this pod finishes
+// finishClock returns the clock at which this pod finishes.
 func (pod *Pod) finishClock() clock.Clock {
 	return pod.startClock.Add(time.Duration(pod.totalSeconds()) * time.Second)
 }

@@ -4,24 +4,25 @@ import (
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
-// spec represents pod's resource usage spec of each execution phase.
+// spec represents a list of a pod's resource usage spec of each execution phase.
 type spec []specPhase
 
-// specPhase represents a pod's resource usage spec in an execution phase.
+// specPhase represents a pod's resource usage spec of one execution phase.
 type specPhase struct {
 	seconds       int32
 	resourceUsage v1.ResourceList
 }
 
-// errInvalidResourceUsageField may be returned from parseSpec().
+// errInvalidResourceUsageField is returned from parseSpec.
 var errInvalidResourceUsageField = errors.New("Invalid spec.resoruceUsage field")
 
 // parseSpec parses the pod's "spec" annotation into spec.
+// Returns error if the "spec" annotation does not exist, or the parsing failes.
 func parseSpec(pod *v1.Pod) (spec, error) {
 	specAnnot, ok := pod.ObjectMeta.Annotations["simSpec"]
 	if !ok {
@@ -32,6 +33,7 @@ func parseSpec(pod *v1.Pod) (spec, error) {
 }
 
 // parseSpec parses the YAML into spec.
+// Returns error if the YAML is invalid.
 func parseSpecYAML(specYAML string) (spec, error) {
 	type specPhaseYAML struct {
 		Seconds       int32                      `yaml:"seconds"`

@@ -59,8 +59,9 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
-// GetPod returns a pod by name that was accepted on this node.
+// GetPod returns the pod by name that was accepted on this node.
 // The returned pod may have failed to be scheduled.
+// Returns error if the pod is not found.
 func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
 	log.L.Debugf("Node %q: GetPod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
@@ -72,7 +73,7 @@ func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, er
 	return pod.ToV1(), nil
 }
 
-// GetPodList returns the list of all pods that were accepted on this node.
+// GetPodList returns a list of all pods that were accepted on this node.
 // Each of the returned pods may have failed to be scheduled.
 func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
 	log.L.Debugf("Node %q: GetPodList(%v) called", node.v1.Name, clock)
@@ -80,6 +81,7 @@ func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
 }
 
 // GetPodStatus returns the status of the pod by name.
+// Returns error if the pod is not found.
 func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
 	log.L.Debugf("Node %q: GetPodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
@@ -92,7 +94,7 @@ func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.P
 	return &status, nil
 }
 
-// totalResourceRequest calculates the total resource request (not usage) of running pods at the
+// totalResourceRequest calculates the total resource request (not usage) of all running pods at the
 // time clock.
 func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
@@ -105,7 +107,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	return total
 }
 
-// runningPodsNum returns the number of running pods at the time clock.
+// runningPodsNum returns the number of all running pods at the time clock.
 func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	num := int64(0)
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
@@ -119,6 +121,7 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 
 // getSimPod returns a *pod.Pod by name that was accepted on this node.
 // The returned pod may have failed to be scheduled.
+// Returns nil if the pod is not found.
 func (node *Node) getSimPod(namespace, name string) *pod.Pod {
 	key := buildKeyFromNames(namespace, name)
 	pod, ok := node.pods.Load(key)
@@ -130,6 +133,7 @@ func (node *Node) getSimPod(namespace, name string) *pod.Pod {
 }
 
 // buildKey builds a key for the provided pod.
+// Returns error if the pod does not have valid (= non-empty) namespace and name.
 func buildKey(pod *v1.Pod) (string, error) {
 	if pod.ObjectMeta.Namespace == "" {
 		return "", strongerrors.InvalidArgument(errors.New("Empty pod namespace"))

@@ -6,7 +6,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// Map stores a map associating "key" with Pod.
+// Map stores a map associating "key"s with Pods.
 // It wraps sync.Map for type-safetiness.
 type Map struct {
 	inner sync.Map
@@ -23,7 +23,7 @@ func (m *Map) Load(key string) (*Pod, bool) {
 	return &pod, true
 }
 
-// Store stores a new pair of key and pod.
+// Store stores a new pair of the key and the pod.
 func (m *Map) Store(key string, pod Pod) {
 	m.inner.Store(key, pod)
 }
@@ -33,7 +33,7 @@ func (m *Map) Delete(key string) {
 	m.inner.Delete(key)
 }
 
-// ListPods returns an array of pods.
+// ListPods returns a slice of pods stored in this Map.
 func (m *Map) ListPods() []*v1.Pod {
 	pods := []*v1.Pod{}
 	m.Range(func(_ string, pod Pod) bool {
@@ -43,7 +43,7 @@ func (m *Map) ListPods() []*v1.Pod {
 	return pods
 }
 
-// Range applies a function to each pair of key and pod.
+// Range applies a function to each pair of a key and a pod.
 func (m *Map) Range(f func(string, Pod) bool) {
 	g := func(key, pod interface{}) bool {
 		return f(key.(string), pod.(Pod))
