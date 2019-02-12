@@ -117,7 +117,7 @@ func (sched *Scheduler) filter(
 	// In-process plugins
 	errs := errors.MessageCountMap{}
 	for _, p := range sched.predicates {
-		filteredNodes = pluginPredicate(&p, pod, filteredNodes, nodeMap, failedPredicateMap, errs)
+		filteredNodes = callPredicatePlugin(&p, pod, filteredNodes, nodeMap, failedPredicateMap, errs)
 		if len(filteredNodes) == 0 {
 			break
 		}
@@ -178,7 +178,7 @@ func (sched *Scheduler) prioritize(
 
 	// In-process plugins
 	for _, prioritizer := range sched.prioritizers {
-		prios := pluginPrioritize(&prioritizer, pod, filteredNodes, nodeMap, errs)
+		prios := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeMap, errs)
 		for i, prio := range prios {
 			prioList[i].Score += prio.Score
 		}

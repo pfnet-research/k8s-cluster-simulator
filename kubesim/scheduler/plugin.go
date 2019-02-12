@@ -21,9 +21,7 @@ func (d *dummyPredicateMetadata) ShallowCopy() predicates.PredicateMetadata     
 func (d *dummyPredicateMetadata) AddPod(pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) error { return nil }
 func (d *dummyPredicateMetadata) RemovePod(pod *v1.Pod) error                           { return nil }
 
-// type FitPredicate = func(pod *v1.Pod, meta predicates.PredicateMetadata, nodeInfo *nodeinfo.NodeInfo) (bool, []predicates.PredicateFailureReason, error)
-
-func pluginPredicate(
+func callPredicatePlugin(
 	pred *predicates.FitPredicate,
 	pod *v1.Pod,
 	nodes []*v1.Node,
@@ -48,10 +46,7 @@ func pluginPredicate(
 	return filteredNodes
 }
 
-// type PriorityMapFunction = func(pod *v1.Pod, meta interface{}, nodeInfo *nodeinfo.NodeInfo) (api.HostPriority, error)
-// type PriorityReduceFunction = func(pod *v1.Pod, meta interface{}, nodeNameToInfo map[string]*nodeinfo.NodeInfo, result api.HostPriorityList) error
-
-func pluginPrioritize(
+func callPrioritizePlugin(
 	prioritizer *priorities.PriorityConfig,
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
