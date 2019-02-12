@@ -22,8 +22,8 @@ metadata:
   name: nginx-sim
   annotations:
     simSpec: |
-- seconds: 5        # a execution phase of this pod
-  resourceUsage:    # resource usage (not request nor limit)
+- seconds: 5        # an execution phase of this pod
+  resourceUsage:    # resource usage (not request, nor limit)
     cpu: 1
     memory: 2Gi
     nvidia.com/gpu: 0
@@ -43,17 +43,17 @@ v1.Node{
         APIVersion: "v1",
     },
     ObjectMeta: metav1.ObjectMeta{
-        Name:        // all determined by config
+        Name:        // all determined by the config
         Namespace:   //
         Labels:      //
         Annotations: //
     },
     Spec: v1.NodeSpec{
         Unschedulable: false,
-        Taints:        // determined by config
+        Taints:        // determined by the config
     },
     Status: v1.NodeStatus{
-        Capacity:    // determined by config
+        Capacity:    // determined by the config
         Allocatable: // same as Capacity
         Conditions:  []v1.NodeCondition{
             {
