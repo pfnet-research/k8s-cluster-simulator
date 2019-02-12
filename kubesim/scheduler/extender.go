@@ -38,7 +38,11 @@ type Extender struct {
 	Ignorable bool
 }
 
-func (ext *Extender) filter(pod *v1.Pod, nodes []*v1.Node, nodeMap map[string]*v1.Node, failedPredicateMap core.FailedPredicateMap) ([]*v1.Node, error) {
+func (ext *Extender) filter(
+	pod *v1.Pod,
+	nodes []*v1.Node,
+	nodeMap map[string]*v1.Node,
+	failedPredicateMap core.FailedPredicateMap) ([]*v1.Node, error) {
 	if ext.Filter == nil {
 		return nodes, nil
 	}
@@ -48,14 +52,14 @@ func (ext *Extender) filter(pod *v1.Pod, nodes []*v1.Node, nodeMap map[string]*v
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 	result := ext.Filter(args)
 
-	nodes = []*v1.Node{}
+	nodes = make([]*v1.Node, len(nodes), len(nodes))
 	if ext.NodeCacheCapable {
-		for _, name := range *result.NodeNames {
-			nodes = append(nodes, nodeMap[name])
+		for i, name := range *result.NodeNames {
+			nodes[i] = nodeMap[name]
 		}
 	} else {
-		for _, node := range result.Nodes.Items {
-			nodes = append(nodes, &node)
+		for i, node := range result.Nodes.Items {
+			nodes[i] = &node
 		}
 	}
 
