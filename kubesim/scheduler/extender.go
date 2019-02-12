@@ -53,14 +53,14 @@ func (ext *Extender) filter(
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 	result := ext.Filter(args)
 
-	nodes = make([]*v1.Node, len(nodes), len(nodes))
+	nodes = make([]*v1.Node, 0, len(nodes))
 	if ext.NodeCacheCapable {
-		for i, name := range *result.NodeNames {
-			nodes[i] = nodeMap[name]
+		for _, name := range *result.NodeNames {
+			nodes = append(nodes, nodeMap[name])
 		}
 	} else {
-		for i, node := range result.Nodes.Items {
-			nodes[i] = &node
+		for _, node := range result.Nodes.Items {
+			nodes = append(nodes, &node)
 		}
 	}
 
@@ -106,7 +106,7 @@ func buildExtenderArgs(pod *v1.Pod, nodes []*v1.Node, nodeCacheCapable bool) api
 			APIVersion: "v1",
 		},
 		// ListMeta: metav1.ListMeta{},
-		Items: []v1.Node{},
+		Items: make([]v1.Node, 0, len(nodes)),
 	}
 	nodeNames := make([]string, 0, len(nodes))
 
