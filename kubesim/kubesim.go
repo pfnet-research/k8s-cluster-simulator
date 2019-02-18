@@ -23,7 +23,9 @@ import (
 type KubeSim struct {
 	nodes map[string]*node.Node
 	pods  podQueue
+
 	tick  int
+	clock clock.Clock
 
 	submitters []api.Submitter
 	scheduler  scheduler.Scheduler
@@ -32,8 +34,18 @@ type KubeSim struct {
 // NewKubeSim creates a new KubeSim with the config.
 func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
-	if err := configure(conf); err != nil {
+
+	if err := configLog(conf.LogLevel); err != nil {
 		return nil, errors.Errorf("error configuring: %s", err.Error())
+	}
+
+	clk := time.Now()
+	if conf.StartClock != "" {
+		var err error
+		clk, err = time.Parse(time.RFC3339, conf.StartClock)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	nodes := map[string]*node.Node{}
@@ -57,6 +69,7 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 		nodes:     nodes,
 		pods:      podQueue{},
 		tick:      conf.Tick,
+		clock:     clock.NewClock(clk),
 		scheduler: scheduler.NewScheduler(nodesV1),
 	}
 
@@ -86,12 +99,10 @@ func (k *KubeSim) Scheduler() *scheduler.Scheduler {
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
 func (k *KubeSim) Run(ctx context.Context) error {
 	tick := make(chan clock.Clock)
-
 	go func() {
-		clock := clock.NewClock(time.Now())
 		for {
-			clock = clock.Add(time.Duration(k.tick) * time.Second)
-			tick <- clock
+			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
+			tick <- k.clock
 		}
 	}()
 
@@ -187,8 +198,8 @@ func readConfig(path string) (*config.Config, error) {
 	return &conf, nil
 }
 
-func configure(conf *config.Config) error {
-	level, err := log.ParseLevel(conf.LogLevel)
+func configLog(logLevel string) error {
+	level, err := log.ParseLevel(logLevel)
 	if err != nil {
 		return strongerrors.InvalidArgument(errors.Errorf("%s: log level %q not supported", err.Error(), level))
 	}
