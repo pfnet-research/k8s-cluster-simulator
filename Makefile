@@ -20,7 +20,7 @@ all: test example
 # example: authors
 example:
 	@echo "Building examples/main..."
-	$Q CGO_ENABLED=0 go build -o bin/main examples/main.go
+	$Q CGO_ENABLED=0 go build -o bin/main $(shell ls examples/*.go)
 
 .PHONY: tags
 tags:
