@@ -26,7 +26,7 @@ func main() {
 	}
 }
 
-// configPath is the path of the config file, defaulting to "sample/config"
+// configPath is the path of the config file, defaulting to "examples/config_sample".
 var configPath string
 
 func init() {
@@ -61,7 +61,7 @@ var rootCmd = &cobra.Command{
 			},
 		)
 
-		// SIGINT calcels submitPods() and kubesim.Run()
+		// SIGINT cancels the sumbitter and kubesim.Run().
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
