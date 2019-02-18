@@ -2,6 +2,7 @@ package kubesim
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/cpuguy83/strongerrors"
@@ -16,6 +17,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -23,7 +25,7 @@ import (
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
 	nodes map[string]*node.Node
-	pods  podQueue
+	pods  queue.PodQueue
 
 	tick  int
 	clock clock.Clock
@@ -66,7 +68,7 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 	kubesim := KubeSim{
 		nodes:     nodes,
-		pods:      podQueue{},
+		pods:      queue.PodQueue{},
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
 		scheduler: scheduler.NewScheduler(),
@@ -117,15 +119,15 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			pod, err := k.pods.pop()
-			if err == errEmptyPodQueue {
+			pod, err := k.pods.Pop()
+			if err == queue.ErrEmptyPodQueue {
 				continue
 			}
 
 			err = k.scheduleOne(clock, pod)
-			if err == errPodDoestNotFit {
-				log.L.Debug(err.Error())
-				k.pods.placeBack(pod)
+			if fitErr, ok := err.(*errPodDoesNotFit); ok {
+				log.L.Debug(fitErr.Error())
+				k.pods.PlaceBack(pod)
 				continue
 			}
 
@@ -156,14 +158,20 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 			log.L.Tracef("Submit %v", pod)
 			log.L.Debugf("Submit %q", pod.Name)
 
-			k.pods.append(pod)
+			k.pods.Append(pod)
 		}
 	}
 
 	return nil
 }
 
-var errPodDoestNotFit = errors.New("Pod does not fit in any node")
+type errPodDoesNotFit struct {
+	pod *v1.Pod
+}
+
+func (e *errPodDoesNotFit) Error() string {
+	return fmt.Sprintf("Pod %q does not fit in any node", e.pod.Name)
+}
 
 func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 	log.L.Tracef("Trying to schedule pod %v", pod)
@@ -178,7 +186,7 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 
 	if err != nil {
 		if _, ok := err.(*core.FitError); ok {
-			return errPodDoestNotFit
+			return &errPodDoesNotFit{pod}
 		}
 		return err
 	}
