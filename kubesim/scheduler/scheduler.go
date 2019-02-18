@@ -30,7 +30,14 @@ type Scheduler struct {
 
 // NewScheduler creates a new Scheduler.
 func NewScheduler() Scheduler {
-	return Scheduler{}
+	return Scheduler{
+		predicates: map[string]predicates.FitPredicate{},
+	}
+}
+
+// AddExtender adds an extender to this Scheduler.
+func (sched *Scheduler) AddExtender(extender Extender) {
+	sched.extenders = append(sched.extenders, extender)
 }
 
 // AddPredicate adds a predicate plugin to this Scheduler.
@@ -41,11 +48,6 @@ func (sched *Scheduler) AddPredicate(name string, predicate predicates.FitPredic
 // AddPrioritizer adds a prioritizer plugin to this Scheduler.
 func (sched *Scheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
 	sched.prioritizers = append(sched.prioritizers, prioritizer)
-}
-
-// AddExtender adds an extender to this Scheduler.
-func (sched *Scheduler) AddExtender(extender Extender) {
-	sched.extenders = append(sched.extenders, extender)
 }
 
 // Schedule makes scheduling decision for the given pod and nodes.
@@ -213,8 +215,8 @@ func (sched *Scheduler) prioritize(
 			extender.prioritize(pod, filteredNodes, prioMap)
 		}
 
-		for _, prio := range prioList {
-			prio.Score += prioMap[prio.Host]
+		for i, prio := range prioList {
+			prioList[i].Score += prioMap[prio.Host]
 		}
 	}
 
