@@ -33,8 +33,8 @@ func (node *Node) ToV1() *v1.Node {
 }
 
 // ToNodeInfo creates nodeinfo.NodeInfo object from this node.
-func (node *Node) ToNodeInfo() *nodeinfo.NodeInfo {
-	nodeInfo := nodeinfo.NewNodeInfo(node.pods.ListPods()...)
+func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
+	nodeInfo := nodeinfo.NewNodeInfo(node.runningPodsWithStatus(clock)...)
 	nodeInfo.SetNode(node.ToV1())
 	return nodeInfo
 }
@@ -100,6 +100,21 @@ func (node *Node) PodStatus(clock clock.Clock, namespace, name string) (*v1.PodS
 
 	status := pod.BuildStatus(clock)
 	return &status, nil
+}
+
+// runningPodsWithStatus returns all running pods at the time clock, with their status updated.
+func (node *Node) runningPodsWithStatus(clock clock.Clock) []*v1.Pod {
+	pods := []*v1.Pod{}
+	node.pods.Range(func(_ string, pod pod.Pod) bool {
+		podV1 := pod.ToV1()
+		podV1.Status = pod.BuildStatus(clock)
+		if pod.IsRunning(clock) {
+			pods = append(pods, podV1)
+		}
+		return true
+	})
+
+	return pods
 }
 
 // totalResourceRequest calculates the total resource request (not usage) of all running pods at the
