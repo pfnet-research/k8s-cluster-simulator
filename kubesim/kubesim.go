@@ -24,8 +24,8 @@ import (
 
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
-	nodes map[string]*node.Node
-	pods  queue.PodQueue
+	nodes    map[string]*node.Node
+	podQueue queue.Queue
 
 	tick  int
 	clock clock.Clock
@@ -68,7 +68,7 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 	kubesim := KubeSim{
 		nodes:     nodes,
-		pods:      queue.PodQueue{},
+		podQueue:  &queue.FIFOQueue{},
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
 		scheduler: scheduler.NewScheduler(),
@@ -119,15 +119,15 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			pod, err := k.pods.Pop()
-			if err == queue.ErrEmptyPodQueue {
+			pod, err := k.podQueue.Pop()
+			if err == queue.ErrEmptyQueue {
 				continue
 			}
 
 			err = k.scheduleOne(clock, pod)
 			if fitErr, ok := err.(*errPodDoesNotFit); ok {
 				log.L.Debug(fitErr.Error())
-				k.pods.PlaceBack(pod)
+				k.podQueue.PlaceBack(pod)
 				continue
 			}
 
@@ -158,7 +158,7 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 			log.L.Tracef("Submit %v", pod)
 			log.L.Debugf("Submit %q", pod.Name)
 
-			k.pods.Append(pod)
+			k.podQueue.Push(pod)
 		}
 	}
 
