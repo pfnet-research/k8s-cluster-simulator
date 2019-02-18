@@ -21,12 +21,12 @@ func newPod(name string) *v1.Pod {
 	return &pod
 }
 
-func TestPodQueuePop(t *testing.T) {
-	q := PodQueue{}
+func TestFIFOQueuePush(t *testing.T) {
+	q := FIFOQueue{}
 
-	q.Append(newPod("pod-0"))
-	q.Append(newPod("pod-1"))
-	q.Append(newPod("pod-2"))
+	q.Push(newPod("pod-0"))
+	q.Push(newPod("pod-1"))
+	q.Push(newPod("pod-2"))
 
 	pod, _ := q.Pop()
 	if pod.Name != "pod-0" {
@@ -44,8 +44,8 @@ func TestPodQueuePop(t *testing.T) {
 	}
 }
 
-func TestPodQueuePlaceBack(t *testing.T) {
-	q := PodQueue{}
+func TestFIFOPlaceBack(t *testing.T) {
+	q := FIFOQueue{}
 
 	q.PlaceBack(newPod("pod-0"))
 	pod, _ := q.Pop()
