@@ -8,6 +8,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/api"
 	"k8s.io/kubernetes/pkg/scheduler/core"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -41,7 +42,7 @@ type Extender struct {
 func (ext *Extender) filter(
 	pod *v1.Pod,
 	nodes []*v1.Node,
-	nodeMap map[string]*v1.Node,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	failedPredicateMap core.FailedPredicateMap) ([]*v1.Node, error) {
 
 	if ext.Filter == nil {
@@ -59,7 +60,7 @@ func (ext *Extender) filter(
 	nodes = make([]*v1.Node, 0, len(nodes))
 	if ext.NodeCacheCapable {
 		for _, name := range *result.NodeNames {
-			nodes = append(nodes, nodeMap[name])
+			nodes = append(nodes, nodeInfoMap[name].Node())
 		}
 	} else {
 		for _, node := range result.Nodes.Items {
