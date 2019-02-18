@@ -30,12 +30,12 @@ func main() {
 var configPath string
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&configPath, ".", "examples/config_sample", "config file (exclusing file extension)")
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "examples/config_sample", "config file (exclusing file extension)")
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "kubernetes-simulator",
-	Short: "kubernetes-simulator provides a virtual kubernetes cluster interface for your kubernetes scheduler.",
+	Short: "kubernetes-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
 
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
