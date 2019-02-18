@@ -54,8 +54,6 @@ func (sched *Scheduler) Schedule(
 	nodeLister algorithm.NodeLister,
 	nodeMap map[string]*node.Node) (core.ScheduleResult, error) {
 
-	log.L.Tracef("Trying to schedule pod %v", pod)
-
 	result := core.ScheduleResult{}
 	nodes, err := nodeLister.List()
 	if err != nil {
@@ -111,13 +109,20 @@ func (sched *Scheduler) filter(
 	nodes []*v1.Node,
 	nodeMap map[string]*node.Node) ([]*v1.Node, core.FailedPredicateMap, error) {
 
+	// FIXME: Make nodeNames only when debug logging is enabled.
+	nodeNames := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Filtering nodes %v", nodeNames)
+
 	failedPredicateMap := core.FailedPredicateMap{}
 	filteredNodes := nodes
 
 	// In-process plugins
 	errs := errors.MessageCountMap{}
-	for _, p := range sched.predicates {
-		filteredNodes = callPredicatePlugin(&p, pod, filteredNodes, nodeMap, failedPredicateMap, errs)
+	for name, p := range sched.predicates {
+		filteredNodes = callPredicatePlugin(name, &p, pod, filteredNodes, nodeMap, failedPredicateMap, errs)
 		if len(filteredNodes) == 0 {
 			break
 		}
@@ -147,6 +152,12 @@ func (sched *Scheduler) filter(
 		}
 	}
 
+	nodeNames = make([]string, 0, len(filteredNodes))
+	for _, node := range nodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Filtered %v", nodeNames)
+
 	return filteredNodes, failedPredicateMap, nil
 }
 
@@ -154,6 +165,13 @@ func (sched *Scheduler) prioritize(
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
 	nodeMap map[string]*node.Node) (api.HostPriorityList, error) {
+
+	// FIXME: Make nodeNames only when debug logging is enabled.
+	nodeNames := make([]string, 0, len(filteredNodes))
+	for _, node := range filteredNodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Prioritizing nodes %v", nodeNames)
 
 	prioList := make(api.HostPriorityList, len(filteredNodes), len(filteredNodes))
 
@@ -199,6 +217,8 @@ func (sched *Scheduler) prioritize(
 			prio.Score += prioMap[prio.Host]
 		}
 	}
+
+	log.L.Debugf("Prioritized %v", prioList)
 
 	return prioList, nil
 }

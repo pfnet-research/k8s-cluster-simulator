@@ -98,7 +98,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case clock := <-tick:
-			log.L.Debugf("Clock %s", clock.String())
+			log.L.Tracef("Clock %s", clock.String())
 
 			nodes, _ := k.List()
 			if err := k.submit(clock, nodes); err != nil {
@@ -143,10 +143,11 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 
 func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 	log.L.Tracef("Trying to schedule pod %v", pod)
+	log.L.Debugf("Trying to schedule pod %q", pod.Name)
 
 	result, err := k.scheduler.Schedule(pod, k, k.nodes)
 	if _, ok := err.(*core.FitError); ok {
-		log.L.Trace("Pod does not fit in any node")
+		log.L.Debug("Pod does not fit in any node")
 		return nil
 	}
 	if err != nil {
@@ -154,7 +155,7 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 	}
 
 	nodeName := result.SuggestedHost
-	log.L.Tracef("Selected node %q", nodeName)
+	log.L.Debugf("Selected node %q", nodeName)
 
 	node, ok := k.nodes[nodeName]
 	if !ok {

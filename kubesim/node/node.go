@@ -42,7 +42,7 @@ func (node *Node) ToNodeInfo() *nodeinfo.NodeInfo {
 // CreatePod accepts the definition of a pod and try to start it.
 // The pod will fail to be scheduled if there is not sufficient resources.
 func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
-	log.L.Debugf("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
+	log.L.Tracef("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
 
 	key, err := buildKey(v1Pod)
 	if err != nil {
@@ -71,7 +71,7 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 // The returned pod may have failed to be scheduled.
 // Returns error if the pod is not found.
 func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
-	log.L.Debugf("Node %q: GetPod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
+	log.L.Tracef("Node %q: GetPod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
 	pod := node.getSimPod(namespace, name)
 	if pod == nil {
@@ -84,14 +84,14 @@ func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, er
 // GetPodList returns the list of all pods that were accepted on this node.
 // Each of the returned pods may have failed to be scheduled.
 func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
-	log.L.Debugf("Node %q: GetPodList(%v) called", node.v1.Name, clock)
+	log.L.Tracef("Node %q: GetPodList(%v) called", node.v1.Name, clock)
 	return node.pods.ListPods()
 }
 
 // GetPodStatus returns the status of the pod by name.
 // Returns error if the pod is not found.
 func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
-	log.L.Debugf("Node %q: GetPodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
+	log.L.Tracef("Node %q: GetPodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
 
 	pod := node.getSimPod(namespace, name)
 	if pod == nil {
