@@ -49,7 +49,7 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 		return err
 	}
 
-	newTotalReq := resourceListSum(node.totalResourceRequest(clock), getResourceReq(v1Pod))
+	newTotalReq := resourceListSum(node.totalResourceRequest(clock), extractResourceRequest(v1Pod))
 	cap := node.v1.Status.Capacity
 	var podStatus pod.Status
 	if !resourceListGE(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
@@ -108,7 +108,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		if pod.IsRunning(clock) {
-			total = resourceListSum(total, getResourceReq(pod.ToV1()))
+			total = resourceListSum(total, extractResourceRequest(pod.ToV1()))
 		}
 		return true
 	})

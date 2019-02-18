@@ -39,8 +39,8 @@ func resourceListDiff(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
 	return diff, nil
 }
 
-// getResourceReq extracts total requested resource of the pod.
-func getResourceReq(pod *v1.Pod) v1.ResourceList {
+// extractResourceRequest extracts total requested resource of the pod.
+func extractResourceRequest(pod *v1.Pod) v1.ResourceList {
 	result := v1.ResourceList{}
 	for _, container := range pod.Spec.Containers {
 		result = resourceListSum(result, container.Resources.Requests)
