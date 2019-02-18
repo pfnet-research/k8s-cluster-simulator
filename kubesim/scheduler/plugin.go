@@ -9,7 +9,6 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -26,7 +25,7 @@ func callPredicatePlugin(
 	pred *predicates.FitPredicate,
 	pod *v1.Pod,
 	nodes []*v1.Node,
-	nodeMap map[string]*node.Node,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	failedPredicateMap core.FailedPredicateMap,
 	errs errors.MessageCountMap) (filteredNodes []*v1.Node) {
 
@@ -41,7 +40,7 @@ func callPredicatePlugin(
 
 	filteredNodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
-		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeMap[node.Name].ToNodeInfo())
+		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeInfoMap[node.Name])
 		if err != nil {
 			errs[err.Error()]++
 		}
@@ -63,7 +62,7 @@ func callPrioritizePlugin(
 	prioritizer *priorities.PriorityConfig,
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
-	nodeMap map[string]*node.Node,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	errs []error) api.HostPriorityList {
 
 	log.L.Tracef("Plugin %q: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
@@ -77,7 +76,7 @@ func callPrioritizePlugin(
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))
 	for _, node := range filteredNodes {
-		prio, err := prioritizer.Map(pod, &dummyPriorityMetadata{}, nodeMap[node.Name].ToNodeInfo())
+		prio, err := prioritizer.Map(pod, &dummyPriorityMetadata{}, nodeInfoMap[node.Name])
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -85,11 +84,6 @@ func callPrioritizePlugin(
 	}
 
 	if prioritizer.Reduce != nil {
-		nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
-		for nodeName, node := range nodeMap {
-			nodeInfoMap[nodeName] = node.ToNodeInfo()
-		}
-
 		err := prioritizer.Reduce(pod, &dummyPriorityMetadata{}, nodeInfoMap, prios)
 		if err != nil {
 			errs = append(errs, err)

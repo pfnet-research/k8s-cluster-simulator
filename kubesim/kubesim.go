@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/core"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
@@ -156,7 +157,13 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 	log.L.Tracef("Trying to schedule pod %v", pod)
 	log.L.Debugf("Trying to schedule pod %q", pod.Name)
 
-	result, err := k.scheduler.Schedule(pod, k, k.nodes)
+	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
+	for name, node := range k.nodes {
+		nodeInfoMap[name] = node.ToNodeInfo(clock)
+	}
+
+	result, err := k.scheduler.Schedule(pod, k, nodeInfoMap)
+
 	if _, ok := err.(*core.FitError); ok {
 		log.L.Debug("Pod does not fit in any node")
 		return nil

@@ -10,8 +10,8 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 	"k8s.io/kubernetes/pkg/scheduler/api"
 	"k8s.io/kubernetes/pkg/scheduler/core"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -54,7 +54,7 @@ func (sched *Scheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
 func (sched *Scheduler) Schedule(
 	pod *v1.Pod,
 	nodeLister algorithm.NodeLister,
-	nodeMap map[string]*node.Node) (core.ScheduleResult, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) (core.ScheduleResult, error) {
 
 	result := core.ScheduleResult{}
 	nodes, err := nodeLister.List()
@@ -65,7 +65,7 @@ func (sched *Scheduler) Schedule(
 		return result, core.ErrNoNodesAvailable
 	}
 
-	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeMap)
+	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap)
 	if err != nil {
 		return result, err
 	}
@@ -85,7 +85,7 @@ func (sched *Scheduler) Schedule(
 		}, nil
 	}
 
-	prios, err := sched.prioritize(pod, nodesFiltered, nodeMap)
+	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap)
 	if err != nil {
 		return result, err
 	}
@@ -109,7 +109,7 @@ func (sched *Scheduler) Schedule(
 func (sched *Scheduler) filter(
 	pod *v1.Pod,
 	nodes []*v1.Node,
-	nodeMap map[string]*node.Node) ([]*v1.Node, core.FailedPredicateMap, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]*v1.Node, core.FailedPredicateMap, error) {
 
 	// FIXME: Make nodeNames only when debug logging is enabled.
 	nodeNames := make([]string, 0, len(nodes))
@@ -124,7 +124,7 @@ func (sched *Scheduler) filter(
 	// In-process plugins
 	errs := errors.MessageCountMap{}
 	for name, p := range sched.predicates {
-		filteredNodes = callPredicatePlugin(name, &p, pod, filteredNodes, nodeMap, failedPredicateMap, errs)
+		filteredNodes = callPredicatePlugin(name, &p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
 		if len(filteredNodes) == 0 {
 			break
 		}
@@ -136,14 +136,9 @@ func (sched *Scheduler) filter(
 
 	// Extenders
 	if len(filteredNodes) > 0 && len(sched.extenders) > 0 {
-		v1NodeMap := map[string]*v1.Node{}
-		for name, node := range nodeMap {
-			v1NodeMap[name] = node.ToV1()
-		}
-
 		for _, extender := range sched.extenders {
 			var err error
-			filteredNodes, err = extender.filter(pod, filteredNodes, v1NodeMap, failedPredicateMap)
+			filteredNodes, err = extender.filter(pod, filteredNodes, nodeInfoMap, failedPredicateMap)
 			if err != nil {
 				return []*v1.Node{}, core.FailedPredicateMap{}, err
 			}
@@ -155,7 +150,7 @@ func (sched *Scheduler) filter(
 	}
 
 	nodeNames = make([]string, 0, len(filteredNodes))
-	for _, node := range nodes {
+	for _, node := range filteredNodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
 	log.L.Debugf("Filtered %v", nodeNames)
@@ -166,7 +161,7 @@ func (sched *Scheduler) filter(
 func (sched *Scheduler) prioritize(
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
-	nodeMap map[string]*node.Node) (api.HostPriorityList, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) (api.HostPriorityList, error) {
 
 	// FIXME: Make nodeNames only when debug logging is enabled.
 	nodeNames := make([]string, 0, len(filteredNodes))
@@ -181,7 +176,7 @@ func (sched *Scheduler) prioritize(
 	// This is required to generate the priority list in the required format
 	if len(sched.prioritizers) == 0 && len(sched.extenders) == 0 {
 		for i, node := range filteredNodes {
-			prio, err := core.EqualPriorityMap(pod, &dummyPriorityMetadata{}, nodeMap[node.Name].ToNodeInfo())
+			prio, err := core.EqualPriorityMap(pod, &dummyPriorityMetadata{}, nodeInfoMap[node.Name])
 			if err != nil {
 				return api.HostPriorityList{}, err
 			}
@@ -198,7 +193,7 @@ func (sched *Scheduler) prioritize(
 
 	// In-process plugins
 	for _, prioritizer := range sched.prioritizers {
-		prios := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeMap, errs)
+		prios := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeInfoMap, errs)
 		for i, prio := range prios {
 			prioList[i].Score += prio.Score
 		}
