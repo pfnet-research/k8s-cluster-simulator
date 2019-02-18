@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
@@ -58,8 +60,13 @@ var rootCmd = &cobra.Command{
 		)
 
 		// Add plugins
-		// sched.AddPredicate("MyPredicatePlugin", predicatePlugin)
-		// sched.AddPrioritizer()
+		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "MostRequestedPriority",
+			Map:    priorities.MostRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
 
 		// SIGINT cancels the sumbitter and kubesim.Run().
 		sig := make(chan os.Signal, 1)
