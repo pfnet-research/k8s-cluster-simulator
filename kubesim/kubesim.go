@@ -122,7 +122,14 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				continue
 			}
 
-			if err := k.scheduleOne(clock, pod); err != nil {
+			err = k.scheduleOne(clock, pod)
+			if err == errPodDoestNotFit {
+				log.L.Debug(err.Error())
+				k.pods.placeBack(pod)
+				continue
+			}
+
+			if err != nil {
 				return err
 			}
 		}
@@ -156,6 +163,8 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 	return nil
 }
 
+var errPodDoestNotFit = errors.New("Pod does not fit in any node")
+
 func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 	log.L.Tracef("Trying to schedule pod %v", pod)
 	log.L.Debugf("Trying to schedule pod %q", pod.Name)
@@ -167,11 +176,10 @@ func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
 
 	result, err := k.scheduler.Schedule(pod, k, nodeInfoMap)
 
-	if _, ok := err.(*core.FitError); ok {
-		log.L.Debug("Pod does not fit in any node")
-		return nil
-	}
 	if err != nil {
+		if _, ok := err.(*core.FitError); ok {
+			return errPodDoestNotFit
+		}
 		return err
 	}
 

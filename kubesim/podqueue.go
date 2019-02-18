@@ -31,3 +31,8 @@ func (q *podQueue) pop() (*v1.Pod, error) {
 
 	return pod, nil
 }
+
+// placeBack pushes a pod to the head of this podQueue.
+func (q *podQueue) placeBack(pod *v1.Pod) {
+	q.queue, q.queue[0] = append(q.queue[:1], q.queue[0:]...), pod
+}
