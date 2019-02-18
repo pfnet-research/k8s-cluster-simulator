@@ -22,6 +22,7 @@ func (d *dummyPredicateMetadata) AddPod(pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo
 func (d *dummyPredicateMetadata) RemovePod(pod *v1.Pod) error                           { return nil }
 
 func callPredicatePlugin(
+	name string,
 	pred *predicates.FitPredicate,
 	pod *v1.Pod,
 	nodes []*v1.Node,
@@ -29,7 +30,16 @@ func callPredicatePlugin(
 	failedPredicateMap core.FailedPredicateMap,
 	errs errors.MessageCountMap) (filteredNodes []*v1.Node) {
 
-	log.L.Tracef("Predicating nodes %v", nodes)
+	log.L.Tracef("Plugin %q: Predicating nodes %v", name, nodes)
+
+	// FIXME: Make nodeNames only when debug logging is enabled.
+	nodeNames := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Plugin %q: Predicating nodes %v", name, nodeNames)
+
+	filteredNodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeMap[node.Name].ToNodeInfo())
 		if err != nil {
@@ -37,12 +47,15 @@ func callPredicatePlugin(
 		}
 		if fits {
 			filteredNodes = append(filteredNodes, node)
+			filteredNodeNames = append(filteredNodeNames, node.Name)
 		} else {
 			failedPredicateMap[node.Name] = failureReason
 		}
 	}
 
 	log.L.Tracef("Predicated nodes %v", filteredNodes)
+	log.L.Debugf("Predicated nodes %v", filteredNodeNames)
+
 	return filteredNodes
 }
 
@@ -54,6 +67,13 @@ func callPrioritizePlugin(
 	errs []error) api.HostPriorityList {
 
 	log.L.Tracef("Plugin %q: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
+
+	// FIXME: Make nodeNames only when debug logging is enabled.
+	nodeNames := make([]string, 0, len(filteredNodes))
+	for _, node := range filteredNodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Plugin %q: Prioritizing nodes %v", prioritizer.Name, nodeNames)
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))
 	for i, node := range filteredNodes {
@@ -80,6 +100,7 @@ func callPrioritizePlugin(
 		prios[i].Score *= prioritizer.Weight
 	}
 
-	log.L.Tracef("Prioritized %v", prios)
+	log.L.Debugf("Prioritized %v", prios)
+
 	return prios
 }
