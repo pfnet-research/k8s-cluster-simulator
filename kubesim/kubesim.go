@@ -112,7 +112,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case clock := <-tick:
-			log.L.Tracef("Clock %s", clock.String())
+			log.L.Debugf("Clock %s", clock.String())
 
 			nodes, _ := k.List()
 			if err := k.submit(clock, nodes); err != nil {

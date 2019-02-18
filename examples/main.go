@@ -60,10 +60,16 @@ var rootCmd = &cobra.Command{
 		)
 
 		// Add plugins
-		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
+		sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
 		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "MostRequestedPriority",
-			Map:    priorities.MostRequestedPriorityMap,
+			Name:   "BalancedResourceAllocation",
+			Map:    priorities.BalancedResourceAllocationMap,
+			Reduce: nil,
+			Weight: 1,
+		})
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "LeastRequested",
+			Map:    priorities.LeastRequestedPriorityMap,
 			Reduce: nil,
 			Weight: 1,
 		})
