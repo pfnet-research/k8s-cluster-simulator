@@ -6,6 +6,7 @@ import (
 
 	"github.com/cpuguy83/strongerrors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
@@ -31,17 +32,25 @@ func (node *Node) ToV1() *v1.Node {
 	return node.v1
 }
 
+// ToNodeInfo creates nodeinfo.NodeInfo object from this node.
+func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
+	pods := node.runningPodsWithStatus(clock)
+	nodeInfo := nodeinfo.NewNodeInfo(pods...)
+	nodeInfo.SetNode(node.ToV1())
+	return nodeInfo
+}
+
 // CreatePod accepts the definition of a pod and try to start it.
 // The pod will fail to be scheduled if there is not sufficient resources.
 func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
-	log.L.Debugf("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
+	log.L.Tracef("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
 
 	key, err := buildKey(v1Pod)
 	if err != nil {
 		return err
 	}
 
-	newTotalReq := resourceListSum(node.totalResourceRequest(clock), getResourceReq(v1Pod))
+	newTotalReq := resourceListSum(node.totalResourceRequest(clock), extractResourceRequest(v1Pod))
 	cap := node.v1.Status.Capacity
 	var podStatus pod.Status
 	if !resourceListGE(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
@@ -59,39 +68,19 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
-// GetPod returns the pod by name that was accepted on this node.
-// The returned pod may have failed to be scheduled.
-// Returns error if the pod is not found.
-func (node *Node) GetPod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
-	log.L.Debugf("Node %q: GetPod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
+// runningPodsWithStatus returns all running pods at the time clock, with their status updated.
+func (node *Node) runningPodsWithStatus(clock clock.Clock) []*v1.Pod {
+	pods := []*v1.Pod{}
+	node.pods.Range(func(_ string, pod pod.Pod) bool {
+		podV1 := pod.ToV1()
+		podV1.Status = pod.BuildStatus(clock)
+		if pod.IsRunning(clock) {
+			pods = append(pods, podV1)
+		}
+		return true
+	})
 
-	pod := node.getSimPod(namespace, name)
-	if pod == nil {
-		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
-	}
-
-	return pod.ToV1(), nil
-}
-
-// GetPodList returns a list of all pods that were accepted on this node.
-// Each of the returned pods may have failed to be scheduled.
-func (node *Node) GetPodList(clock clock.Clock) []*v1.Pod {
-	log.L.Debugf("Node %q: GetPodList(%v) called", node.v1.Name, clock)
-	return node.pods.ListPods()
-}
-
-// GetPodStatus returns the status of the pod by name.
-// Returns error if the pod is not found.
-func (node *Node) GetPodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
-	log.L.Debugf("Node %q: GetPodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
-
-	pod := node.getSimPod(namespace, name)
-	if pod == nil {
-		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
-	}
-
-	status := pod.BuildStatus(clock)
-	return &status, nil
+	return pods
 }
 
 // totalResourceRequest calculates the total resource request (not usage) of all running pods at the
@@ -100,7 +89,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		if pod.IsRunning(clock) {
-			total = resourceListSum(total, getResourceReq(pod.ToV1()))
+			total = resourceListSum(total, extractResourceRequest(pod.ToV1()))
 		}
 		return true
 	})
@@ -119,10 +108,10 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	return num
 }
 
-// getSimPod returns a *pod.Pod by name that was accepted on this node.
+// simPod returns a *pod.Pod by name that was accepted on this node.
 // The returned pod may have failed to be scheduled.
 // Returns nil if the pod is not found.
-func (node *Node) getSimPod(namespace, name string) *pod.Pod {
+func (node *Node) simPod(namespace, name string) *pod.Pod {
 	key := buildKeyFromNames(namespace, name)
 	pod, ok := node.pods.Load(key)
 	if !ok {

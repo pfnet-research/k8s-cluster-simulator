@@ -2,6 +2,7 @@ package kubesim
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/cpuguy83/strongerrors"
@@ -10,11 +11,13 @@ import (
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/core"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -22,7 +25,7 @@ import (
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
 	nodes map[string]*node.Node
-	pods  podQueue
+	pods  queue.PodQueue
 
 	tick  int
 	clock clock.Clock
@@ -49,7 +52,6 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 	}
 
 	nodes := map[string]*node.Node{}
-	nodesV1 := map[string]*v1.Node{}
 	for _, nodeConf := range conf.Cluster.Nodes {
 		log.L.Debugf("NodeConfig: %+v", nodeConf)
 
@@ -60,17 +62,16 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 		n := node.NewNode(nodeV1)
 		nodes[nodeV1.Name] = &n
-		nodesV1[nodeV1.Name] = n.ToV1()
 
 		log.L.Debugf("Node %q created", nodeV1.Name)
 	}
 
 	kubesim := KubeSim{
 		nodes:     nodes,
-		pods:      podQueue{},
+		pods:      queue.PodQueue{},
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
-		scheduler: scheduler.NewScheduler(nodesV1),
+		scheduler: scheduler.NewScheduler(),
 	}
 
 	return &kubesim, nil
@@ -86,8 +87,8 @@ func NewKubeSimFromConfigPath(confPath string) (*KubeSim, error) {
 	return NewKubeSim(conf)
 }
 
-// RegisterSubmitter registers a new submitter plugin to this KubeSim.
-func (k *KubeSim) RegisterSubmitter(submitter api.Submitter) {
+// AddSubmitter adds a new submitter plugin to this KubeSim.
+func (k *KubeSim) AddSubmitter(submitter api.Submitter) {
 	k.submitters = append(k.submitters, submitter)
 }
 
@@ -98,11 +99,11 @@ func (k *KubeSim) Scheduler() *scheduler.Scheduler {
 
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
 func (k *KubeSim) Run(ctx context.Context) error {
-	tick := make(chan clock.Clock)
+	tick := make(chan clock.Clock, 1)
 	go func() {
 		for {
-			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
 			tick <- k.clock
+			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
 		}
 	}()
 
@@ -118,16 +119,32 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			pod, err := k.pods.pop()
-			if err == errEmptyPodQueue {
+			pod, err := k.pods.Pop()
+			if err == queue.ErrEmptyPodQueue {
 				continue
 			}
 
-			if err := k.scheduleOne(clock, pod, nodes); err != nil {
+			err = k.scheduleOne(clock, pod)
+			if fitErr, ok := err.(*errPodDoesNotFit); ok {
+				log.L.Debug(fitErr.Error())
+				k.pods.PlaceBack(pod)
+				continue
+			}
+
+			if err != nil {
 				return err
 			}
 		}
 	}
+}
+
+// List implements "k8s.io/pkg/scheduler/algorithm".NodeLister
+func (k *KubeSim) List() ([]*v1.Node, error) {
+	nodes := make([]*v1.Node, 0, len(k.nodes))
+	for _, node := range k.nodes {
+		nodes = append(nodes, node.ToV1())
+	}
+	return nodes, nil
 }
 
 func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
@@ -138,27 +155,44 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 		}
 
 		for _, pod := range pods {
-			k.pods.append(pod)
+			log.L.Tracef("Submit %v", pod)
+			log.L.Debugf("Submit %q", pod.Name)
+
+			k.pods.Append(pod)
 		}
 	}
 
 	return nil
 }
 
-func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod, nodes []*v1.Node) error {
-	log.L.Tracef("Trying to schedule pod %v", pod)
+type errPodDoesNotFit struct {
+	pod *v1.Pod
+}
 
-	result, err := k.scheduler.Schedule(pod, k)
-	if _, ok := err.(*core.FitError); ok {
-		log.L.Trace("Pod does not fit in any node")
-		return nil
+func (e *errPodDoesNotFit) Error() string {
+	return fmt.Sprintf("Pod %q does not fit in any node", e.pod.Name)
+}
+
+func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
+	log.L.Tracef("Trying to schedule pod %v", pod)
+	log.L.Debugf("Trying to schedule pod %q", pod.Name)
+
+	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
+	for name, node := range k.nodes {
+		nodeInfoMap[name] = node.ToNodeInfo(clock)
 	}
+
+	result, err := k.scheduler.Schedule(pod, k, nodeInfoMap)
+
 	if err != nil {
+		if _, ok := err.(*core.FitError); ok {
+			return &errPodDoesNotFit{pod}
+		}
 		return err
 	}
 
 	nodeName := result.SuggestedHost
-	log.L.Tracef("Selected node %q", nodeName)
+	log.L.Debugf("Selected node %q", nodeName)
 
 	node, ok := k.nodes[nodeName]
 	if !ok {
@@ -209,13 +243,4 @@ func configLog(logLevel string) error {
 	log.L = logger
 
 	return nil
-}
-
-// List implements "k8s.io/pkg/scheduler/algorithm".NodeLister
-func (k *KubeSim) List() ([]*v1.Node, error) {
-	nodes := []*v1.Node{}
-	for _, node := range k.nodes {
-		nodes = append(nodes, node.ToV1())
-	}
-	return nodes, nil
 }

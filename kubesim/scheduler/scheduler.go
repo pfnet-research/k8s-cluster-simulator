@@ -1,51 +1,37 @@
 package scheduler
 
 import (
-	"errors"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 	"k8s.io/kubernetes/pkg/scheduler/api"
 	"k8s.io/kubernetes/pkg/scheduler/core"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
-// Extender reperesents a scheduler extender.
-type Extender struct {
-	Name string
-
-	// Filter filters out the nodes that cannot run the given pod.
-	// This function can be nil.
-	Filter func(api.ExtenderArgs) api.ExtenderFilterResult
-
-	// Prioritize ranks each node that has passes the filtering stage.
-	// The weighted scores are summed up and the total score is used for the node selection.
-	Prioritize func(api.ExtenderArgs) api.HostPriorityList
-	Weight     int
-
-	NodeCacheCapable bool
-}
-
 // Scheduler makes scheduling decision for each given pod.
 //
 // It mimics "k8s.io/pkg/Scheduler/Scheduler/core".genericScheduler, which implements
-// "k8s.io/pkg/Scheduler/Scheduler/core".ScheduleAlgorithm
+// "k8s.io/pkg/Scheduler/Scheduler/core".ScheduleAlgorithm.
 type Scheduler struct {
-	nodes         map[string]*v1.Node
-	extenders     []Extender
+	extenders []Extender
+
+	predicates   map[string]predicates.FitPredicate
+	prioritizers []priorities.PriorityConfig
+
 	lastNodeIndex uint64
 }
 
-// NewScheduler creates new Scheduler with the nodes.
-func NewScheduler(nodes map[string]*v1.Node) Scheduler {
+// NewScheduler creates a new Scheduler.
+func NewScheduler() Scheduler {
 	return Scheduler{
-		nodes:         nodes,
-		extenders:     []Extender{},
-		lastNodeIndex: 0,
+		predicates: map[string]predicates.FitPredicate{},
 	}
 }
 
@@ -54,12 +40,23 @@ func (sched *Scheduler) AddExtender(extender Extender) {
 	sched.extenders = append(sched.extenders, extender)
 }
 
+// AddPredicate adds a predicate plugin to this Scheduler.
+func (sched *Scheduler) AddPredicate(name string, predicate predicates.FitPredicate) {
+	sched.predicates[name] = predicate
+}
+
+// AddPrioritizer adds a prioritizer plugin to this Scheduler.
+func (sched *Scheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
+	sched.prioritizers = append(sched.prioritizers, prioritizer)
+}
+
 // Schedule makes scheduling decision for the given pod and nodes.
-func (sched *Scheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister) (core.ScheduleResult, error) {
-	log.L.Tracef("Trying to schedule pod %v", pod)
+func (sched *Scheduler) Schedule(
+	pod *v1.Pod,
+	nodeLister algorithm.NodeLister,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) (core.ScheduleResult, error) {
 
 	result := core.ScheduleResult{}
-
 	nodes, err := nodeLister.List()
 	if err != nil {
 		return result, err
@@ -68,7 +65,7 @@ func (sched *Scheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister) (
 		return result, core.ErrNoNodesAvailable
 	}
 
-	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes)
+	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap)
 	if err != nil {
 		return result, err
 	}
@@ -88,8 +85,11 @@ func (sched *Scheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister) (
 		}, nil
 	}
 
-	priorities := sched.prioritize(pod, nodesFiltered)
-	host, err := sched.selectHost(priorities)
+	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap)
+	if err != nil {
+		return result, err
+	}
+	host, err := sched.selectHost(prios)
 
 	return core.ScheduleResult{
 		SuggestedHost:  host,
@@ -98,104 +98,126 @@ func (sched *Scheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister) (
 	}, err
 }
 
-// func (sched *Scheduler) Preempt(pod *v1.Pod, nodeLister algorithm.NodeLister, err error) (selectedNode *v1.Node, preemptedPods []*v1.Pod, cleanupNominatedPods []*v1.Pod, err error)
+// func (sched *Scheduler) Preempt(
+// 	pod *v1.Pod,
+// 	nodeLister algorithm.NodeLister,
+// 	err error) (selectedNode *v1.Node,
+// 	preemptedPods []*v1.Pod,
+// 	cleanupNominatedPods []*v1.Pod, e error) {
+// }
 
-func (sched *Scheduler) filter(pod *v1.Pod, nodes []*v1.Node) ([]*v1.Node, core.FailedPredicateMap, error) {
+func (sched *Scheduler) filter(
+	pod *v1.Pod,
+	nodes []*v1.Node,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]*v1.Node, core.FailedPredicateMap, error) {
+
+	// FIXME: Make nodeNames only when debug logging is enabled.
+	nodeNames := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Filtering nodes %v", nodeNames)
+
 	failedPredicateMap := core.FailedPredicateMap{}
+	filteredNodes := nodes
 
-	for _, extender := range sched.extenders {
-		if extender.Filter == nil {
-			continue
-		}
-
-		log.L.Tracef("Extender %q: Filtering nodes %v", extender.Name, nodes)
-
-		args := buildExtenderArgs(pod, nodes, extender.NodeCacheCapable)
-		result := extender.Filter(args)
-
-		nodes = []*v1.Node{}
-		if extender.NodeCacheCapable {
-			for _, name := range *result.NodeNames {
-				nodes = append(nodes, sched.nodes[name])
-			}
-		} else {
-			for _, node := range result.Nodes.Items {
-				nodes = append(nodes, &node)
-			}
-		}
-
-		for failedNodeName, failedMsg := range result.FailedNodes {
-			if _, found := failedPredicateMap[failedNodeName]; !found {
-				failedPredicateMap[failedNodeName] = []predicates.PredicateFailureReason{}
-			}
-			failedPredicateMap[failedNodeName] = append(failedPredicateMap[failedNodeName], predicates.NewFailureReason(failedMsg))
-		}
-
-		if result.Error != "" {
-			return nodes, failedPredicateMap, errors.New(result.Error)
-		}
-
-		log.L.Tracef("Filtered nodes %v", nodes)
-
-		if len(nodes) == 0 {
+	// In-process plugins
+	errs := errors.MessageCountMap{}
+	for name, p := range sched.predicates {
+		filteredNodes = callPredicatePlugin(name, &p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
+		if len(filteredNodes) == 0 {
 			break
 		}
 	}
 
-	return nodes, failedPredicateMap, nil
+	if len(errs) > 0 {
+		return []*v1.Node{}, core.FailedPredicateMap{}, errors.CreateAggregateFromMessageCountMap(errs)
+	}
+
+	// Extenders
+	if len(filteredNodes) > 0 && len(sched.extenders) > 0 {
+		for _, extender := range sched.extenders {
+			var err error
+			filteredNodes, err = extender.filter(pod, filteredNodes, nodeInfoMap, failedPredicateMap)
+			if err != nil {
+				return []*v1.Node{}, core.FailedPredicateMap{}, err
+			}
+
+			if len(filteredNodes) == 0 {
+				break
+			}
+		}
+	}
+
+	nodeNames = make([]string, 0, len(filteredNodes))
+	for _, node := range filteredNodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Filtered %v", nodeNames)
+
+	return filteredNodes, failedPredicateMap, nil
 }
 
-func (sched *Scheduler) prioritize(pod *v1.Pod, nodes []*v1.Node) api.HostPriorityList {
-	prioMap := map[string]int{}
+func (sched *Scheduler) prioritize(
+	pod *v1.Pod,
+	filteredNodes []*v1.Node,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) (api.HostPriorityList, error) {
 
-	for _, extender := range sched.extenders {
-		if extender.Prioritize == nil {
-			continue
+	// FIXME: Make nodeNames only when debug logging is enabled.
+	nodeNames := make([]string, 0, len(filteredNodes))
+	for _, node := range filteredNodes {
+		nodeNames = append(nodeNames, node.Name)
+	}
+	log.L.Debugf("Prioritizing nodes %v", nodeNames)
+
+	prioList := make(api.HostPriorityList, len(filteredNodes), len(filteredNodes))
+
+	// If no priority configs are provided, then the EqualPriority function is applied
+	// This is required to generate the priority list in the required format
+	if len(sched.prioritizers) == 0 && len(sched.extenders) == 0 {
+		for i, node := range filteredNodes {
+			prio, err := core.EqualPriorityMap(pod, &dummyPriorityMetadata{}, nodeInfoMap[node.Name])
+			if err != nil {
+				return api.HostPriorityList{}, err
+			}
+			prioList[i] = prio
 		}
-
-		log.L.Tracef("Extender %q: Prioritizing nodes %v", extender.Name, nodes)
-
-		args := buildExtenderArgs(pod, nodes, extender.NodeCacheCapable)
-		result := extender.Prioritize(args)
-
-		log.L.Tracef("Prioritized %v", result)
-		for _, prio := range result {
-			prioMap[prio.Host] += prio.Score * extender.Weight
-		}
+		return prioList, nil
 	}
 
-	prioList := api.HostPriorityList{}
-	for name, score := range prioMap {
-		prioList = append(prioList, api.HostPriority{Host: name, Score: score})
+	for i, node := range filteredNodes {
+		prioList[i] = api.HostPriority{Host: node.Name, Score: 0}
 	}
 
-	return prioList
-}
+	errs := []error{}
 
-func buildExtenderArgs(pod *v1.Pod, nodes []*v1.Node, nodeCacheCapable bool) api.ExtenderArgs {
-	nodeList := v1.NodeList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "NodeList",
-			APIVersion: "v1",
-		},
-		// ListMeta: metav1.ListMeta{},
-		Items: []v1.Node{},
-	}
-	nodeNames := make([]string, 0, len(nodes))
-
-	for _, node := range nodes {
-		if nodeCacheCapable {
-			nodeNames = append(nodeNames, node.Name)
-		} else {
-			nodeList.Items = append(nodeList.Items, *node)
+	// In-process plugins
+	for _, prioritizer := range sched.prioritizers {
+		prios := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeInfoMap, errs)
+		for i, prio := range prios {
+			prioList[i].Score += prio.Score
 		}
 	}
 
-	return api.ExtenderArgs{
-		Pod:       pod,
-		Nodes:     &nodeList,
-		NodeNames: &nodeNames,
+	if len(errs) > 0 {
+		return api.HostPriorityList{}, errors.NewAggregate(errs)
 	}
+
+	// Extenders
+	if len(sched.extenders) > 0 {
+		prioMap := map[string]int{}
+		for _, extender := range sched.extenders {
+			extender.prioritize(pod, filteredNodes, prioMap)
+		}
+
+		for i, prio := range prioList {
+			prioList[i].Score += prioMap[prio.Host]
+		}
+	}
+
+	log.L.Debugf("Prioritized %v", prioList)
+
+	return prioList, nil
 }
 
 func (sched *Scheduler) selectHost(priorities api.HostPriorityList) (string, error) {
