@@ -76,12 +76,12 @@ func callPrioritizePlugin(
 	log.L.Debugf("Plugin %q: Prioritizing nodes %v", prioritizer.Name, nodeNames)
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))
-	for i, node := range filteredNodes {
+	for _, node := range filteredNodes {
 		prio, err := prioritizer.Map(pod, &dummyPriorityMetadata{}, nodeMap[node.Name].ToNodeInfo())
 		if err != nil {
 			errs = append(errs, err)
 		}
-		prios[i] = prio
+		prios = append(prios, prio)
 	}
 
 	if prioritizer.Reduce != nil {
