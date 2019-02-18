@@ -85,8 +85,8 @@ func NewKubeSimFromConfigPath(confPath string) (*KubeSim, error) {
 	return NewKubeSim(conf)
 }
 
-// RegisterSubmitter registers a new submitter plugin to this KubeSim.
-func (k *KubeSim) RegisterSubmitter(submitter api.Submitter) {
+// AddSubmitter adds a new submitter plugin to this KubeSim.
+func (k *KubeSim) AddSubmitter(submitter api.Submitter) {
 	k.submitters = append(k.submitters, submitter)
 }
 
@@ -146,6 +146,9 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 		}
 
 		for _, pod := range pods {
+			log.L.Tracef("Submit %v", pod)
+			log.L.Debugf("Submit %q", pod.Name)
+
 			k.pods.append(pod)
 		}
 	}

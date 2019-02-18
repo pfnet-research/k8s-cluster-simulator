@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 
 		// Register a submitter
 		submitter := mySubmitter{}
-		kubesim.RegisterSubmitter(&submitter)
+		kubesim.AddSubmitter(&submitter)
 
 		sched := kubesim.Scheduler()
 
@@ -68,7 +68,7 @@ var rootCmd = &cobra.Command{
 			Weight: 1,
 		})
 
-		// SIGINT cancels the sumbitter and kubesim.Run().
+		// SIGINT (Ctrl-C) cancels the sumbitter and kubesim.Run().
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
