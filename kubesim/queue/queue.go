@@ -15,7 +15,7 @@ type Queue interface {
 	Push(pod *v1.Pod)
 
 	// Pop pops a single pod from this queue.
-	// Returns ErrEmptyQueue if the queue is empty.
+	// Immediately returns ErrEmptyQueue if the queue is empty.
 	Pop() (*v1.Pod, error)
 
 	// PlaceBack pushes the pod to the "head" of this queue.

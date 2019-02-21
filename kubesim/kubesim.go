@@ -68,13 +68,21 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 	kubesim := KubeSim{
 		nodes:     nodes,
-		podQueue:  queue.NewPriorityQueue(),
+		podQueue:  queue.NewPriorityQueueWithComparator(lifo),
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
 		scheduler: scheduler.NewScheduler(),
 	}
 
 	return &kubesim, nil
+}
+
+// for test
+func lifo(pod0, pod1 *v1.Pod) bool {
+	ts0 := clock.NewClockWithMetaV1(pod0.CreationTimestamp)
+	ts1 := clock.NewClockWithMetaV1(pod1.CreationTimestamp)
+
+	return ts0.Before(ts1)
 }
 
 // NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path).
