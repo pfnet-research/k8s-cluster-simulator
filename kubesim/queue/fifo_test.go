@@ -21,7 +21,7 @@ func newPod(name string) *v1.Pod {
 	return &pod
 }
 
-func TestFIFOQueuePush(t *testing.T) {
+func TestFIFOQueuePushAndPop(t *testing.T) {
 	q := FIFOQueue{}
 
 	q.Push(newPod("pod-0"))
