@@ -28,13 +28,21 @@ func newPodWithPriority(name string, prio *int32, ts metav1.Time) *v1.Pod {
 	return &pod
 }
 
-func (pq *rawPriorityQueue) isSorted() bool {
-	items := pq.items()
-	for i := 1; i < pq.Len(); i++ {
-		if podComparePriority(items[i-1].pod, items[i].pod) {
+func (pq *PriorityQueue) isSorted(comparator Compare) bool {
+	pod, _ := pq.Pop()
+
+	for {
+		podNext, err := pq.Pop()
+		if err != nil {
+			break
+		}
+
+		if !comparator(pod, podNext) {
 			return false
 		}
+		pod = podNext
 	}
+
 	return true
 }
 
@@ -104,16 +112,13 @@ func TestPriorityQueueIsSorted(t *testing.T) {
 	now := metav1.Now()
 	q := NewPriorityQueue()
 
-	for prio := int32(9); prio >= 0; prio-- {
-		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &prio, now))
+	for prio := 9; prio >= 0; prio-- {
+		p := int32(prio)
+		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &p, now))
 	}
 
-	if !q.inner.isSorted() {
+	if !q.isSorted(q.inner.comparator) {
 		t.Error("PriorityQueue is not sorted")
-	}
-
-	for _, pod := range q.PendingPods() {
-		fmt.Println(pod.Name)
 	}
 }
 
@@ -132,4 +137,24 @@ func TestPriorityQueuePendingPods(t *testing.T) {
 	if len(pods) != podsNum {
 		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
 	}
+}
+
+func TestPriorityQueueIsSortedWithCustomComparator(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueueWithComparator(lowPriority)
+
+	for prio := 9; prio >= 0; prio-- {
+		p := int32(prio)
+		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &p, now))
+	}
+
+	if !q.isSorted(q.inner.comparator) {
+		t.Error("PriorityQueue is not sorted")
+	}
+}
+
+func lowPriority(pod0, pod1 *v1.Pod) bool {
+	prio0 := getPodPriority(pod0)
+	prio1 := getPodPriority(pod1)
+	return prio0 < prio1
 }

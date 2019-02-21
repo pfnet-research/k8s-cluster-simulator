@@ -17,20 +17,32 @@ type PriorityQueue struct {
 	inner rawPriorityQueue
 }
 
+// Compare returns true if pod0 has higher priority than pod1.
+// Otherwise, this function returns false.
+type Compare = func(pod0, pod1 *v1.Pod) bool
+
 var _ = Queue(&PriorityQueue{}) // Making sure that PriorityQueue implements Queue.
 
-// NewPriorityQueue creates a new PriorityQueue.
+// NewPriorityQueue creates a new PriorityQueue with defaultComparator.
 func NewPriorityQueue() *PriorityQueue {
-	rawPq := make(rawPriorityQueue, 0)
+	return NewPriorityQueueWithComparator(defaultComparator)
+}
+
+// NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator function.
+func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
+	rawPq := rawPriorityQueue{
+		items:      make([]*item, 0),
+		comparator: comparator,
+	}
 	heap.Init(&rawPq)
 
-	pq := PriorityQueue{inner: rawPq}
-	return &pq
+	return &PriorityQueue{
+		inner: rawPq,
+	}
 }
 
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
-	item := item{pod: pod}
-	heap.Push(&pq.inner, &item)
+	heap.Push(&pq.inner, &item{pod: pod})
 }
 
 func (pq *PriorityQueue) Pop() (*v1.Pod, error) {
@@ -54,59 +66,57 @@ type item struct {
 	index int
 }
 
-type rawPriorityQueue []*item
+type rawPriorityQueue struct {
+	items      []*item
+	comparator Compare
+}
 
 // Len, Less, and Swap are required to implement sort.Interface, which is included in heap.Interface.
-func (pq rawPriorityQueue) Len() int { return len(pq) }
+func (pq rawPriorityQueue) Len() int { return len(pq.items) }
 
 func (pq rawPriorityQueue) Less(i, j int) bool {
-	pod0 := pq[i].pod
-	pod1 := pq[j].pod
+	pod0 := pq.items[i].pod
+	pod1 := pq.items[j].pod
 
-	return podComparePriority(pod0, pod1)
+	return (pq.comparator)(pod0, pod1)
 }
 
 func (pq rawPriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
+	items := pq.items
+	items[i], items[j] = items[j], items[i]
+	items[i].index = i
+	items[j].index = j
 }
 
 // Push and Pop are required to implement heap.Interface.
 func (pq *rawPriorityQueue) Push(itm interface{}) {
 	item := itm.(*item)
-	item.index = len(*pq)
-	*pq = append(*pq, item)
+	item.index = len(pq.items)
+	pq.items = append(pq.items, item)
 }
 
 func (pq *rawPriorityQueue) Pop() interface{} {
-	pqOld := *pq
+	pqOld := pq.items
 	n := len(pqOld)
 	item := pqOld[n-1]
 	item.index = -1 // for safety
-	*pq = pqOld[0 : n-1]
+	pq.items = pqOld[0 : n-1]
 
 	return item
 }
 
 func (pq *rawPriorityQueue) pendingPods() []*v1.Pod {
 	pods := make([]*v1.Pod, 0, pq.Len())
-	for _, item := range *pq {
+	for _, item := range pq.items {
 		pods = append(pods, item.pod)
 	}
 	return pods
 }
 
-func (pq *rawPriorityQueue) items() []*item {
-	items := make([]*item, 0, pq.Len())
-	for _, item := range *pq {
-		items = append(items, item)
-	}
-	return items
-}
-
-// podComparePriority returns true if pod0 has higher priority than pod1, false otherwise.
-func podComparePriority(pod0, pod1 *v1.Pod) bool {
+// defaultComparator returns true if pod0 has higher priority than pod1.
+// If the priorities are equal, it compares the timestamps and returns true if pod0 is older than
+// pod1.
+func defaultComparator(pod0, pod1 *v1.Pod) bool {
 	prio0 := getPodPriority(pod0)
 	prio1 := getPodPriority(pod1)
 
