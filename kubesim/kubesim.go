@@ -155,6 +155,8 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 		}
 
 		for _, pod := range pods {
+			pod.CreationTimestamp = clock.ToMetaV1()
+
 			log.L.Tracef("Submit %v", pod)
 			log.L.Debugf("Submit %q", pod.Name)
 
