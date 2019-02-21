@@ -4,7 +4,9 @@ import (
 	"container/heap"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
@@ -145,3 +147,19 @@ func getPodTimestamp(pod *v1.Pod) clock.Clock {
 	// }
 	// return &condition.LastProbeTime
 }
+
+// List and FilteredList implement algorithm.PodLister interface.
+// PriorityQueue ignores labels.Selecter.
+func (pq *PriorityQueue) List(_ labels.Selector) ([]*v1.Pod, error) {
+	pod, err := pq.Pop()
+	return []*v1.Pod{pod}, err
+}
+
+// FilteredList and List implement algorithm.PodLister interface.
+// PriorityQueue ignores algorithm.PodFilter and labels.Selecter.
+func (pq *PriorityQueue) FilteredList(_ algorithm.PodFilter, _ labels.Selector) ([]*v1.Pod, error) {
+	pod, err := pq.Pop()
+	return []*v1.Pod{pod}, err
+}
+
+var _ = algorithm.PodLister(&PriorityQueue{})

@@ -15,6 +15,10 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
+// type Scheduler interface {
+// 	Schedule(podLister algorithm.PodLister, nodeLister algorithm.NodeLister, nodeInfoMap map[string]*nodeinfo.NodeInfo) (core.ScheduleResult, error)
+// }
+
 // Scheduler makes scheduling decision for each given pod.
 //
 // It mimics "k8s.io/pkg/Scheduler/Scheduler/core".genericScheduler, which implements
