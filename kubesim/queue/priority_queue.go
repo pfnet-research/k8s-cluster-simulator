@@ -9,8 +9,6 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
 
-// TODO: Update pod
-
 // PriorityQueue stores pods in a priority queue.
 // The pods are sorted by their priority.
 //

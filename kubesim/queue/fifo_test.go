@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"fmt"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -62,5 +63,19 @@ func TestFIFOPlaceBack(t *testing.T) {
 	pod, _ = q.Pop()
 	if pod.Name != "pod-1" {
 		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
+	}
+}
+
+func TestFIFOQueuePendingPods(t *testing.T) {
+	q := FIFOQueue{}
+
+	podsNum := 256
+	for prio := 0; prio < podsNum; prio++ {
+		q.Push(newPod(fmt.Sprintf("pod-%d", prio)))
+	}
+
+	pods := q.PendingPods()
+	if len(pods) != podsNum {
+		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
 	}
 }

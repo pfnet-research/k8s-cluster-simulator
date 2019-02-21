@@ -116,3 +116,20 @@ func TestPriorityQueueIsSorted(t *testing.T) {
 		fmt.Println(pod.Name)
 	}
 }
+
+func TestPriorityQueuePendingPods(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	podsNum := 256
+
+	for prio := 0; prio < podsNum; prio++ {
+		p := int32(prio)
+		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &p, now))
+	}
+
+	pods := q.PendingPods()
+	if len(pods) != podsNum {
+		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
+	}
+}
