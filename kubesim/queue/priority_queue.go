@@ -17,6 +17,8 @@ type PriorityQueue struct {
 	inner rawPriorityQueue
 }
 
+var _ = Queue(&PriorityQueue{}) // Making sure that PriorityQueue implements Queue.
+
 // NewPriorityQueue creates a new PriorityQueue.
 func NewPriorityQueue() *PriorityQueue {
 	rawPq := make(rawPriorityQueue, 0)

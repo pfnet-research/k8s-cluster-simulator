@@ -9,6 +9,8 @@ type FIFOQueue struct {
 	q []*v1.Pod
 }
 
+var _ = Queue(&FIFOQueue{}) // Making sure that FIFOQueue implements Queue.
+
 func (fifo *FIFOQueue) Push(pod *v1.Pod) {
 	fifo.q = append(fifo.q, pod)
 }

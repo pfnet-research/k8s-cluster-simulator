@@ -68,7 +68,7 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 
 	kubesim := KubeSim{
 		nodes:     nodes,
-		podQueue:  &queue.FIFOQueue{},
+		podQueue:  queue.NewPriorityQueue(),
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
 		scheduler: scheduler.NewScheduler(),
