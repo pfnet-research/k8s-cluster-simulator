@@ -5,10 +5,11 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
 
 // TODO: Update pod
-// TODO: Pod timestamp
 
 // PriorityQueue stores pods in a priority queue.
 // The pods are sorted by their priority.
@@ -27,19 +28,8 @@ func NewPriorityQueue() *PriorityQueue {
 	return &pq
 }
 
-func getPriority(pod *v1.Pod) int32 {
-	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
-	if pod.Spec.Priority != nil {
-		prio = *pod.Spec.Priority
-	}
-	return prio
-}
-
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
-	item := item{
-		pod:      pod,
-		priority: getPriority(pod),
-	}
+	item := item{pod: pod}
 	heap.Push(&pq.inner, &item)
 }
 
@@ -60,9 +50,8 @@ func (pq *PriorityQueue) PendingPods() []*v1.Pod {
 }
 
 type item struct {
-	pod      *v1.Pod
-	priority int32
-	index    int
+	pod   *v1.Pod
+	index int
 }
 
 type rawPriorityQueue []*item
@@ -71,7 +60,10 @@ type rawPriorityQueue []*item
 func (pq rawPriorityQueue) Len() int { return len(pq) }
 
 func (pq rawPriorityQueue) Less(i, j int) bool {
-	return pq[i].priority > pq[j].priority
+	pod0 := pq[i].pod
+	pod1 := pq[j].pod
+
+	return podComparePriority(pod0, pod1)
 }
 
 func (pq rawPriorityQueue) Swap(i, j int) {
@@ -111,4 +103,35 @@ func (pq *rawPriorityQueue) items() []*item {
 		items = append(items, item)
 	}
 	return items
+}
+
+// podComparePriority returns true if pod0 has higher priority than pod1, false otherwise.
+func podComparePriority(pod0, pod1 *v1.Pod) bool {
+	prio0 := getPodPriority(pod0)
+	prio1 := getPodPriority(pod1)
+
+	ts0 := getPodTimestamp(pod0)
+	ts1 := getPodTimestamp(pod1)
+
+	return (prio0 > prio1) || (prio0 == prio1 && ts0.Before(ts1))
+}
+
+func getPodPriority(pod *v1.Pod) int32 {
+	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
+	if pod.Spec.Priority != nil {
+		prio = *pod.Spec.Priority
+	}
+	return prio
+}
+
+func getPodTimestamp(pod *v1.Pod) clock.Clock {
+	// _, condition := podutil.GetPodCondition(&pod.Status, v1.PodScheduled)
+	// if condition == nil {
+	ts := clock.NewClockWithMetaV1(pod.CreationTimestamp)
+	return ts
+	// }
+	// if condition.LastProbeTime.IsZero() {
+	// 	return &condition.LastTransitionTime
+	// }
+	// return &condition.LastProbeTime
 }
