@@ -18,8 +18,8 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
-// ScheduleResult represents a binding of a pod to a node.
-type ScheduleResult struct {
+// ScheduleBinding represents a binding of a pod to a node.
+type ScheduleBinding struct {
 	Pod    *v1.Pod
 	Result core.ScheduleResult
 }
@@ -32,7 +32,7 @@ type Scheduler interface {
 		clock clock.Clock,
 		podQueue queue.PodQueue,
 		nodeLister algorithm.NodeLister,
-		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error)
+		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleBinding, error)
 }
 
 // GenericScheduler makes scheduling decision for each given pod in the one-by-one manner.
@@ -75,9 +75,9 @@ func (sched *GenericScheduler) Schedule(
 	clock clock.Clock,
 	podQueue queue.PodQueue,
 	nodeLister algorithm.NodeLister,
-	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleBinding, error) {
 
-	results := []ScheduleResult{}
+	results := []ScheduleBinding{}
 
 	for {
 		pod, err := podQueue.Front()
@@ -101,7 +101,7 @@ func (sched *GenericScheduler) Schedule(
 				log.L.Debugf("Pod %q does not fit in any node", pod.Name)
 				break
 			} else {
-				return []ScheduleResult{}, nil
+				return []ScheduleBinding{}, nil
 			}
 		}
 
@@ -110,7 +110,7 @@ func (sched *GenericScheduler) Schedule(
 
 		log.L.Debugf("Selected Node %q", result.SuggestedHost)
 
-		results = append(results, ScheduleResult{pod, result})
+		results = append(results, ScheduleBinding{pod, result})
 	}
 
 	return results, nil
