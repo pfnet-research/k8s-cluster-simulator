@@ -21,9 +21,9 @@ type PriorityQueue struct {
 // Otherwise, this function returns false.
 type Compare = func(pod0, pod1 *v1.Pod) bool
 
-// NewPriorityQueue creates a new PriorityQueue with defaultComparator.
+// NewPriorityQueue creates a new PriorityQueue with DefaultComparator.
 func NewPriorityQueue() *PriorityQueue {
-	return NewPriorityQueueWithComparator(defaultComparator)
+	return NewPriorityQueueWithComparator(DefaultComparator)
 }
 
 // NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator function.
@@ -111,10 +111,10 @@ func (pq *rawPriorityQueue) pendingPods() []*v1.Pod {
 	return pods
 }
 
-// defaultComparator returns true if pod0 has higher priority than pod1.
+// DefaultComparator returns true if pod0 has higher priority than pod1.
 // If the priorities are equal, it compares the timestamps and returns true if pod0 is older than
 // pod1.
-func defaultComparator(pod0, pod1 *v1.Pod) bool {
+func DefaultComparator(pod0, pod1 *v1.Pod) bool {
 	prio0 := getPodPriority(pod0)
 	prio1 := getPodPriority(pod1)
 
