@@ -9,8 +9,8 @@ import (
 // ErrEmptyQueue is returned from Pop.
 var ErrEmptyQueue = errors.New("No pod queued")
 
-// Queue defines the interface of pod queues.
-type Queue interface {
+// PodQueue defines the interface of pod queues.
+type PodQueue interface {
 	// Push pushes the pod to the "end" of this queue.
 	Push(pod *v1.Pod)
 

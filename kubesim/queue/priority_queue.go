@@ -22,7 +22,7 @@ type PriorityQueue struct {
 // Otherwise, this function returns false.
 type Compare = func(pod0, pod1 *v1.Pod) bool
 
-var _ = Queue(&PriorityQueue{}) // Making sure that PriorityQueue implements Queue.
+var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PriorityQueue.
 
 // NewPriorityQueue creates a new PriorityQueue with defaultComparator.
 func NewPriorityQueue() *PriorityQueue {
