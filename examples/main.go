@@ -36,17 +36,8 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		// Create a new KubeSim
-		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath)
-		if err != nil {
-			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
-		}
-
-		// Register a submitter
-		submitter := mySubmitter{}
-		kubesim.AddSubmitter(&submitter)
-
-		sched := kubesim.Scheduler()
+		// Create a scheduler
+		sched := scheduler.NewGenericScheduler()
 
 		// Add an extender
 		sched.AddExtender(
@@ -73,6 +64,16 @@ var rootCmd = &cobra.Command{
 			Reduce: nil,
 			Weight: 1,
 		})
+
+		// Create a KubeSim
+		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, &sched)
+		if err != nil {
+			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
+		}
+
+		// Register a submitter
+		submitter := mySubmitter{}
+		kubesim.AddSubmitter(&submitter)
 
 		// SIGINT (Ctrl-C) cancels the sumbitter and kubesim.Run().
 		sig := make(chan os.Signal, 1)

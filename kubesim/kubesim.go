@@ -32,8 +32,8 @@ type KubeSim struct {
 	scheduler  scheduler.Scheduler
 }
 
-// NewKubeSim creates a new KubeSim with the config.
-func NewKubeSim(conf *config.Config) (*KubeSim, error) {
+// NewKubeSim creates a new KubeSim with the given config and scheduler.
+func NewKubeSim(conf *config.Config, sched scheduler.Scheduler) (*KubeSim, error) {
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
 
 	if err := configLog(conf.LogLevel); err != nil {
@@ -64,20 +64,18 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 		log.L.Debugf("Node %q created", nodeV1.Name)
 	}
 
-	sched := scheduler.NewGenericScheduler()
-
 	kubesim := KubeSim{
 		nodes:     nodes,
 		podQueue:  queue.NewPriorityQueueWithComparator(lifo),
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
-		scheduler: &sched,
+		scheduler: sched,
 	}
 
 	return &kubesim, nil
 }
 
-// for test
+// TODO: for test
 func lifo(pod0, pod1 *v1.Pod) bool {
 	ts0 := clock.NewClockWithMetaV1(pod0.CreationTimestamp)
 	ts1 := clock.NewClockWithMetaV1(pod1.CreationTimestamp)
@@ -85,24 +83,20 @@ func lifo(pod0, pod1 *v1.Pod) bool {
 	return ts0.Before(ts1)
 }
 
-// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path).
-func NewKubeSimFromConfigPath(confPath string) (*KubeSim, error) {
+// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path)
+// and the scheduler.
+func NewKubeSimFromConfigPath(confPath string, sched scheduler.Scheduler) (*KubeSim, error) {
 	conf, err := readConfig(confPath)
 	if err != nil {
 		return nil, errors.Errorf("error reading config: %s", err.Error())
 	}
 
-	return NewKubeSim(conf)
+	return NewKubeSim(conf, sched)
 }
 
 // AddSubmitter adds a new submitter plugin to this KubeSim.
 func (k *KubeSim) AddSubmitter(submitter api.Submitter) {
 	k.submitters = append(k.submitters, submitter)
-}
-
-// Scheduler retuns *scheduler.Scheduler of this Kubesim
-func (k *KubeSim) Scheduler() *scheduler.Scheduler {
-	return &k.scheduler
 }
 
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
