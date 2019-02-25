@@ -191,7 +191,7 @@ func (k *KubeSim) schedule(clock clock.Clock) error {
 		nodeInfoMap[name] = node.ToNodeInfo(clock)
 	}
 
-	results, err := k.scheduler.Schedule(k.podQueue, k, nodeInfoMap)
+	results, err := k.scheduler.Schedule(clock, k.podQueue, k, nodeInfoMap)
 	if err != nil {
 		return err
 	}

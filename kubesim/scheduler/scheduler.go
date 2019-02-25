@@ -5,6 +5,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
+	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -27,6 +29,7 @@ type Scheduler interface {
 	// Schedule makes scheduling decisions for each pods produced by the podQueue.
 	// The return value is a list of bindings of a pod to a node.
 	Schedule(
+		clock clock.Clock,
 		podQueue queue.PodQueue,
 		nodeLister algorithm.NodeLister,
 		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error)
@@ -69,6 +72,7 @@ func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityCon
 
 // Schedule implements Scheduler interface.
 func (sched *GenericScheduler) Schedule(
+	clock clock.Clock,
 	podQueue queue.PodQueue,
 	nodeLister algorithm.NodeLister,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error) {
@@ -90,6 +94,8 @@ func (sched *GenericScheduler) Schedule(
 
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap)
 		if err != nil {
+			updatePodStatusSchedulingFailure(clock, pod, err)
+
 			if _, ok := err.(*core.FitError); ok {
 				log.L.Tracef("Pod %v does not fit in any node", pod)
 				log.L.Debugf("Pod %q does not fit in any node", pod.Name)
@@ -99,14 +105,24 @@ func (sched *GenericScheduler) Schedule(
 			}
 		}
 
+		pod, _ = podQueue.Pop()
+		updatePodStatusSchedulingSucceess(clock, pod)
+
 		log.L.Debugf("Selected Node %q", result.SuggestedHost)
 
-		pod, _ = podQueue.Pop()
 		results = append(results, ScheduleResult{pod, result})
 	}
 
 	return results, nil
 }
+
+// func (sched *GenericScheduler) Preempt(
+// 	pod *v1.Pod,
+// 	nodeLister algorithm.NodeLister,
+// 	err error) (selectedNode *v1.Node,
+// 	preemptedPods []*v1.Pod,
+// 	cleanupNominatedPods []*v1.Pod, e error) {
+// }
 
 var _ = Scheduler(&GenericScheduler{}) // Making sure that GenericScheduler implements Scheduler
 
@@ -159,14 +175,6 @@ func (sched *GenericScheduler) scheduleOne(
 		FeasibleNodes:  len(nodesFiltered),
 	}, err
 }
-
-// func (sched *GenericScheduler) Preempt(
-// 	pod *v1.Pod,
-// 	nodeLister algorithm.NodeLister,
-// 	err error) (selectedNode *v1.Node,
-// 	preemptedPods []*v1.Pod,
-// 	cleanupNominatedPods []*v1.Pod, e error) {
-// }
 
 func (sched *GenericScheduler) filter(
 	pod *v1.Pod,
@@ -309,4 +317,51 @@ func findMaxScores(priorities api.HostPriorityList) []int {
 	}
 
 	return maxScoreIndexes
+}
+
+func updatePodStatusSchedulingSucceess(clock clock.Clock, pod *v1.Pod) {
+	updatePodCondition(clock, &pod.Status, &v1.PodCondition{
+		Type:          v1.PodScheduled,
+		Status:        v1.ConditionTrue,
+		LastProbeTime: clock.ToMetaV1(),
+		// Reason:
+		// Message:
+	})
+}
+
+func updatePodStatusSchedulingFailure(clock clock.Clock, pod *v1.Pod, err error) {
+	updatePodCondition(clock, &pod.Status, &v1.PodCondition{
+		Type:          v1.PodScheduled,
+		Status:        v1.ConditionFalse,
+		LastProbeTime: clock.ToMetaV1(),
+		Reason:        v1.PodReasonUnschedulable,
+		Message:       err.Error(),
+	})
+}
+
+// Copied from podutil.UpdatePodCondition()
+//
+// > UpdatePodCondition updates existing pod condition or creates a new one. Sets
+// > LastTransitionTime to now if the status has changed. Returns true if pod condition has changed
+// > or has been added.
+func updatePodCondition(clock clock.Clock, status *v1.PodStatus, condition *v1.PodCondition) bool {
+	condition.LastTransitionTime = clock.ToMetaV1()
+	conditionIndex, oldCondition := podutil.GetPodCondition(status, condition.Type)
+
+	if oldCondition == nil {
+		status.Conditions = append(status.Conditions, *condition)
+		return true
+	}
+	if condition.Status == oldCondition.Status {
+		condition.LastTransitionTime = oldCondition.LastTransitionTime
+	}
+
+	isEqual := condition.Status == oldCondition.Status &&
+		condition.Reason == oldCondition.Reason &&
+		condition.Message == oldCondition.Message &&
+		condition.LastProbeTime.Equal(&oldCondition.LastProbeTime) &&
+		condition.LastTransitionTime.Equal(&oldCondition.LastTransitionTime)
+
+	status.Conditions[conditionIndex] = *condition
+	return !isEqual
 }
