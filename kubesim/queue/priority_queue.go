@@ -7,7 +7,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 )
 
 // PriorityQueue stores pods in a priority queue.
@@ -21,8 +20,6 @@ type PriorityQueue struct {
 // Compare returns true if pod0 has higher priority than pod1.
 // Otherwise, this function returns false.
 type Compare = func(pod0, pod1 *v1.Pod) bool
-
-var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PriorityQueue.
 
 // NewPriorityQueue creates a new PriorityQueue with defaultComparator.
 func NewPriorityQueue() *PriorityQueue {
@@ -58,9 +55,28 @@ func (pq *PriorityQueue) PlaceBack(pod *v1.Pod) {
 	pq.Push(pod)
 }
 
-func (pq *PriorityQueue) PendingPods() []*v1.Pod {
-	return pq.inner.pendingPods()
+var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
+
+// Produce returns all pending pods in the sorted order.
+func (pq *PriorityQueue) Produce() ([]*v1.Pod, error) {
+	pods := make([]*v1.Pod, 0, pq.inner.Len())
+	for {
+		pod, err := pq.Pop()
+		if err != nil {
+			if err == ErrEmptyQueue {
+				break
+			} else {
+				panic("Unexpected error raised by PriorityQueue.Pop()")
+			}
+		}
+
+		pods = append(pods, pod)
+	}
+
+	return pods, nil
 }
+
+var _ = PodProducer(&PriorityQueue{})
 
 type item struct {
 	pod   *v1.Pod
@@ -146,23 +162,3 @@ func getPodTimestamp(pod *v1.Pod) clock.Clock {
 	// }
 	// return &condition.LastProbeTime
 }
-
-func (pq *PriorityQueue) Produce() ([]*v1.Pod, error) {
-	pods := make([]*v1.Pod, 0, pq.inner.Len())
-	for {
-		pod, err := pq.Pop()
-		if err != nil {
-			if err == ErrEmptyQueue {
-				break
-			} else {
-				panic("Unexpected error raised by PriorityQueue.Pop()")
-			}
-		}
-
-		pods = append(pods, pod)
-	}
-
-	return pods, nil
-}
-
-var _ = scheduler.PodProducer(&PriorityQueue{})
