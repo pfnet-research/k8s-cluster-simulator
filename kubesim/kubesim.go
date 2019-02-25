@@ -32,8 +32,8 @@ type KubeSim struct {
 	scheduler  scheduler.Scheduler
 }
 
-// NewKubeSim creates a new KubeSim with the given config and scheduler.
-func NewKubeSim(conf *config.Config, sched scheduler.Scheduler) (*KubeSim, error) {
+// NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
+func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Scheduler) (*KubeSim, error) {
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
 
 	if err := configLog(conf.LogLevel); err != nil {
@@ -66,7 +66,7 @@ func NewKubeSim(conf *config.Config, sched scheduler.Scheduler) (*KubeSim, error
 
 	kubesim := KubeSim{
 		nodes:     nodes,
-		podQueue:  queue.NewPriorityQueueWithComparator(lifo),
+		podQueue:  queue,
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
 		scheduler: sched,
@@ -75,23 +75,15 @@ func NewKubeSim(conf *config.Config, sched scheduler.Scheduler) (*KubeSim, error
 	return &kubesim, nil
 }
 
-// TODO: for test
-func lifo(pod0, pod1 *v1.Pod) bool {
-	ts0 := clock.NewClockWithMetaV1(pod0.CreationTimestamp)
-	ts1 := clock.NewClockWithMetaV1(pod1.CreationTimestamp)
-
-	return ts0.Before(ts1)
-}
-
-// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path)
-// and the scheduler.
-func NewKubeSimFromConfigPath(confPath string, sched scheduler.Scheduler) (*KubeSim, error) {
+// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path),
+// queue, and scheduler.
+func NewKubeSimFromConfigPath(confPath string, queue queue.PodQueue, sched scheduler.Scheduler) (*KubeSim, error) {
 	conf, err := readConfig(confPath)
 	if err != nil {
 		return nil, errors.Errorf("error reading config: %s", err.Error())
 	}
 
-	return NewKubeSim(conf, sched)
+	return NewKubeSim(conf, queue, sched)
 }
 
 // AddSubmitter adds a new submitter plugin to this KubeSim.

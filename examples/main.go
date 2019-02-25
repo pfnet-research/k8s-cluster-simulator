@@ -8,10 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -36,9 +38,9 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		// Create a scheduler
-		sched := scheduler.NewGenericScheduler()
+		queue := queue.NewPriorityQueueWithComparator(lifo)
 
+		sched := scheduler.NewGenericScheduler()
 		// Add an extender
 		sched.AddExtender(
 			scheduler.Extender{
@@ -66,7 +68,7 @@ var rootCmd = &cobra.Command{
 		})
 
 		// Create a KubeSim
-		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, &sched)
+		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, &sched)
 		if err != nil {
 			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
@@ -87,4 +89,9 @@ var rootCmd = &cobra.Command{
 			log.L.Fatal(err)
 		}
 	},
+}
+
+// for test
+func lifo(pod0, pod1 *v1.Pod) bool {
+	return pod0.CreationTimestamp.Before(&pod1.CreationTimestamp)
 }
