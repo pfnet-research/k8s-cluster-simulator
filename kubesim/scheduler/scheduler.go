@@ -24,10 +24,10 @@ type ScheduleResult struct {
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
-	// Schedule makes scheduling decisions for each pods produced by the given podProducer.
+	// Schedule makes scheduling decisions for each pods produced by the podQueue.
 	// The return value is a list of bindings of a pod to a node.
 	Schedule(
-		podProducer queue.PodProducer,
+		podQueue queue.PodQueue,
 		nodeLister algorithm.NodeLister,
 		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error)
 }
@@ -69,21 +69,21 @@ func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityCon
 
 // Schedule implements Scheduler interface.
 func (sched *GenericScheduler) Schedule(
-	podProducer queue.PodProducer,
+	podQueue queue.PodQueue,
 	nodeLister algorithm.NodeLister,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error) {
 
-	pods, err := podProducer.Produce()
-	if err != nil {
-		return []ScheduleResult{}, err
-	}
-	sched.pendingPods = append(sched.pendingPods, pods...)
+	results := []ScheduleResult{}
 
-	podIdx := 0
-	results := make([]ScheduleResult, 0, len(sched.pendingPods))
-
-	for ; podIdx < len(sched.pendingPods); podIdx++ {
-		pod := sched.pendingPods[podIdx]
+	for {
+		pod, err := podQueue.Front()
+		if err != nil {
+			if err == queue.ErrEmptyQueue {
+				break
+			} else {
+				panic("Unexpected error raised by Queueu.Pop()")
+			}
+		}
 
 		log.L.Tracef("Trying to schedule pod %v", pod)
 		log.L.Debugf("Trying to schedule pod %q", pod.Name)
@@ -100,10 +100,10 @@ func (sched *GenericScheduler) Schedule(
 		}
 
 		log.L.Debugf("Selected Node %q", result.SuggestedHost)
+
+		pod, _ = podQueue.Pop()
 		results = append(results, ScheduleResult{pod, result})
 	}
-
-	sched.pendingPods = sched.pendingPods[podIdx:]
 
 	return results, nil
 }
