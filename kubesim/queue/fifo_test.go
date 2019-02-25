@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"fmt"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -20,20 +19,6 @@ func newPod(name string) *v1.Pod {
 		},
 	}
 	return &pod
-}
-
-func TestFIFOQueueProduce(t *testing.T) {
-	q := FIFOQueue{}
-
-	podsNum := 256
-	for prio := 0; prio < podsNum; prio++ {
-		q.Push(newPod(fmt.Sprintf("pod-%d", prio)))
-	}
-
-	pods, _ := q.Produce()
-	if len(pods) != podsNum {
-		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
-	}
 }
 
 func TestFIFOQueuePushAndPop(t *testing.T) {
@@ -56,5 +41,41 @@ func TestFIFOQueuePushAndPop(t *testing.T) {
 	pod, _ = q.Pop()
 	if pod.Name != "pod-2" {
 		t.Errorf("got: %v\nwant: \"pod-2\"", pod.Name)
+	}
+
+	_, err := q.Pop()
+	if err != ErrEmptyQueue {
+		t.Errorf("got: %v\nwant: %v", err, ErrEmptyQueue)
+	}
+}
+
+func TestFIFOQueueFront(t *testing.T) {
+	q := FIFOQueue{}
+
+	q.Push(newPod("pod-0"))
+	q.Push(newPod("pod-1"))
+	q.Push(newPod("pod-2"))
+
+	pod, _ := q.Front()
+	if pod.Name != "pod-0" {
+		t.Errorf("got: %v\nwant: \"pod-0\"", pod.Name)
+	}
+
+	pod, _ = q.Front()
+	if pod.Name != "pod-0" {
+		t.Errorf("got: %v\nwant: \"pod-0\"", pod.Name)
+	}
+
+	_, _ = q.Pop()
+	pod, _ = q.Front()
+	if pod.Name != "pod-1" {
+		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
+	}
+
+	_, _ = q.Pop()
+	_, _ = q.Pop()
+	_, err := q.Front()
+	if err != ErrEmptyQueue {
+		t.Errorf("got: %v\nwant: %v", err, ErrEmptyQueue)
 	}
 }

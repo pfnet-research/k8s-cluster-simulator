@@ -39,27 +39,6 @@ func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
 	}
 }
 
-// Produce returns all pending pods in the sorted order.
-func (pq *PriorityQueue) Produce() ([]*v1.Pod, error) {
-	pods := make([]*v1.Pod, 0, pq.inner.Len())
-	for {
-		pod, err := pq.Pop()
-		if err != nil {
-			if err == ErrEmptyQueue {
-				break
-			} else {
-				panic("Unexpected error raised by PriorityQueue.Pop()")
-			}
-		}
-
-		pods = append(pods, pod)
-	}
-
-	return pods, nil
-}
-
-var _ = PodProducer(&PriorityQueue{})
-
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
 	heap.Push(&pq.inner, &item{pod: pod})
 }
@@ -68,8 +47,18 @@ func (pq *PriorityQueue) Pop() (*v1.Pod, error) {
 	if pq.inner.Len() == 0 {
 		return nil, ErrEmptyQueue
 	}
-
 	return heap.Pop(&pq.inner).(*item).pod, nil
+}
+
+func (pq *PriorityQueue) Front() (*v1.Pod, error) {
+	if pq.inner.Len() == 0 {
+		return nil, ErrEmptyQueue
+	}
+
+	front := heap.Pop(&pq.inner) // FIXME: more efficient implementation
+	heap.Push(&pq.inner, front)
+
+	return front.(*item).pod, nil
 }
 
 var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.

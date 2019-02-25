@@ -46,22 +46,6 @@ func (pq *PriorityQueue) isSorted(comparator Compare) bool {
 	return true
 }
 
-func TestPriorityQueueProduce(t *testing.T) {
-	now := metav1.Now()
-	q := NewPriorityQueue()
-
-	podsNum := 256
-	for prio := 0; prio < podsNum; prio++ {
-		p := int32(prio)
-		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &p, now))
-	}
-
-	pods, _ := q.Produce()
-	if len(pods) != podsNum {
-		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
-	}
-}
-
 func TestPriorityQueuePushAndPop(t *testing.T) {
 	now := metav1.Now()
 	q := NewPriorityQueue()
@@ -123,4 +107,41 @@ func lowPriority(pod0, pod1 *v1.Pod) bool {
 	prio0 := getPodPriority(pod0)
 	prio1 := getPodPriority(pod1)
 	return prio0 < prio1
+}
+
+func TestPriorityQueueFront(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	q.Push(newPodWithPriority("pod-0", nil, now))
+
+	prio := int32(1)
+	q.Push(newPodWithPriority("pod-1", &prio, now))
+
+	dur, _ := time.ParseDuration("1s")
+	clock := metav1.NewTime(now.Add(dur))
+	q.Push(newPodWithPriority("pod-2", &prio, clock))
+
+	pod, _ := q.Front()
+	if pod.Name != "pod-1" {
+		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
+	}
+
+	pod, _ = q.Front()
+	if pod.Name != "pod-1" {
+		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
+	}
+
+	_, _ = q.Pop()
+	pod, _ = q.Front()
+	if pod.Name != "pod-2" {
+		t.Errorf("got: %v\nwant: \"pod-2\"", pod.Name)
+	}
+
+	_, _ = q.Pop()
+	_, _ = q.Pop()
+	_, err := q.Front()
+	if err != ErrEmptyQueue {
+		t.Errorf("got: %v\nwant: %v", err, ErrEmptyQueue)
+	}
 }

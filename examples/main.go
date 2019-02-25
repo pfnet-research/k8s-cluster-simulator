@@ -93,5 +93,5 @@ var rootCmd = &cobra.Command{
 
 // for test
 func lifo(pod0, pod1 *v1.Pod) bool {
-	return pod0.CreationTimestamp.Before(&pod1.CreationTimestamp)
+	return pod1.CreationTimestamp.Before(&pod0.CreationTimestamp)
 }
