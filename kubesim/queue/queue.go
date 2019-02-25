@@ -18,7 +18,7 @@ type PodQueue interface {
 	// Immediately returns ErrEmptyQueue if the queue is empty.
 	Pop() (*v1.Pod, error)
 
-	// Front references (not pops) the pod on the "front" of this queue.
+	// Front refers (not pops) the pod on the "front" of this queue.
 	// Immediately returns ErrEmptyQueue if the queue is empty.
 	Front() (*v1.Pod, error)
 }

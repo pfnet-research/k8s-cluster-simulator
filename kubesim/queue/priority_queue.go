@@ -54,18 +54,14 @@ func (pq *PriorityQueue) Front() (*v1.Pod, error) {
 	if pq.inner.Len() == 0 {
 		return nil, ErrEmptyQueue
 	}
-
-	front := heap.Pop(&pq.inner) // FIXME: more efficient implementation
-	heap.Push(&pq.inner, front)
-
-	return front.(*item).pod, nil
+	return pq.inner.items[0].pod, nil
 }
 
 var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
 
 type item struct {
 	pod   *v1.Pod
-	index int
+	index int // Needed by update and is maintained by the heap.Interface methods.
 }
 
 type rawPriorityQueue struct {
