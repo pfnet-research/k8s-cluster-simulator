@@ -21,9 +21,9 @@ type PriorityQueue struct {
 // Otherwise, this function returns false.
 type Compare = func(pod0, pod1 *v1.Pod) bool
 
-// NewPriorityQueue creates a new PriorityQueue with defaultComparator.
+// NewPriorityQueue creates a new PriorityQueue with DefaultComparator.
 func NewPriorityQueue() *PriorityQueue {
-	return NewPriorityQueueWithComparator(defaultComparator)
+	return NewPriorityQueueWithComparator(DefaultComparator)
 }
 
 // NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator function.
@@ -37,6 +37,18 @@ func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
 	return &PriorityQueue{
 		inner: rawPq,
 	}
+}
+
+// Reorder creates a new PriorityQueue. All pods stored in the original PriorityQueue are moved to
+// the new one, in the sorted order according to the given comparator.
+func (pq *PriorityQueue) Reorder(comparator Compare) *PriorityQueue {
+	pods := pq.inner.pendingPods()
+	pqNew := NewPriorityQueueWithComparator(comparator)
+	for _, pod := range pods {
+		pqNew.Push(pod)
+	}
+
+	return pqNew
 }
 
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
@@ -54,18 +66,14 @@ func (pq *PriorityQueue) Front() (*v1.Pod, error) {
 	if pq.inner.Len() == 0 {
 		return nil, ErrEmptyQueue
 	}
-
-	front := heap.Pop(&pq.inner) // FIXME: more efficient implementation
-	heap.Push(&pq.inner, front)
-
-	return front.(*item).pod, nil
+	return pq.inner.items[0].pod, nil
 }
 
 var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
 
 type item struct {
 	pod   *v1.Pod
-	index int
+	index int // Needed by update and is maintained by the heap.Interface methods.
 }
 
 type rawPriorityQueue struct {
@@ -115,10 +123,10 @@ func (pq *rawPriorityQueue) pendingPods() []*v1.Pod {
 	return pods
 }
 
-// defaultComparator returns true if pod0 has higher priority than pod1.
+// DefaultComparator returns true if pod0 has higher priority than pod1.
 // If the priorities are equal, it compares the timestamps and returns true if pod0 is older than
 // pod1.
-func defaultComparator(pod0, pod1 *v1.Pod) bool {
+func DefaultComparator(pod0, pod1 *v1.Pod) bool {
 	prio0 := getPodPriority(pod0)
 	prio1 := getPodPriority(pod1)
 
