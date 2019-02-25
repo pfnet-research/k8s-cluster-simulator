@@ -2,7 +2,6 @@ package kubesim
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/cpuguy83/strongerrors"
@@ -10,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/kubernetes-simulator/api"
@@ -25,7 +23,7 @@ import (
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
 	nodes    map[string]*node.Node
-	podQueue queue.Queue
+	podQueue queue.PodQueue
 
 	tick  int
 	clock clock.Clock
@@ -66,12 +64,14 @@ func NewKubeSim(conf *config.Config) (*KubeSim, error) {
 		log.L.Debugf("Node %q created", nodeV1.Name)
 	}
 
+	sched := scheduler.NewGenericScheduler()
+
 	kubesim := KubeSim{
 		nodes:     nodes,
 		podQueue:  queue.NewPriorityQueueWithComparator(lifo),
 		tick:      conf.Tick,
 		clock:     clock.NewClock(clk),
-		scheduler: scheduler.NewScheduler(),
+		scheduler: &sched,
 	}
 
 	return &kubesim, nil
@@ -106,46 +106,24 @@ func (k *KubeSim) Scheduler() *scheduler.Scheduler {
 }
 
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
+// This method blocks until ctx is done.
 func (k *KubeSim) Run(ctx context.Context) error {
-	tick := make(chan clock.Clock, 1)
-	go func() {
-		for {
-			tick <- k.clock
-			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
-		}
-	}()
-
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case clock := <-tick:
-			log.L.Debugf("Clock %s", clock.String())
+		default:
+			log.L.Debugf("Clock %s", k.clock.String())
 
-			nodes, _ := k.List()
-			if err := k.submit(clock, nodes); err != nil {
+			if err := k.submit(k.clock); err != nil {
 				return err
 			}
 
-			pod, err := k.podQueue.Pop()
-			if err != nil {
-				if err == queue.ErrEmptyQueue {
-					continue
-				} else {
-					panic("Unexpected error raised by Queue.Pop()")
-				}
-			}
-
-			err = k.scheduleOne(clock, pod)
-			if fitErr, ok := err.(*errPodDoesNotFit); ok {
-				log.L.Debug(fitErr.Error())
-				k.podQueue.PlaceBack(pod)
-				continue
-			}
-
-			if err != nil {
+			if err := k.schedule(k.clock); err != nil {
 				return err
 			}
+
+			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
 		}
 	}
 }
@@ -159,7 +137,9 @@ func (k *KubeSim) List() ([]*v1.Node, error) {
 	return nodes, nil
 }
 
-func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
+func (k *KubeSim) submit(clock clock.Clock) error {
+	nodes, _ := k.List()
+
 	for _, submitter := range k.submitters {
 		pods, err := submitter.Submit(clock, nodes)
 		if err != nil {
@@ -179,42 +159,27 @@ func (k *KubeSim) submit(clock clock.Clock, nodes []*v1.Node) error {
 	return nil
 }
 
-type errPodDoesNotFit struct {
-	pod *v1.Pod
-}
-
-func (e *errPodDoesNotFit) Error() string {
-	return fmt.Sprintf("Pod %q does not fit in any node", e.pod.Name)
-}
-
-func (k *KubeSim) scheduleOne(clock clock.Clock, pod *v1.Pod) error {
-	log.L.Tracef("Trying to schedule pod %v", pod)
-	log.L.Debugf("Trying to schedule pod %q", pod.Name)
-
+func (k *KubeSim) schedule(clock clock.Clock) error {
 	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
 	for name, node := range k.nodes {
 		nodeInfoMap[name] = node.ToNodeInfo(clock)
 	}
 
-	result, err := k.scheduler.Schedule(pod, k, nodeInfoMap)
-
+	results, err := k.scheduler.Schedule(k.podQueue, k, nodeInfoMap)
 	if err != nil {
-		if _, ok := err.(*core.FitError); ok {
-			return &errPodDoesNotFit{pod}
+		return err
+	}
+
+	for _, result := range results {
+		nodeName := result.Result.SuggestedHost
+		node, ok := k.nodes[nodeName]
+		if !ok {
+			return errors.Errorf("No node named %q", nodeName)
 		}
-		return err
-	}
 
-	nodeName := result.SuggestedHost
-	log.L.Debugf("Selected node %q", nodeName)
-
-	node, ok := k.nodes[nodeName]
-	if !ok {
-		return errors.Errorf("No node named %q", nodeName)
-	}
-
-	if err := node.CreatePod(clock, pod); err != nil {
-		return err
+		if err := node.CreatePod(clock, result.Pod); err != nil {
+			return err
+		}
 	}
 
 	return nil
