@@ -9,7 +9,12 @@ type FIFOQueue struct {
 	q []*v1.Pod
 }
 
-var _ = Queue(&FIFOQueue{}) // Making sure that FIFOQueue implements Queue.
+// Produce returns all pending pods.
+func (fifo *FIFOQueue) Produce() ([]*v1.Pod, error) {
+	return fifo.q, nil
+}
+
+var _ = PodProducer(&FIFOQueue{}) // Making sure that FIFOQueue implements PodProducer
 
 func (fifo *FIFOQueue) Push(pod *v1.Pod) {
 	fifo.q = append(fifo.q, pod)
@@ -26,10 +31,4 @@ func (fifo *FIFOQueue) Pop() (*v1.Pod, error) {
 	return pod, nil
 }
 
-func (fifo *FIFOQueue) PlaceBack(pod *v1.Pod) {
-	fifo.q = append([]*v1.Pod{pod}, fifo.q...)
-}
-
-func (fifo *FIFOQueue) PendingPods() []*v1.Pod {
-	return fifo.q
-}
+var _ = PodQueue(&FIFOQueue{})

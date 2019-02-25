@@ -21,8 +21,6 @@ type PriorityQueue struct {
 // Otherwise, this function returns false.
 type Compare = func(pod0, pod1 *v1.Pod) bool
 
-var _ = Queue(&PriorityQueue{}) // Making sure that PriorityQueue implements Queue.
-
 // NewPriorityQueue creates a new PriorityQueue with defaultComparator.
 func NewPriorityQueue() *PriorityQueue {
 	return NewPriorityQueueWithComparator(defaultComparator)
@@ -41,6 +39,27 @@ func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
 	}
 }
 
+// Produce returns all pending pods in the sorted order.
+func (pq *PriorityQueue) Produce() ([]*v1.Pod, error) {
+	pods := make([]*v1.Pod, 0, pq.inner.Len())
+	for {
+		pod, err := pq.Pop()
+		if err != nil {
+			if err == ErrEmptyQueue {
+				break
+			} else {
+				panic("Unexpected error raised by PriorityQueue.Pop()")
+			}
+		}
+
+		pods = append(pods, pod)
+	}
+
+	return pods, nil
+}
+
+var _ = PodProducer(&PriorityQueue{})
+
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
 	heap.Push(&pq.inner, &item{pod: pod})
 }
@@ -53,13 +72,7 @@ func (pq *PriorityQueue) Pop() (*v1.Pod, error) {
 	return heap.Pop(&pq.inner).(*item).pod, nil
 }
 
-func (pq *PriorityQueue) PlaceBack(pod *v1.Pod) {
-	pq.Push(pod)
-}
-
-func (pq *PriorityQueue) PendingPods() []*v1.Pod {
-	return pq.inner.pendingPods()
-}
+var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
 
 type item struct {
 	pod   *v1.Pod

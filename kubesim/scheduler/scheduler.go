@@ -12,46 +12,108 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
-// Scheduler makes scheduling decision for each given pod.
-//
-// It mimics "k8s.io/pkg/Scheduler/Scheduler/core".genericScheduler, which implements
+// ScheduleResult represents a binding of a pod to a node.
+type ScheduleResult struct {
+	Pod    *v1.Pod
+	Result core.ScheduleResult
+}
+
+// Scheduler defines the lowest-level scheduler interface.
+type Scheduler interface {
+	// Schedule makes scheduling decisions for each pods produced by the given podProducer.
+	// The return value is a list of bindings of a pod to a node.
+	Schedule(
+		podProducer queue.PodProducer,
+		nodeLister algorithm.NodeLister,
+		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error)
+}
+
+// GenericScheduler makes scheduling decision for each given pod in the one-by-one manner.
+// This type is similar to "k8s.io/pkg/Scheduler/Scheduler/core".genericScheduler, which implements
 // "k8s.io/pkg/Scheduler/Scheduler/core".ScheduleAlgorithm.
-type Scheduler struct {
+type GenericScheduler struct {
 	extenders []Extender
 
 	predicates   map[string]predicates.FitPredicate
 	prioritizers []priorities.PriorityConfig
 
+	pendingPods   []*v1.Pod
 	lastNodeIndex uint64
 }
 
-// NewScheduler creates a new Scheduler.
-func NewScheduler() Scheduler {
-	return Scheduler{
+// NewGenericScheduler creates a new GenericScheduler.
+func NewGenericScheduler() GenericScheduler {
+	return GenericScheduler{
 		predicates: map[string]predicates.FitPredicate{},
 	}
 }
 
-// AddExtender adds an extender to this Scheduler.
-func (sched *Scheduler) AddExtender(extender Extender) {
+// AddExtender adds an extender to this GenericScheduler.
+func (sched *GenericScheduler) AddExtender(extender Extender) {
 	sched.extenders = append(sched.extenders, extender)
 }
 
-// AddPredicate adds a predicate plugin to this Scheduler.
-func (sched *Scheduler) AddPredicate(name string, predicate predicates.FitPredicate) {
+// AddPredicate adds a predicate plugin to this GenericScheduler.
+func (sched *GenericScheduler) AddPredicate(name string, predicate predicates.FitPredicate) {
 	sched.predicates[name] = predicate
 }
 
-// AddPrioritizer adds a prioritizer plugin to this Scheduler.
-func (sched *Scheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
+// AddPrioritizer adds a prioritizer plugin to this GenericScheduler.
+func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
 	sched.prioritizers = append(sched.prioritizers, prioritizer)
 }
 
-// Schedule makes scheduling decision for the given pod and nodes.
-func (sched *Scheduler) Schedule(
+// Schedule implements Scheduler interface.
+func (sched *GenericScheduler) Schedule(
+	podProducer queue.PodProducer,
+	nodeLister algorithm.NodeLister,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleResult, error) {
+
+	pods, err := podProducer.Produce()
+	if err != nil {
+		return []ScheduleResult{}, err
+	}
+	sched.pendingPods = append(sched.pendingPods, pods...)
+
+	podIdx := 0
+	results := make([]ScheduleResult, 0, len(sched.pendingPods))
+
+	for ; podIdx < len(sched.pendingPods); podIdx++ {
+		pod := sched.pendingPods[podIdx]
+
+		log.L.Tracef("Trying to schedule pod %v", pod)
+		log.L.Debugf("Trying to schedule pod %q", pod.Name)
+
+		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap)
+		if err != nil {
+			if _, ok := err.(*core.FitError); ok {
+				log.L.Tracef("Pod %v does not fit in any node", pod)
+				log.L.Debugf("Pod %q does not fit in any node", pod.Name)
+				break
+			} else {
+				return []ScheduleResult{}, nil
+			}
+		}
+
+		log.L.Debugf("Selected Node %q", result.SuggestedHost)
+		results = append(results, ScheduleResult{pod, result})
+	}
+
+	sched.pendingPods = sched.pendingPods[podIdx:]
+
+	return results, nil
+}
+
+var _ = Scheduler(&GenericScheduler{}) // Making sure that GenericScheduler implements Scheduler
+
+// scheduleOne makes scheduling decision for the given pod and nodes.
+// Returns core.ErrNoNodesAvailable if nodeLister lists zero nodes, or core.FitError if the given
+// pod does not fit in any nodes.
+func (sched *GenericScheduler) scheduleOne(
 	pod *v1.Pod,
 	nodeLister algorithm.NodeLister,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) (core.ScheduleResult, error) {
@@ -98,7 +160,7 @@ func (sched *Scheduler) Schedule(
 	}, err
 }
 
-// func (sched *Scheduler) Preempt(
+// func (sched *GenericScheduler) Preempt(
 // 	pod *v1.Pod,
 // 	nodeLister algorithm.NodeLister,
 // 	err error) (selectedNode *v1.Node,
@@ -106,7 +168,7 @@ func (sched *Scheduler) Schedule(
 // 	cleanupNominatedPods []*v1.Pod, e error) {
 // }
 
-func (sched *Scheduler) filter(
+func (sched *GenericScheduler) filter(
 	pod *v1.Pod,
 	nodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]*v1.Node, core.FailedPredicateMap, error) {
@@ -158,7 +220,7 @@ func (sched *Scheduler) filter(
 	return filteredNodes, failedPredicateMap, nil
 }
 
-func (sched *Scheduler) prioritize(
+func (sched *GenericScheduler) prioritize(
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) (api.HostPriorityList, error) {
@@ -220,7 +282,7 @@ func (sched *Scheduler) prioritize(
 	return prioList, nil
 }
 
-func (sched *Scheduler) selectHost(priorities api.HostPriorityList) (string, error) {
+func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (string, error) {
 	if len(priorities) == 0 {
 		return "", fmt.Errorf("empty priorities")
 	}
