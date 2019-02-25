@@ -46,6 +46,22 @@ func (pq *PriorityQueue) isSorted(comparator Compare) bool {
 	return true
 }
 
+func TestPriorityQueueProduce(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	podsNum := 256
+	for prio := 0; prio < podsNum; prio++ {
+		p := int32(prio)
+		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &p, now))
+	}
+
+	pods, _ := q.Produce()
+	if len(pods) != podsNum {
+		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
+	}
+}
+
 func TestPriorityQueuePushAndPop(t *testing.T) {
 	now := metav1.Now()
 	q := NewPriorityQueue()
@@ -119,23 +135,6 @@ func TestPriorityQueueIsSorted(t *testing.T) {
 
 	if !q.isSorted(q.inner.comparator) {
 		t.Error("PriorityQueue is not sorted")
-	}
-}
-
-func TestPriorityQueuePendingPods(t *testing.T) {
-	now := metav1.Now()
-	q := NewPriorityQueue()
-
-	podsNum := 256
-
-	for prio := 0; prio < podsNum; prio++ {
-		p := int32(prio)
-		q.Push(newPodWithPriority(fmt.Sprintf("pod-%d", prio), &p, now))
-	}
-
-	pods := q.PendingPods()
-	if len(pods) != podsNum {
-		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
 	}
 }
 

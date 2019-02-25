@@ -22,6 +22,20 @@ func newPod(name string) *v1.Pod {
 	return &pod
 }
 
+func TestFIFOQueueProduce(t *testing.T) {
+	q := FIFOQueue{}
+
+	podsNum := 256
+	for prio := 0; prio < podsNum; prio++ {
+		q.Push(newPod(fmt.Sprintf("pod-%d", prio)))
+	}
+
+	pods, _ := q.Produce()
+	if len(pods) != podsNum {
+		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
+	}
+}
+
 func TestFIFOQueuePushAndPop(t *testing.T) {
 	q := FIFOQueue{}
 
@@ -63,19 +77,5 @@ func TestFIFOPlaceBack(t *testing.T) {
 	pod, _ = q.Pop()
 	if pod.Name != "pod-1" {
 		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
-	}
-}
-
-func TestFIFOQueuePendingPods(t *testing.T) {
-	q := FIFOQueue{}
-
-	podsNum := 256
-	for prio := 0; prio < podsNum; prio++ {
-		q.Push(newPod(fmt.Sprintf("pod-%d", prio)))
-	}
-
-	pods := q.PendingPods()
-	if len(pods) != podsNum {
-		t.Errorf("got: %v\nwant: \"%v\"", len(pods), podsNum)
 	}
 }
