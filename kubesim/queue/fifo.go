@@ -31,8 +31,4 @@ func (fifo *FIFOQueue) Pop() (*v1.Pod, error) {
 	return pod, nil
 }
 
-func (fifo *FIFOQueue) PlaceBack(pod *v1.Pod) {
-	fifo.q = append([]*v1.Pod{pod}, fifo.q...)
-}
-
 var _ = PodQueue(&FIFOQueue{})

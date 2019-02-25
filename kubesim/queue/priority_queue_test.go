@@ -91,39 +91,6 @@ func TestPriorityQueuePushAndPop(t *testing.T) {
 	}
 }
 
-func TestPriorityQueuePlaceBack(t *testing.T) {
-	now := metav1.Now()
-	q := NewPriorityQueue()
-
-	q.PlaceBack(newPodWithPriority("pod-0", nil, now))
-	pod, _ := q.Pop()
-	if pod.Name != "pod-0" {
-		t.Errorf("got: %v\nwant: \"pod-0\"", pod.Name)
-	}
-
-	q.PlaceBack(newPodWithPriority("pod-1", nil, now))
-
-	prio := int32(1)
-	q.PlaceBack(newPodWithPriority("pod-2", &prio, now))
-
-	dur, _ := time.ParseDuration("1s")
-	clock := metav1.NewTime(now.Add(dur))
-	q.PlaceBack(newPodWithPriority("pod-3", &prio, clock))
-
-	pod, _ = q.Pop()
-	if pod.Name != "pod-2" {
-		t.Errorf("got: %v\nwant: \"pod-2\"", pod.Name)
-	}
-	pod, _ = q.Pop()
-	if pod.Name != "pod-3" {
-		t.Errorf("got: %v\nwant: \"pod-3\"", pod.Name)
-	}
-	pod, _ = q.Pop()
-	if pod.Name != "pod-1" {
-		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
-	}
-}
-
 func TestPriorityQueueIsSorted(t *testing.T) {
 	now := metav1.Now()
 	q := NewPriorityQueue()

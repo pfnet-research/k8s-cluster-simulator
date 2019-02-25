@@ -72,10 +72,6 @@ func (pq *PriorityQueue) Pop() (*v1.Pod, error) {
 	return heap.Pop(&pq.inner).(*item).pod, nil
 }
 
-func (pq *PriorityQueue) PlaceBack(pod *v1.Pod) {
-	pq.Push(pod)
-}
-
 var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
 
 type item struct {
