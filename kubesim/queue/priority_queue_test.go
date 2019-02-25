@@ -145,3 +145,26 @@ func TestPriorityQueueFront(t *testing.T) {
 		t.Errorf("got: %v\nwant: %v", err, ErrEmptyQueue)
 	}
 }
+
+func TestPriorityReorder(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	q.Push(newPodWithPriority("pod-0", nil, now))
+
+	prio := int32(1)
+	q.Push(newPodWithPriority("pod-1", &prio, now))
+
+	dur, _ := time.ParseDuration("1s")
+	clock := metav1.NewTime(now.Add(dur))
+	q.Push(newPodWithPriority("pod-2", &prio, clock))
+
+	if !q.isSorted(DefaultComparator) {
+		t.Error("PriorityQueue is not sorted")
+	}
+
+	q = q.Reorder(lowPriority)
+	if !q.isSorted(lowPriority) {
+		t.Error("PriorityQueue is not sorted")
+	}
+}

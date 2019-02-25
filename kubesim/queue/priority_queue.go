@@ -39,6 +39,18 @@ func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
 	}
 }
 
+// Reorder creates a new PriorityQueue. All pods stored in the original PriorityQueue are moved to
+// the new one, in the sorted order according to the given comparator.
+func (pq *PriorityQueue) Reorder(comparator Compare) *PriorityQueue {
+	pods := pq.inner.pendingPods()
+	pqNew := NewPriorityQueueWithComparator(comparator)
+	for _, pod := range pods {
+		pqNew.Push(pod)
+	}
+
+	return pqNew
+}
+
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
 	heap.Push(&pq.inner, &item{pod: pod})
 }
