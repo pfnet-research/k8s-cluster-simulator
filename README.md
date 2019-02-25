@@ -34,7 +34,27 @@ metadata:
     nvidia.com/gpu: 1
 ```
 
-## Supported `v1.Node` fields
+## `v1.Pod` fields modified by the simulator
+
+```go
+v1.Pod{
+	ObjectMeta: metav1.ObjectMeta{
+        CreationTimestamp, // when submitted
+    },
+    Spec: v1.PodSpec {
+        NodeName, // when scheduled to a node
+    },
+    Status: v1.PodStatus{
+        Phase, // Pending -> Running -> Succeeded xor Failed
+        Conditions,  
+        Reason,
+        Message,
+        StartTime, // when started in a node
+    },
+}
+```
+
+## `v1.Node` fields supported by the simulator
 
 ```go
 v1.Node{

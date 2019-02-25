@@ -6,6 +6,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
 // Pod represents a simulated pod.
@@ -76,69 +77,67 @@ func (pod *Pod) IsTerminated(clock clock.Clock) bool {
 
 // BuildStatus builds a status of this pod at the clock.
 func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
-	var status v1.PodStatus
+	status := pod.ToV1().Status
 
 	switch pod.status {
 	case OverCapacity:
-		status = v1.PodStatus{
-			Phase:   v1.PodFailed,
-			Reason:  "CapacityExceeded",
-			Message: "Pod cannot be started due to exceeded capacity",
-		}
+		status.Phase = v1.PodFailed
+		// status.Conditions
+		status.Reason = "CapacityExceeded"
+		status.Message = "Pod cannot be started due to the requested resource exceeds the capacity"
 	case Ok:
 		startTime := pod.startClock.ToMetaV1()
 		finishTime := pod.finishClock().ToMetaV1()
 
-		var phase v1.PodPhase
+		status.StartTime = &startTime
+
 		var containerState v1.ContainerState
 		if pod.IsRunning(clock) {
-			phase = v1.PodRunning
+			status.Phase = v1.PodRunning
 			containerState = v1.ContainerState{
 				Running: &v1.ContainerStateRunning{
 					StartedAt: startTime,
 				}}
 		} else {
-			phase = v1.PodSucceeded
+			status.Phase = v1.PodSucceeded
 			containerState = v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
-					ExitCode:   0,
+					ExitCode: 0,
+					// Signal:
 					Reason:     "Succeeded",
 					Message:    "All containers in the pod have voluntarily terminated",
 					StartedAt:  startTime,
 					FinishedAt: finishTime,
+					// ContainerID:
 				}}
 		}
 
-		status = v1.PodStatus{
-			Phase:     phase,
-			HostIP:    "1.2.3.4",
-			PodIP:     "5.6.7.8",
-			StartTime: &startTime,
-			Conditions: []v1.PodCondition{
-				{
-					Type:   v1.PodInitialized,
-					Status: v1.ConditionTrue,
-				},
-				{
-					Type:   v1.PodReady,
-					Status: v1.ConditionTrue,
-				},
-				{
-					Type:   v1.PodScheduled,
-					Status: v1.ConditionTrue,
-				},
-			},
-		}
-
-		for _, container := range pod.v1.Spec.Containers {
-			status.ContainerStatuses = append(status.ContainerStatuses, v1.ContainerStatus{
-				Name:         container.Name,
-				Image:        container.Image,
-				Ready:        true,
-				RestartCount: 0,
-				State:        containerState,
+		for _, conditionType := range []v1.PodConditionType{v1.PodInitialized, v1.PodReady} {
+			util.UpdatePodCondition(clock, &status, &v1.PodCondition{
+				Type:               conditionType,
+				Status:             v1.ConditionTrue,
+				LastProbeTime:      clock.ToMetaV1(),
+				LastTransitionTime: startTime,
+				// Reason:
+				// Message:
 			})
 		}
+
+		containerStatuses := make([]v1.ContainerStatus, 0, len(pod.ToV1().Spec.Containers))
+		for _, container := range pod.ToV1().Spec.Containers {
+			containerStatuses = append(containerStatuses, v1.ContainerStatus{
+				Name:  container.Name,
+				State: containerState,
+				// LastTerminationState:
+				Ready:        true,
+				RestartCount: 0,
+				Image:        container.Image,
+				// ImageId:
+				// ContainerID:
+			})
+		}
+
+		status.ContainerStatuses = containerStatuses
 	}
 
 	return status

@@ -123,54 +123,6 @@ func (k *KubeSim) List() ([]*v1.Node, error) {
 	return nodes, nil
 }
 
-func (k *KubeSim) submit(clock clock.Clock) error {
-	nodes, _ := k.List()
-
-	for _, submitter := range k.submitters {
-		pods, err := submitter.Submit(clock, nodes)
-		if err != nil {
-			return err
-		}
-
-		for _, pod := range pods {
-			pod.CreationTimestamp = clock.ToMetaV1()
-
-			log.L.Tracef("Submit %v", pod)
-			log.L.Debugf("Submit %q", pod.Name)
-
-			k.podQueue.Push(pod)
-		}
-	}
-
-	return nil
-}
-
-func (k *KubeSim) schedule(clock clock.Clock) error {
-	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
-	for name, node := range k.nodes {
-		nodeInfoMap[name] = node.ToNodeInfo(clock)
-	}
-
-	results, err := k.scheduler.Schedule(k.podQueue, k, nodeInfoMap)
-	if err != nil {
-		return err
-	}
-
-	for _, result := range results {
-		nodeName := result.Result.SuggestedHost
-		node, ok := k.nodes[nodeName]
-		if !ok {
-			return errors.Errorf("No node named %q", nodeName)
-		}
-
-		if err := node.CreatePod(clock, result.Pod); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // readConfig reads and parses a config from the path (excluding file extension).
 func readConfig(path string) (*config.Config, error) {
 	viper.SetConfigName(path)
@@ -206,6 +158,58 @@ func configLog(logLevel string) error {
 
 	logger := log.L
 	log.L = logger
+
+	return nil
+}
+
+func (k *KubeSim) submit(clock clock.Clock) error {
+	nodes, _ := k.List()
+
+	for _, submitter := range k.submitters {
+		pods, err := submitter.Submit(clock, nodes)
+		if err != nil {
+			return err
+		}
+
+		for _, pod := range pods {
+			pod.CreationTimestamp = clock.ToMetaV1()
+			pod.Status.Phase = v1.PodPending
+
+			log.L.Tracef("Submit %v", pod)
+			log.L.Debugf("Submit %q", pod.Name)
+
+			k.podQueue.Push(pod)
+		}
+	}
+
+	return nil
+}
+
+func (k *KubeSim) schedule(clock clock.Clock) error {
+	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
+	for name, node := range k.nodes {
+		nodeInfoMap[name] = node.ToNodeInfo(clock)
+	}
+
+	results, err := k.scheduler.Schedule(clock, k.podQueue, k, nodeInfoMap)
+	if err != nil {
+		return err
+	}
+
+	for _, result := range results {
+		nodeName := result.Result.SuggestedHost
+		node, ok := k.nodes[nodeName]
+
+		if ok {
+			result.Pod.Spec.NodeName = nodeName
+		} else {
+			return errors.Errorf("No node named %q", nodeName)
+		}
+
+		if err := node.CreatePod(clock, result.Pod); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
