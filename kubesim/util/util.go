@@ -5,6 +5,9 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
 
 // BuildResourceList parses a map from resource names to quantities to v1.ResourceList.
@@ -20,4 +23,32 @@ func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, e
 	}
 
 	return resourceList, nil
+}
+
+// UpdatePodCondition is copied from podutil.UpdatePodCondition().
+// (We cannot call it because it uses metav1.Now().)
+//
+// > UpdatePodCondition updates existing pod condition or creates a new one. Sets
+// > LastTransitionTime to now if the status has changed. Returns true if pod condition has changed
+// > or has been added.
+func UpdatePodCondition(clock clock.Clock, status *v1.PodStatus, condition *v1.PodCondition) bool {
+	condition.LastTransitionTime = clock.ToMetaV1()
+	conditionIndex, oldCondition := podutil.GetPodCondition(status, condition.Type)
+
+	if oldCondition == nil {
+		status.Conditions = append(status.Conditions, *condition)
+		return true
+	}
+	if condition.Status == oldCondition.Status {
+		condition.LastTransitionTime = oldCondition.LastTransitionTime
+	}
+
+	isEqual := condition.Status == oldCondition.Status &&
+		condition.Reason == oldCondition.Reason &&
+		condition.Message == oldCondition.Message &&
+		condition.LastProbeTime.Equal(&oldCondition.LastProbeTime) &&
+		condition.LastTransitionTime.Equal(&oldCondition.LastTransitionTime)
+
+	status.Conditions[conditionIndex] = *condition
+	return !isEqual
 }

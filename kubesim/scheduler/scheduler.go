@@ -5,7 +5,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
-	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -320,7 +320,7 @@ func findMaxScores(priorities api.HostPriorityList) []int {
 }
 
 func updatePodStatusSchedulingSucceess(clock clock.Clock, pod *v1.Pod) {
-	updatePodCondition(clock, &pod.Status, &v1.PodCondition{
+	util.UpdatePodCondition(clock, &pod.Status, &v1.PodCondition{
 		Type:          v1.PodScheduled,
 		Status:        v1.ConditionTrue,
 		LastProbeTime: clock.ToMetaV1(),
@@ -330,38 +330,11 @@ func updatePodStatusSchedulingSucceess(clock clock.Clock, pod *v1.Pod) {
 }
 
 func updatePodStatusSchedulingFailure(clock clock.Clock, pod *v1.Pod, err error) {
-	updatePodCondition(clock, &pod.Status, &v1.PodCondition{
+	util.UpdatePodCondition(clock, &pod.Status, &v1.PodCondition{
 		Type:          v1.PodScheduled,
 		Status:        v1.ConditionFalse,
 		LastProbeTime: clock.ToMetaV1(),
 		Reason:        v1.PodReasonUnschedulable,
 		Message:       err.Error(),
 	})
-}
-
-// Copied from podutil.UpdatePodCondition()
-//
-// > UpdatePodCondition updates existing pod condition or creates a new one. Sets
-// > LastTransitionTime to now if the status has changed. Returns true if pod condition has changed
-// > or has been added.
-func updatePodCondition(clock clock.Clock, status *v1.PodStatus, condition *v1.PodCondition) bool {
-	condition.LastTransitionTime = clock.ToMetaV1()
-	conditionIndex, oldCondition := podutil.GetPodCondition(status, condition.Type)
-
-	if oldCondition == nil {
-		status.Conditions = append(status.Conditions, *condition)
-		return true
-	}
-	if condition.Status == oldCondition.Status {
-		condition.LastTransitionTime = oldCondition.LastTransitionTime
-	}
-
-	isEqual := condition.Status == oldCondition.Status &&
-		condition.Reason == oldCondition.Reason &&
-		condition.Message == oldCondition.Message &&
-		condition.LastProbeTime.Equal(&oldCondition.LastProbeTime) &&
-		condition.LastTransitionTime.Equal(&oldCondition.LastTransitionTime)
-
-	status.Conditions[conditionIndex] = *condition
-	return !isEqual
 }
