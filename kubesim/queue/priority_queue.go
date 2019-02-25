@@ -4,11 +4,10 @@ import (
 	"container/heap"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
-	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 )
 
 // PriorityQueue stores pods in a priority queue.
@@ -148,18 +147,22 @@ func getPodTimestamp(pod *v1.Pod) clock.Clock {
 	// return &condition.LastProbeTime
 }
 
-// List and FilteredList implement algorithm.PodLister interface.
-// PriorityQueue ignores labels.Selecter.
-func (pq *PriorityQueue) List(_ labels.Selector) ([]*v1.Pod, error) {
-	pod, err := pq.Pop()
-	return []*v1.Pod{pod}, err
+func (pq *PriorityQueue) Produce() ([]*v1.Pod, error) {
+	pods := make([]*v1.Pod, 0, pq.inner.Len())
+	for {
+		pod, err := pq.Pop()
+		if err != nil {
+			if err == ErrEmptyQueue {
+				break
+			} else {
+				panic("Unexpected error raised by PriorityQueue.Pop()")
+			}
+		}
+
+		pods = append(pods, pod)
+	}
+
+	return pods, nil
 }
 
-// FilteredList and List implement algorithm.PodLister interface.
-// PriorityQueue ignores algorithm.PodFilter and labels.Selecter.
-func (pq *PriorityQueue) FilteredList(_ algorithm.PodFilter, _ labels.Selector) ([]*v1.Pod, error) {
-	pod, err := pq.Pop()
-	return []*v1.Pod{pod}, err
-}
-
-var _ = algorithm.PodLister(&PriorityQueue{})
+var _ = scheduler.PodProducer(&PriorityQueue{})

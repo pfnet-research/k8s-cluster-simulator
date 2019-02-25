@@ -15,9 +15,10 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
-// type Scheduler interface {
-// 	Schedule(podLister algorithm.PodLister, nodeLister algorithm.NodeLister, nodeInfoMap map[string]*nodeinfo.NodeInfo) (core.ScheduleResult, error)
-// }
+// PodProducer interface produces pending pods.
+type PodProducer interface {
+	Produce() ([]*v1.Pod, error)
+}
 
 // Scheduler makes scheduling decision for each given pod.
 //

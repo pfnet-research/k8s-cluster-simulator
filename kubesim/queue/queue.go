@@ -20,7 +20,4 @@ type Queue interface {
 
 	// PlaceBack pushes the pod to the "head" of this queue.
 	PlaceBack(pod *v1.Pod)
-
-	// PendingPods returns all pending pods in this queue.
-	PendingPods() []*v1.Pod
 }

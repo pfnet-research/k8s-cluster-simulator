@@ -128,8 +128,12 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			}
 
 			pod, err := k.podQueue.Pop()
-			if err == queue.ErrEmptyQueue {
-				continue
+			if err != nil {
+				if err == queue.ErrEmptyQueue {
+					continue
+				} else {
+					panic("Unexpected error raised by Queue.Pop()")
+				}
 			}
 
 			err = k.scheduleOne(clock, pod)

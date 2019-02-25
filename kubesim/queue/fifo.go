@@ -1,9 +1,8 @@
 package queue
 
 import (
+	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 )
 
 // FIFOQueue stores pods in a FIFO queue.
@@ -32,22 +31,10 @@ func (fifo *FIFOQueue) PlaceBack(pod *v1.Pod) {
 	fifo.q = append([]*v1.Pod{pod}, fifo.q...)
 }
 
-func (fifo *FIFOQueue) PendingPods() []*v1.Pod {
-	return fifo.q
+// Produce implements the PodProducer interface.
+// This methods returns all pending pods.
+func (fifo *FIFOQueue) Produce() ([]*v1.Pod, error) {
+	return fifo.q, nil
 }
 
-// List and FilteredList implement algorithm.PodLister interface.
-// FIFOQueue ignores labels.Selecter.
-func (fifo *FIFOQueue) List(_ labels.Selector) ([]*v1.Pod, error) {
-	pod, err := fifo.Pop()
-	return []*v1.Pod{pod}, err
-}
-
-// FilteredList and List implement algorithm.PodLister interface.
-// FIFOQueue ignores algorithm.PodFilter and labels.Selecter.
-func (fifo *FIFOQueue) FilteredList(_ algorithm.PodFilter, _ labels.Selector) ([]*v1.Pod, error) {
-	pod, err := fifo.Pop()
-	return []*v1.Pod{pod}, err
-}
-
-var _ = algorithm.PodLister(&FIFOQueue{})
+var _ = scheduler.PodProducer(&FIFOQueue{})
