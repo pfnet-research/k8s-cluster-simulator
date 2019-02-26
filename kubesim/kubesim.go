@@ -99,7 +99,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.L.Debugf("Clock %s", k.clock.String())
+			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
 
 			if err := k.submit(k.clock); err != nil {
 				return err
