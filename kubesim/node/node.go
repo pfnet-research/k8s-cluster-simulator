@@ -40,10 +40,10 @@ func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
 	return nodeInfo
 }
 
-// CreatePod accepts the definition of a pod and try to start it.
-// The pod will fail to be scheduled if there is not sufficient resources.
+// CreatePod accepts the definition of a pod and try to start it. The pod will fail to be scheduled
+// if there is not sufficient resources.
 func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
-	log.L.Tracef("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
+	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, v1Pod.Name)
 
 	key, err := buildKey(v1Pod)
 	if err != nil {
@@ -51,9 +51,9 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	}
 
 	newTotalReq := resourceListSum(node.totalResourceRequest(clock), extractResourceRequest(v1Pod))
-	cap := node.v1.Status.Capacity
+	capacity := node.ToV1().Status.Capacity
 	var podStatus pod.Status
-	if !resourceListGE(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
+	if !resourceListGE(capacity, newTotalReq) || node.runningPodsNum(clock) >= capacity.Pods().Value() {
 		podStatus = pod.OverCapacity
 	} else {
 		podStatus = pod.Ok
@@ -68,12 +68,9 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
-// Pod returns the pod by name that was accepted on this node.
-// The returned pod may have failed to be scheduled.
-// Returns error if the pod is not found.
-func (node *Node) Pod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
-	log.L.Tracef("Node %q: Pod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
-
+// Pod returns the pod by name that was accepted on this node. The returned pod may have failed to
+// be scheduled. Returns error if the pod is not found.
+func (node *Node) Pod(namespace, name string) (*v1.Pod, error) {
 	pod := node.simPod(namespace, name)
 	if pod == nil {
 		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
@@ -82,25 +79,10 @@ func (node *Node) Pod(clock clock.Clock, namespace, name string) (*v1.Pod, error
 	return pod.ToV1(), nil
 }
 
-// PodList returns the list of all pods that were accepted on this node.
-// Each of the returned pods may have failed to be scheduled.
-func (node *Node) PodList(clock clock.Clock) []*v1.Pod {
-	log.L.Tracef("Node %q: PodList(%v) called", node.v1.Name, clock)
+// PodList returns the list of all pods that were accepted on this node. Each of the returned pods
+// may have failed to be scheduled.
+func (node *Node) PodList() []*v1.Pod {
 	return node.pods.ListPods()
-}
-
-// PodStatus returns the status of the pod by name.
-// Returns error if the pod is not found.
-func (node *Node) PodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
-	log.L.Tracef("Node %q: PodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
-
-	pod := node.simPod(namespace, name)
-	if pod == nil {
-		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
-	}
-
-	status := pod.BuildStatus(clock)
-	return &status, nil
 }
 
 // runningPodsWithStatus returns all running pods at the time clock, with their status updated.
@@ -128,6 +110,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 		}
 		return true
 	})
+
 	return total
 }
 
