@@ -24,9 +24,9 @@ type Metrics struct {
 	ResourceLimit   v1.ResourceList
 	ResourceUsage   v1.ResourceList
 
-	BoundAt          clock.Clock
-	Node             string
-	ExecutedDuration time.Duration
+	BoundAt         clock.Clock
+	Node            string
+	ExecutedSeconds int32
 
 	Status Status
 }
@@ -70,9 +70,9 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 		ResourceLimit:   pod.TotalResourceLimits(),
 		ResourceUsage:   pod.ResourceUsage(clock),
 
-		BoundAt:          pod.boundAt,
-		Node:             pod.node,
-		ExecutedDuration: pod.executedDuration(clock),
+		BoundAt:         pod.boundAt,
+		Node:            pod.node,
+		ExecutedSeconds: int32(pod.executedDuration(clock).Seconds()),
 
 		Status: pod.status,
 	}
