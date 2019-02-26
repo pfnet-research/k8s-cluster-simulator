@@ -32,7 +32,7 @@ type KubeSim struct {
 	submitters []api.Submitter
 	scheduler  scheduler.Scheduler
 
-	metricsWriter metrics.Writer
+	metricsWriters []metrics.Writer
 }
 
 // NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
@@ -40,7 +40,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
 
 	if err := configLog(conf.LogLevel); err != nil {
-		return nil, errors.Errorf("Error configuring: %s", err.Error())
+		return nil, errors.Errorf("Error configuring logging: %s", err.Error())
 	}
 
 	clk := time.Now()
@@ -67,6 +67,16 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		log.L.Debugf("Node %s created", nodeV1.Name)
 	}
 
+	metricsWriters := []metrics.Writer{}
+	if conf.MetricsFile != "" {
+		writer, err := metrics.NewFileWriter(conf.MetricsFile)
+		if err != nil {
+			return nil, err
+		}
+		log.L.Infof("Log written to %s", conf.MetricsFile)
+		metricsWriters = append(metricsWriters, writer)
+	}
+
 	return &KubeSim{
 		tick:  conf.Tick,
 		clock: clock.NewClock(clk),
@@ -77,7 +87,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		submitters: []api.Submitter{},
 		scheduler:  sched,
 
-		metricsWriter: nil,
+		metricsWriters: metricsWriters,
 	}, nil
 }
 
@@ -115,7 +125,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			if err := k.metrics(); err != nil {
+			if err := k.writeMetrics(); err != nil {
 				return err
 			}
 
@@ -160,7 +170,7 @@ func readConfig(path string) (*config.Config, error) {
 }
 
 func configLog(logLevel string) error {
-	level, err := log.ParseLevel(logLevel)
+	level, err := log.ParseLevel(logLevel) // if logLevel == "", level <- info
 	if err != nil {
 		return strongerrors.InvalidArgument(errors.Errorf("Log level %q not supported: %s", level, err.Error()))
 	}
@@ -173,6 +183,10 @@ func configLog(logLevel string) error {
 }
 
 func (k *KubeSim) submit() error {
+	if len(k.submitters) == 0 {
+		return nil
+	}
+
 	nodes, _ := k.List()
 
 	for _, submitter := range k.submitters {
@@ -224,9 +238,10 @@ func (k *KubeSim) schedule() error {
 	return nil
 }
 
-func (k *KubeSim) metrics() error {
-	nodesMetrics := make(map[string]interface{}, len(k.nodes))
-	podsMetrics := make(map[string]interface{})
+func (k *KubeSim) writeMetrics() error {
+	if len(k.metricsWriters) == 0 {
+		return nil
+	}
 
 	nodesMetrics["clock"] = k.clock.ToRFC3339()
 	podsMetrics["clock"] = k.clock.ToRFC3339()

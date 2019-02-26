@@ -1,3 +1,4 @@
+# Log level defined by sirupsen/logrus.
 # Optional (default: info)
 logLevel: debug
 
@@ -5,8 +6,13 @@ logLevel: debug
 # Optional (default: 10)
 tick: 10
 
-# apiPort: 10250
+# Metrics of simulated kubernetes cluster is written to a file at this path.
+# Optional (default: not to write metrics to a file)
+metricsFile: kubesim.log
+
 # metricsPort: 10255
+
+# apiPort: 10250
 
 # Start time at which the simulation starts, in RFC3339 format.
 # Optional (default: now)

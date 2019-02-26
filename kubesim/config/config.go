@@ -13,11 +13,12 @@ import (
 
 // Config represents a user-specified simulator config.
 type Config struct {
-	LogLevel   string
-	Tick       int
-	StartClock string
-	// APIPort     int
+	LogLevel    string
+	Tick        int
+	StartClock  string
+	MetricsFile string
 	// MetricsPort int
+	// APIPort     int
 	Cluster ClusterConfig
 }
 
