@@ -18,6 +18,15 @@ const (
 	podsMetricsType  = "PodsMetrics"
 )
 
+// Writer defines the interface of metrics writer.
+type Writer interface {
+	// Write writes the given NodesMetrics and PodsMetrics to some location.
+	Write(nodeMetrics NodesMetrics, podsMetrics PodsMetrics) error
+
+	// Close this writer.
+	Close() error
+}
+
 // BuildMetrics builds NodesMetrics and PodsMetrics.
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) (NodesMetrics, PodsMetrics) {
 	nodesMetrics := make(map[string]interface{})
@@ -39,10 +48,4 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) (NodesMetrics,
 	}
 
 	return nodesMetrics, podsMetrics
-}
-
-// Writer defines the interface of metrics writer.
-type Writer interface {
-	// Write writes the given NodesMetrics and PodsMetrics to some location.
-	Write(nodeMetrics NodesMetrics, podsMetrics PodsMetrics) error
 }
