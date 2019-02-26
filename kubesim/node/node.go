@@ -79,7 +79,7 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 		podStatus = pod.Ok
 	}
 
-	simPod, err := pod.NewPod(v1Pod, clock, podStatus)
+	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name)
 	if err != nil {
 		return err
 	}
