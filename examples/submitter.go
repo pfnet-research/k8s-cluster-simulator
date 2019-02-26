@@ -38,9 +38,8 @@ func newPod(n uint64, clock clock.Clock) *v1.Pod {
 			Kind:       "Pod",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              fmt.Sprintf("pod-%d", n),
-			Namespace:         "default",
-			CreationTimestamp: clock.ToMetaV1(),
+			Name:      fmt.Sprintf("pod-%d", n),
+			Namespace: "default",
 			Annotations: map[string]string{
 				"simSpec": `
 - seconds: 60
