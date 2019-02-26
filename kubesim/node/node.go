@@ -69,7 +69,7 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 }
 
 // Pod returns the pod by name that was accepted on this node. The returned pod may have failed to
-// be scheduled. Returns error if the pod is not found.
+// be bound. Returns error if the pod is not found.
 func (node *Node) Pod(namespace, name string) (*v1.Pod, error) {
 	pod := node.simPod(namespace, name)
 	if pod == nil {
@@ -80,7 +80,7 @@ func (node *Node) Pod(namespace, name string) (*v1.Pod, error) {
 }
 
 // PodList returns the list of all pods that were accepted on this node. Each of the returned pods
-// may have failed to be scheduled.
+// may have failed to be bound.
 func (node *Node) PodList() []*v1.Pod {
 	return node.pods.ListPods()
 }
@@ -127,7 +127,7 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 }
 
 // simPod returns a *pod.Pod by name that was accepted on this node.
-// The returned pod may have failed to be scheduled.
+// The returned pod may have failed to be bound.
 // Returns nil if the pod is not found.
 func (node *Node) simPod(namespace, name string) *pod.Pod {
 	key := buildKeyFromNames(namespace, name)

@@ -21,22 +21,27 @@ type Pod struct {
 type Status int
 
 const (
-	// Ok indicates that the Pod is successfully scheduled to a node.
+	// Ok indicates that the pod is successfully bound to a node.
 	Ok Status = iota
-	// OverCapacity indicates that the Pod is failed to start due to capacity over.
+	// OverCapacity indicates that the pod is failed to start due to capacity over.
 	OverCapacity
 )
 
 // NewPod creates a pod with the v1.Pod definition, the starting time, and the status.
 // Returns error if it fails to parse the simulation spec of the pod.
-func NewPod(pod *v1.Pod, startClock clock.Clock, status Status) (*Pod, error) {
+func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
 	spec, err := parseSpec(pod)
 	if err != nil {
 		return nil, err
 	}
 
-	p := Pod{pod, spec, startClock, status}
-	return &p, nil
+	return &Pod{
+		v1:      pod,
+		spec:    spec,
+		boundAt: boundAt,
+		status:  status,
+		node:    node,
+	}, nil
 }
 
 // ToV1 returns v1.Pod representation of this pod.
@@ -64,13 +69,13 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 }
 
 // IsRunning returns whether the pod is running at the clock.
-// If the pod failed to be scheduled, false is returned.
+// If the pod failed to be bound, false is returned.
 func (pod *Pod) IsRunning(clock clock.Clock) bool {
 	return pod.status == Ok && pod.passedSeconds(clock) < pod.totalSeconds()
 }
 
 // IsTerminated returns whether the pod is terminated at the clock.
-// If the pod failed to be scheduled, false is returned.
+// If the pod failed to be bound, false is returned.
 func (pod *Pod) IsTerminated(clock clock.Clock) bool {
 	return pod.status == Ok && pod.passedSeconds(clock) >= pod.totalSeconds()
 }
@@ -86,7 +91,7 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 		status.Reason = "CapacityExceeded"
 		status.Message = "Pod cannot be started due to the requested resource exceeds the capacity"
 	case Ok:
-		startTime := pod.startClock.ToMetaV1()
+		startTime := pod.boundAt.ToMetaV1()
 		finishTime := pod.finishClock().ToMetaV1()
 
 		status.StartTime = &startTime
