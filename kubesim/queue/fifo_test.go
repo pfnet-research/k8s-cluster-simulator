@@ -1,8 +1,9 @@
-package queue
+package queue_test
 
 import (
 	"testing"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,7 +23,7 @@ func newPod(name string) *v1.Pod {
 }
 
 func TestFIFOQueuePushAndPop(t *testing.T) {
-	q := FIFOQueue{}
+	q := queue.FIFOQueue{}
 
 	q.Push(newPod("pod-0"))
 	q.Push(newPod("pod-1"))
@@ -44,13 +45,13 @@ func TestFIFOQueuePushAndPop(t *testing.T) {
 	}
 
 	_, err := q.Pop()
-	if err != ErrEmptyQueue {
-		t.Errorf("got: %v\nwant: %v", err, ErrEmptyQueue)
+	if err != queue.ErrEmptyQueue {
+		t.Errorf("got: %v\nwant: %v", err, queue.ErrEmptyQueue)
 	}
 }
 
 func TestFIFOQueueFront(t *testing.T) {
-	q := FIFOQueue{}
+	q := queue.FIFOQueue{}
 
 	q.Push(newPod("pod-0"))
 	q.Push(newPod("pod-1"))
@@ -75,7 +76,7 @@ func TestFIFOQueueFront(t *testing.T) {
 	_, _ = q.Pop()
 	_, _ = q.Pop()
 	_, err := q.Front()
-	if err != ErrEmptyQueue {
-		t.Errorf("got: %v\nwant: %v", err, ErrEmptyQueue)
+	if err != queue.ErrEmptyQueue {
+		t.Errorf("got: %v\nwant: %v", err, queue.ErrEmptyQueue)
 	}
 }
