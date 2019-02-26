@@ -9,11 +9,11 @@ import (
 )
 
 // NodesMetrics is a map associating node names and node.Metrics,
-// plus "type" to nodesMetricsType and "clock" to a formatted clock.
+// plus "Type" to nodesMetricsType and "Clock" to a formatted clock.
 type NodesMetrics map[string]interface{}
 
 // PodsMetrics is a map associating pod names and pod.Metrics,
-// plus "type" to podsMetricsType and "clock" to a formatted clock.
+// plus "Type" to podsMetricsType and "Clock" to a formatted clock.
 type PodsMetrics map[string]interface{}
 
 const (
@@ -26,11 +26,11 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) (NodesMetrics,
 	nodesMetrics := make(map[string]interface{})
 	podsMetrics := make(map[string]interface{})
 
-	nodesMetrics["clock"] = clock.ToRFC3339()
-	nodesMetrics["type"] = nodesMetricsType
+	nodesMetrics["Clock"] = clock.ToRFC3339()
+	nodesMetrics["Type"] = nodesMetricsType
 
-	podsMetrics["clock"] = clock.ToRFC3339()
-	podsMetrics["type"] = podsMetricsType
+	podsMetrics["Clock"] = clock.ToRFC3339()
+	podsMetrics["Type"] = podsMetricsType
 
 	for name, node := range nodes {
 		nodesMetrics[name] = node.Metrics(clock)
