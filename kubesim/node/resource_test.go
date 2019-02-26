@@ -79,6 +79,54 @@ func TestResourceListDiff(t *testing.T) {
 	}
 }
 
+func TestExtraceResourceList(t *testing.T) {
+	pod := v1.Pod{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							"cpu":            resource.MustParse("3"),
+							"memory":         resource.MustParse("5Gi"),
+							"nvidia.com/gpu": resource.MustParse("1"),
+						},
+						Limits: v1.ResourceList{
+							"cpu":            resource.MustParse("4"),
+							"memory":         resource.MustParse("6Gi"),
+							"nvidia.com/gpu": resource.MustParse("1"),
+						},
+					},
+				},
+				v1.Container{
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							"cpu":            resource.MustParse("2"),
+							"memory":         resource.MustParse("4Gi"),
+							"nvidia.com/gpu": resource.MustParse("2"),
+						},
+						Limits: v1.ResourceList{
+							"cpu":            resource.MustParse("3"),
+							"memory":         resource.MustParse("5Gi"),
+							"nvidia.com/gpu": resource.MustParse("3"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := v1.ResourceList{
+		"cpu":            resource.MustParse("5"),
+		"memory":         resource.MustParse("9Gi"),
+		"nvidia.com/gpu": resource.MustParse("3"),
+	}
+	actual := extractResourceRequest(&pod)
+
+	if resourceListNE(expected, actual) {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
+
 func TestResourceListGE(t *testing.T) {
 	r1 := v1.ResourceList{
 		"cpu":            resource.MustParse("2"),
