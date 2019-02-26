@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"encoding/json"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -40,6 +41,18 @@ const (
 	// OverCapacity indicates that the pod is failed to start due to capacity over.
 	OverCapacity
 )
+
+// MarshalJSON implements json.Marshaler.
+func (status Status) MarshalJSON() ([]byte, error) {
+	var s string
+	switch status {
+	case Ok:
+		s = "Ok"
+	case OverCapacity:
+		s = "OverCapacity"
+	}
+	return json.Marshal(s)
+}
 
 // NewPod creates a pod with the v1.Pod definition, the starting time, and the status.
 // Returns error if it fails to parse the simulation spec of the pod.
