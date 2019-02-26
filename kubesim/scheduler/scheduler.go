@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"errors"
+	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/util/errors"
@@ -105,10 +106,16 @@ func (sched *GenericScheduler) Schedule(
 			}
 		}
 
+		log.L.Debugf("Selected node %s", result.SuggestedHost)
+
 		pod, _ = podQueue.Pop()
 		updatePodStatusSchedulingSucceess(clock, pod)
 
-		log.L.Debugf("Selected node %s", result.SuggestedHost)
+		nodeInfo, ok := nodeInfoMap[result.SuggestedHost]
+		if !ok {
+			return []ScheduleBinding{}, fmt.Errorf("No node named %s", result.SuggestedHost)
+		}
+		nodeInfo.AddPod(pod)
 
 		results = append(results, ScheduleBinding{pod, result})
 	}
