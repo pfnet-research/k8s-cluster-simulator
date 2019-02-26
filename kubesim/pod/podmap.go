@@ -2,8 +2,6 @@ package pod
 
 import (
 	"sync"
-
-	v1 "k8s.io/api/core/v1"
 )
 
 // Map stores a map associating "key"s with Pods.
@@ -34,10 +32,10 @@ func (m *Map) Delete(key string) {
 }
 
 // ListPods returns a slice of pods stored in this Map.
-func (m *Map) ListPods() []*v1.Pod {
-	pods := []*v1.Pod{}
+func (m *Map) ListPods() []Pod {
+	pods := []Pod{}
 	m.Range(func(_ string, pod Pod) bool {
-		pods = append(pods, pod.ToV1())
+		pods = append(pods, pod)
 		return true
 	})
 	return pods

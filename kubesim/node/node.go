@@ -44,7 +44,7 @@ func (node *Node) ToV1() *v1.Node {
 
 // ToNodeInfo creates nodeinfo.NodeInfo object from this node.
 func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
-	pods := node.runningPodsWithStatus(clock)
+	pods := node.runningV1PodsWithStatus(clock)
 	nodeInfo := nodeinfo.NewNodeInfo(pods...)
 	nodeInfo.SetNode(node.ToV1())
 	return nodeInfo
@@ -89,25 +89,27 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
-// Pod returns the pod by name that was accepted on this node. The returned pod may have failed to
-// be bound. Returns error if the pod is not found.
-func (node *Node) Pod(namespace, name string) (*v1.Pod, error) {
-	pod := node.simPod(namespace, name)
-	if pod == nil {
-		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
+// Pod returns the *pod.Pod by name that was accepted on this node. The returned pod may have
+// failed to be bound. Returns nil if the pod is not found.
+func (node *Node) Pod(namespace, name string) *pod.Pod {
+	key := buildKeyFromNames(namespace, name)
+	pod, ok := node.pods.Load(key)
+	if !ok {
+		return nil
 	}
 
-	return pod.ToV1(), nil
+	return pod
 }
 
 // PodList returns the list of all pods that were accepted on this node. Each of the returned pods
 // may have failed to be bound.
-func (node *Node) PodList() []*v1.Pod {
+func (node *Node) PodList() []pod.Pod {
 	return node.pods.ListPods()
 }
 
-// runningPodsWithStatus returns all running pods at the time clock, with their status updated.
-func (node *Node) runningPodsWithStatus(clock clock.Clock) []*v1.Pod {
+// runningV1PodsWithStatus returns all running pods in *v1.Pod representation at the time clock,
+// with their status updated.
+func (node *Node) runningV1PodsWithStatus(clock clock.Clock) []*v1.Pod {
 	pods := []*v1.Pod{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		podV1 := pod.ToV1()
@@ -170,19 +172,6 @@ func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 	})
 
 	return total
-}
-
-// simPod returns a *pod.Pod by name that was accepted on this node.
-// The returned pod may have failed to be bound.
-// Returns nil if the pod is not found.
-func (node *Node) simPod(namespace, name string) *pod.Pod {
-	key := buildKeyFromNames(namespace, name)
-	pod, ok := node.pods.Load(key)
-	if !ok {
-		return nil
-	}
-
-	return pod
 }
 
 // buildKey builds a key for the provided pod.
