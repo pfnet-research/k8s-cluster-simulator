@@ -14,6 +14,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
@@ -22,14 +23,16 @@ import (
 
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
-	nodes    map[string]*node.Node
-	podQueue queue.PodQueue
-
 	tick  int
 	clock clock.Clock
 
+	nodes    map[string]*node.Node
+	podQueue queue.PodQueue
+
 	submitters []api.Submitter
 	scheduler  scheduler.Scheduler
+
+	metricsWriter metrics.Writer
 }
 
 // NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
@@ -64,15 +67,18 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		log.L.Debugf("Node %s created", nodeV1.Name)
 	}
 
-	kubesim := KubeSim{
-		nodes:     nodes,
-		podQueue:  queue,
-		tick:      conf.Tick,
-		clock:     clock.NewClock(clk),
-		scheduler: sched,
-	}
+	return &KubeSim{
+		tick:  conf.Tick,
+		clock: clock.NewClock(clk),
 
-	return &kubesim, nil
+		nodes:    nodes,
+		podQueue: queue,
+
+		submitters: []api.Submitter{},
+		scheduler:  sched,
+
+		metricsWriter: nil,
+	}, nil
 }
 
 // NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path),
@@ -101,11 +107,15 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		default:
 			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
 
-			if err := k.submit(k.clock); err != nil {
+			if err := k.submit(); err != nil {
 				return err
 			}
 
-			if err := k.schedule(k.clock); err != nil {
+			if err := k.schedule(); err != nil {
+				return err
+			}
+
+			if err := k.metrics(); err != nil {
 				return err
 			}
 
@@ -162,17 +172,17 @@ func configLog(logLevel string) error {
 	return nil
 }
 
-func (k *KubeSim) submit(clock clock.Clock) error {
+func (k *KubeSim) submit() error {
 	nodes, _ := k.List()
 
 	for _, submitter := range k.submitters {
-		pods, err := submitter.Submit(clock, nodes)
+		pods, err := submitter.Submit(k.clock, nodes)
 		if err != nil {
 			return err
 		}
 
 		for _, pod := range pods {
-			pod.CreationTimestamp = clock.ToMetaV1()
+			pod.CreationTimestamp = k.clock.ToMetaV1()
 			pod.Status.Phase = v1.PodPending
 
 			log.L.Tracef("Submit %v", pod)
@@ -185,13 +195,13 @@ func (k *KubeSim) submit(clock clock.Clock) error {
 	return nil
 }
 
-func (k *KubeSim) schedule(clock clock.Clock) error {
+func (k *KubeSim) schedule() error {
 	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
 	for name, node := range k.nodes {
-		nodeInfoMap[name] = node.ToNodeInfo(clock)
+		nodeInfoMap[name] = node.ToNodeInfo(k.clock)
 	}
 
-	results, err := k.scheduler.Schedule(clock, k.podQueue, k, nodeInfoMap)
+	results, err := k.scheduler.Schedule(k.clock, k.podQueue, k, nodeInfoMap)
 	if err != nil {
 		return err
 	}
@@ -206,10 +216,29 @@ func (k *KubeSim) schedule(clock clock.Clock) error {
 			return errors.Errorf("No node named %q", nodeName)
 		}
 
-		if err := node.CreatePod(clock, result.Pod); err != nil {
+		if err := node.CreatePod(k.clock, result.Pod); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (k *KubeSim) metrics() error {
+	nodesMetrics := make(map[string]interface{}, len(k.nodes))
+	podsMetrics := make(map[string]interface{})
+
+	nodesMetrics["clock"] = k.clock.ToRFC3339()
+	podsMetrics["clock"] = k.clock.ToRFC3339()
+
+	for name, node := range k.nodes {
+		nodesMetrics[name] = node.Metrics(k.clock)
+		for _, pod := range node.PodList() {
+			if !pod.IsTerminated(k.clock) {
+				podsMetrics[pod.ToV1().Name] = pod.Metrics(k.clock)
+			}
+		}
+	}
+
+	return k.metricsWriter.Write(nodesMetrics, podsMetrics)
 }
