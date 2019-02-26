@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"errors"
+	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,7 +61,11 @@ func (ext *Extender) filter(
 	nodes = make([]*v1.Node, 0, len(nodes))
 	if ext.NodeCacheCapable {
 		for _, name := range *result.NodeNames {
-			nodes = append(nodes, nodeInfoMap[name].Node())
+			nodeInfo, ok := nodeInfoMap[name]
+			if !ok {
+				return []*v1.Node{}, fmt.Errorf("No node named %s", name)
+			}
+			nodes = append(nodes, nodeInfo.Node())
 		}
 	} else {
 		for _, node := range result.Nodes.Items {

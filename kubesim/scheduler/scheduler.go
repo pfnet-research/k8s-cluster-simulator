@@ -201,7 +201,12 @@ func (sched *GenericScheduler) filter(
 	// In-process plugins
 	errs := kerr.MessageCountMap{}
 	for name, p := range sched.predicates {
-		filteredNodes = callPredicatePlugin(name, &p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
+		var err error
+		filteredNodes, err = callPredicatePlugin(name, &p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
+		if err != nil {
+			return []*v1.Node{}, core.FailedPredicateMap{}, err
+		}
+
 		if len(filteredNodes) == 0 {
 			break
 		}
@@ -253,7 +258,12 @@ func (sched *GenericScheduler) prioritize(
 	// This is required to generate the priority list in the required format
 	if len(sched.prioritizers) == 0 && len(sched.extenders) == 0 {
 		for i, node := range filteredNodes {
-			prio, err := core.EqualPriorityMap(pod, &dummyPriorityMetadata{}, nodeInfoMap[node.Name])
+			nodeInfo, ok := nodeInfoMap[node.Name]
+			if !ok {
+				return api.HostPriorityList{}, fmt.Errorf("No node named %s", node.Name)
+			}
+
+			prio, err := core.EqualPriorityMap(pod, &dummyPriorityMetadata{}, nodeInfo)
 			if err != nil {
 				return api.HostPriorityList{}, err
 			}
@@ -270,7 +280,11 @@ func (sched *GenericScheduler) prioritize(
 
 	// In-process plugins
 	for _, prioritizer := range sched.prioritizers {
-		prios := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeInfoMap, errs)
+		prios, err := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeInfoMap, errs)
+		if err != nil {
+			return api.HostPriorityList{}, err
+		}
+
 		for i, prio := range prios {
 			prioList[i].Score += prio.Score
 		}

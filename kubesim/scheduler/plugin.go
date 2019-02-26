@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"fmt"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
@@ -27,7 +29,7 @@ func callPredicatePlugin(
 	nodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	failedPredicateMap core.FailedPredicateMap,
-	errs errors.MessageCountMap) (filteredNodes []*v1.Node) {
+	errs errors.MessageCountMap) (filteredNodes []*v1.Node, err error) {
 
 	log.L.Tracef("Plugin %s: Predicating nodes %v", name, nodes)
 
@@ -40,7 +42,12 @@ func callPredicatePlugin(
 
 	filteredNodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
-		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeInfoMap[node.Name])
+		nodeInfo, ok := nodeInfoMap[node.Name]
+		if !ok {
+			return []*v1.Node{}, fmt.Errorf("No node named %s", node.Name)
+		}
+
+		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeInfo)
 		if err != nil {
 			errs[err.Error()]++
 		}
@@ -55,7 +62,7 @@ func callPredicatePlugin(
 	log.L.Tracef("Plugin %s: Predicated nodes %v", name, filteredNodes)
 	log.L.Debugf("Plugin %s: Predicated nodes %v", name, filteredNodeNames)
 
-	return filteredNodes
+	return filteredNodes, nil
 }
 
 func callPrioritizePlugin(
@@ -63,7 +70,7 @@ func callPrioritizePlugin(
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
-	errs []error) api.HostPriorityList {
+	errs []error) (api.HostPriorityList, error) {
 
 	log.L.Tracef("Plugin %s: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
 
@@ -76,7 +83,12 @@ func callPrioritizePlugin(
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))
 	for _, node := range filteredNodes {
-		prio, err := prioritizer.Map(pod, &dummyPriorityMetadata{}, nodeInfoMap[node.Name])
+		nodeInfo, ok := nodeInfoMap[node.Name]
+		if !ok {
+			return api.HostPriorityList{}, fmt.Errorf("No node named %s", node.Name)
+		}
+
+		prio, err := prioritizer.Map(pod, &dummyPriorityMetadata{}, nodeInfo)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -96,5 +108,5 @@ func callPrioritizePlugin(
 
 	log.L.Debugf("Plugin %s: Prioritized %v", prioritizer.Name, prios)
 
-	return prios
+	return prios, nil
 }
