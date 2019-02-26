@@ -28,7 +28,8 @@ func main() {
 var configPath string
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", "examples/config_sample", "config file (exclusing file extension)")
+	rootCmd.PersistentFlags().StringVar(
+		&configPath, "config", "examples/config_sample", "config file (exclusing file extension)")
 }
 
 var rootCmd = &cobra.Command{
@@ -38,37 +39,10 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 
+		// Create a KubeSim with a queue and a scheduler.
 		queue := queue.NewPriorityQueueWithComparator(lifo)
-
-		sched := scheduler.NewGenericScheduler()
-		// Add an extender
-		sched.AddExtender(
-			scheduler.Extender{
-				Name:             "MyExtender",
-				Filter:           filterExtender,
-				Prioritize:       prioritizeExtender,
-				Weight:           1,
-				NodeCacheCapable: true,
-			},
-		)
-
-		// Add plugins
-		sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
-		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "BalancedResourceAllocation",
-			Map:    priorities.BalancedResourceAllocationMap,
-			Reduce: nil,
-			Weight: 1,
-		})
-		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "LeastRequested",
-			Map:    priorities.LeastRequestedPriorityMap,
-			Reduce: nil,
-			Weight: 1,
-		})
-
-		// Create a KubeSim
-		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, &sched)
+		sched := buildScheduler()
+		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, sched)
 		if err != nil {
 			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
@@ -77,7 +51,7 @@ var rootCmd = &cobra.Command{
 		submitter := mySubmitter{}
 		kubesim.AddSubmitter(&submitter)
 
-		// SIGINT (Ctrl-C) cancels the sumbitter and kubesim.Run().
+		// SIGINT (Ctrl-C) cancels the sumbitter and kubesim.Run()
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
@@ -85,10 +59,43 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
+		// Run the main loop
 		if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
 			log.L.Fatal(err)
 		}
 	},
+}
+
+func buildScheduler() scheduler.Scheduler {
+	sched := scheduler.NewGenericScheduler()
+
+	// Add an extender
+	sched.AddExtender(
+		scheduler.Extender{
+			Name:             "MyExtender",
+			Filter:           filterExtender,
+			Prioritize:       prioritizeExtender,
+			Weight:           1,
+			NodeCacheCapable: true,
+		},
+	)
+
+	// Add plugins
+	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+	sched.AddPrioritizer(priorities.PriorityConfig{
+		Name:   "BalancedResourceAllocation",
+		Map:    priorities.BalancedResourceAllocationMap,
+		Reduce: nil,
+		Weight: 1,
+	})
+	sched.AddPrioritizer(priorities.PriorityConfig{
+		Name:   "LeastRequested",
+		Map:    priorities.LeastRequestedPriorityMap,
+		Reduce: nil,
+		Weight: 1,
+	})
+
+	return &sched
 }
 
 // for test
