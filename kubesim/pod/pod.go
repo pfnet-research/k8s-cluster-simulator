@@ -78,13 +78,9 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 	}
 }
 
-// TotalResourceRequests extracts the total requested resource of this pod.
+// TotalResourceRequests extracts the total amount of resource requested by this pod.
 func (pod *Pod) TotalResourceRequests() v1.ResourceList {
-	result := v1.ResourceList{}
-	for _, container := range pod.ToV1().Spec.Containers {
-		result = util.ResourceListSum(result, container.Resources.Requests)
-	}
-	return result
+	return util.PodTotalResourceRequests(pod.ToV1())
 }
 
 // TotalResourceLimits extracts the total of resource limits of this pod.

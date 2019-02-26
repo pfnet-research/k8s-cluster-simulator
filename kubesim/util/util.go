@@ -10,6 +10,8 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
 
+// TODO: Place these functions at more proper location
+
 // BuildResourceList parses a map from resource names to quantities to v1.ResourceList.
 func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, error) {
 	resourceList := v1.ResourceList{}
@@ -53,6 +55,15 @@ func UpdatePodCondition(clock clock.Clock, status *v1.PodStatus, condition *v1.P
 	return !isEqual
 }
 
+// PodTotalResourceRequests extracts the total amount of resource requested by this pod.
+func PodTotalResourceRequests(pod *v1.Pod) v1.ResourceList {
+	result := v1.ResourceList{}
+	for _, container := range pod.Spec.Containers {
+		result = ResourceListSum(result, container.Resources.Requests)
+	}
+	return result
+}
+
 // ResourceListSum returns the sum of two resource lists.
 func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 	sum := r1.DeepCopy()
@@ -70,21 +81,21 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 // ErrResourceListDiffNotGE is returned from diffResourceList.
 var ErrResourceListDiffNotGE = errors.New("ResourceList is not greater equal")
 
-// ResourceListDiff returns a difference between two resource lists.
-// r1 must be greater or equal than r2, otherwise errResourceListDiffNotGE will be returned.
-func ResourceListDiff(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
-	if !ResourceListGE(r1, r2) {
-		return v1.ResourceList{}, ErrResourceListDiffNotGE
-	}
+// // ResourceListDiff returns a difference between two resource lists.
+// // r1 must be greater or equal than r2, otherwise errResourceListDiffNotGE will be returned.
+// func ResourceListDiff(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
+// 	if !ResourceListGE(r1, r2) {
+// 		return v1.ResourceList{}, ErrResourceListDiffNotGE
+// 	}
 
-	diff := r1.DeepCopy()
-	for r2Key, r2Val := range r2 {
-		r1Val := diff[r2Key]
-		r1Val.Sub(r2Val)
-		diff[r2Key] = r1Val
-	}
-	return diff, nil
-}
+// 	diff := r1.DeepCopy()
+// 	for r2Key, r2Val := range r2 {
+// 		r1Val := diff[r2Key]
+// 		r1Val.Sub(r2Val)
+// 		diff[r2Key] = r1Val
+// 	}
+// 	return diff, nil
+// }
 
 // ResourceListGE returns true when r1 >= r2, false otherwise.
 func ResourceListGE(r1, r2 v1.ResourceList) bool {

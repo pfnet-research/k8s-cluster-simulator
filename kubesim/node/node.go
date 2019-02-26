@@ -10,6 +10,7 @@ import (
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -70,10 +71,10 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 		return err
 	}
 
-	newTotalReq := resourceListSum(node.totalResourceRequest(clock), extractResourceRequest(v1Pod))
+	newTotalReq := util.ResourceListSum(node.totalResourceRequest(clock), util.PodTotalResourceRequests(v1Pod))
 	capacity := node.ToV1().Status.Capacity
 	var podStatus pod.Status
-	if !resourceListGE(capacity, newTotalReq) || node.runningPodsNum(clock) >= capacity.Pods().Value() {
+	if !util.ResourceListGE(capacity, newTotalReq) || node.runningPodsNum(clock) >= capacity.Pods().Value() {
 		podStatus = pod.OverCapacity
 	} else {
 		podStatus = pod.Ok
@@ -126,7 +127,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		if pod.IsRunning(clock) {
-			total = resourceListSum(total, extractResourceRequest(pod.ToV1()))
+			total = util.ResourceListSum(total, pod.TotalResourceRequests())
 		}
 		return true
 	})
@@ -163,7 +164,7 @@ func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		if pod.IsRunning(clock) {
-			total = resourceListSum(total, pod.ResourceUsage(clock))
+			total = util.ResourceListSum(total, pod.ResourceUsage(clock))
 		}
 		return true
 	})
