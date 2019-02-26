@@ -29,14 +29,14 @@ func callPredicatePlugin(
 	failedPredicateMap core.FailedPredicateMap,
 	errs errors.MessageCountMap) (filteredNodes []*v1.Node) {
 
-	log.L.Tracef("Plugin %q: Predicating nodes %v", name, nodes)
+	log.L.Tracef("Plugin %s: Predicating nodes %v", name, nodes)
 
 	// FIXME: Make nodeNames only when debug logging is enabled.
 	nodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
-	log.L.Debugf("Plugin %q: Predicating nodes %v", name, nodeNames)
+	log.L.Debugf("Plugin %s: Predicating nodes %v", name, nodeNames)
 
 	filteredNodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
@@ -52,8 +52,8 @@ func callPredicatePlugin(
 		}
 	}
 
-	log.L.Tracef("Predicated nodes %v", filteredNodes)
-	log.L.Debugf("Predicated nodes %v", filteredNodeNames)
+	log.L.Tracef("Plugin %s: Predicated nodes %v", name, filteredNodes)
+	log.L.Debugf("Plugin %s: Predicated nodes %v", name, filteredNodeNames)
 
 	return filteredNodes
 }
@@ -65,14 +65,14 @@ func callPrioritizePlugin(
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	errs []error) api.HostPriorityList {
 
-	log.L.Tracef("Plugin %q: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
+	log.L.Tracef("Plugin %s: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
 
 	// FIXME: Make nodeNames only when debug logging is enabled.
 	nodeNames := make([]string, 0, len(filteredNodes))
 	for _, node := range filteredNodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
-	log.L.Debugf("Plugin %q: Prioritizing nodes %v", prioritizer.Name, nodeNames)
+	log.L.Debugf("Plugin %s: Prioritizing nodes %v", prioritizer.Name, nodeNames)
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))
 	for _, node := range filteredNodes {
@@ -94,7 +94,7 @@ func callPrioritizePlugin(
 		prios[i].Score *= prioritizer.Weight
 	}
 
-	log.L.Debugf("Prioritized %v", prios)
+	log.L.Debugf("Plugin %s: Prioritized %v", prioritizer.Name, prios)
 
 	return prios
 }

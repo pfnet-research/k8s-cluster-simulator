@@ -37,7 +37,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
 
 	if err := configLog(conf.LogLevel); err != nil {
-		return nil, errors.Errorf("error configuring: %s", err.Error())
+		return nil, errors.Errorf("Error configuring: %s", err.Error())
 	}
 
 	clk := time.Now()
@@ -51,17 +51,17 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 
 	nodes := map[string]*node.Node{}
 	for _, nodeConf := range conf.Cluster.Nodes {
-		log.L.Debugf("NodeConfig: %+v", nodeConf)
+		log.L.Debugf("Node config %+v", nodeConf)
 
 		nodeV1, err := config.BuildNode(nodeConf, conf.StartClock)
 		if err != nil {
-			return nil, errors.Errorf("error building node config: %s", err.Error())
+			return nil, errors.Errorf("Error building node config: %s", err.Error())
 		}
 
 		n := node.NewNode(nodeV1)
 		nodes[nodeV1.Name] = &n
 
-		log.L.Debugf("Node %q created", nodeV1.Name)
+		log.L.Debugf("Node %s created", nodeV1.Name)
 	}
 
 	kubesim := KubeSim{
@@ -80,7 +80,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 func NewKubeSimFromConfigPath(confPath string, queue queue.PodQueue, sched scheduler.Scheduler) (*KubeSim, error) {
 	conf, err := readConfig(confPath)
 	if err != nil {
-		return nil, errors.Errorf("error reading config: %s", err.Error())
+		return nil, errors.Errorf("Error reading config: %s", err.Error())
 	}
 
 	return NewKubeSim(conf, queue, sched)
@@ -131,7 +131,7 @@ func readConfig(path string) (*config.Config, error) {
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
-	log.G(context.TODO()).Debugf("Using config file %s", viper.ConfigFileUsed())
+	log.G(context.TODO()).Debugf("Config file %s", viper.ConfigFileUsed())
 
 	var conf = config.Config{
 		LogLevel:   "info",
@@ -152,7 +152,7 @@ func readConfig(path string) (*config.Config, error) {
 func configLog(logLevel string) error {
 	level, err := log.ParseLevel(logLevel)
 	if err != nil {
-		return strongerrors.InvalidArgument(errors.Errorf("%s: log level %q not supported", err.Error(), level))
+		return strongerrors.InvalidArgument(errors.Errorf("Log level %q not supported: %s", level, err.Error()))
 	}
 	logrus.SetLevel(level)
 
@@ -176,7 +176,7 @@ func (k *KubeSim) submit(clock clock.Clock) error {
 			pod.Status.Phase = v1.PodPending
 
 			log.L.Tracef("Submit %v", pod)
-			log.L.Debugf("Submit %q", pod.Name)
+			log.L.Debugf("Submit %s", pod.Name)
 
 			k.podQueue.Push(pod)
 		}

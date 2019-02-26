@@ -49,11 +49,11 @@ func (ext *Extender) filter(
 		return nodes, nil
 	}
 
-	log.L.Tracef("Extender %q: Filtering nodes %v", ext.Name, nodes)
+	log.L.Tracef("Extender %s: Filtering nodes %v", ext.Name, nodes)
 
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 	// FIXME: args.NodeNames may be not populated
-	log.L.Debugf("Extender %q: Filtering nodes %v", ext.Name, args.NodeNames)
+	log.L.Debugf("Extender %s: Filtering nodes %v", ext.Name, args.NodeNames)
 
 	result := ext.Filter(args)
 
@@ -83,8 +83,8 @@ func (ext *Extender) filter(
 		}
 	}
 
-	log.L.Tracef("Filtered nodes %v", nodes)
-	log.L.Debugf("Filtered nodes %v", result.NodeNames)
+	log.L.Tracef("Extender %s: Filtered nodes %v", ext.Name, nodes)
+	log.L.Debugf("Extender %s: Filtered nodes %v", ext.Name, result.NodeNames)
 
 	return nodes, nil
 }
@@ -94,15 +94,15 @@ func (ext *Extender) prioritize(pod *v1.Pod, nodes []*v1.Node, prioMap map[strin
 		return
 	}
 
-	log.L.Tracef("Extender %q: Prioritizing nodes %v", ext.Name, nodes)
+	log.L.Tracef("Extender %s: Prioritizing nodes %v", ext.Name, nodes)
 
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 	// FIXME: args.NodeNames may be not populated
-	log.L.Debugf("Extender %q: Prioritizing nodes %v", ext.Name, args.NodeNames)
+	log.L.Debugf("Extender %s: Prioritizing nodes %v", ext.Name, args.NodeNames)
 
 	result := ext.Prioritize(args)
 
-	log.L.Debugf("Prioritized %v", result)
+	log.L.Debugf("Extender %s: Prioritized %v", ext.Name, result)
 	for _, prio := range result {
 		prioMap[prio.Host] += prio.Score * ext.Weight
 	}

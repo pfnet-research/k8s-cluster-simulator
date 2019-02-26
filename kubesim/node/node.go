@@ -68,6 +68,41 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
+// Pod returns the pod by name that was accepted on this node.
+// The returned pod may have failed to be scheduled.
+// Returns error if the pod is not found.
+func (node *Node) Pod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
+	log.L.Tracef("Node %q: Pod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
+
+	pod := node.simPod(namespace, name)
+	if pod == nil {
+		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
+	}
+
+	return pod.ToV1(), nil
+}
+
+// PodList returns the list of all pods that were accepted on this node.
+// Each of the returned pods may have failed to be scheduled.
+func (node *Node) PodList(clock clock.Clock) []*v1.Pod {
+	log.L.Tracef("Node %q: PodList(%v) called", node.v1.Name, clock)
+	return node.pods.ListPods()
+}
+
+// PodStatus returns the status of the pod by name.
+// Returns error if the pod is not found.
+func (node *Node) PodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
+	log.L.Tracef("Node %q: PodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
+
+	pod := node.simPod(namespace, name)
+	if pod == nil {
+		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
+	}
+
+	status := pod.BuildStatus(clock)
+	return &status, nil
+}
+
 // runningPodsWithStatus returns all running pods at the time clock, with their status updated.
 func (node *Node) runningPodsWithStatus(clock clock.Clock) []*v1.Pod {
 	pods := []*v1.Pod{}

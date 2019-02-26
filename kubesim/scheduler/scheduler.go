@@ -1,10 +1,10 @@
 package scheduler
 
 import (
-	"fmt"
+	"errors"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/errors"
+	kerr "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
@@ -85,12 +85,12 @@ func (sched *GenericScheduler) Schedule(
 			if err == queue.ErrEmptyQueue {
 				break
 			} else {
-				panic("Unexpected error raised by Queueu.Pop()")
+				return results, errors.New("Unexpected error raised by Queueu.Pop()")
 			}
 		}
 
 		log.L.Tracef("Trying to schedule pod %v", pod)
-		log.L.Debugf("Trying to schedule pod %q", pod.Name)
+		log.L.Debugf("Trying to schedule pod %s", pod.Name)
 
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap)
 		if err != nil {
@@ -98,7 +98,7 @@ func (sched *GenericScheduler) Schedule(
 
 			if _, ok := err.(*core.FitError); ok {
 				log.L.Tracef("Pod %v does not fit in any node", pod)
-				log.L.Debugf("Pod %q does not fit in any node", pod.Name)
+				log.L.Debugf("Pod %s does not fit in any node", pod.Name)
 				break
 			} else {
 				return []ScheduleBinding{}, nil
@@ -108,7 +108,7 @@ func (sched *GenericScheduler) Schedule(
 		pod, _ = podQueue.Pop()
 		updatePodStatusSchedulingSucceess(clock, pod)
 
-		log.L.Debugf("Selected Node %q", result.SuggestedHost)
+		log.L.Debugf("Selected node %s", result.SuggestedHost)
 
 		results = append(results, ScheduleBinding{pod, result})
 	}
@@ -192,7 +192,7 @@ func (sched *GenericScheduler) filter(
 	filteredNodes := nodes
 
 	// In-process plugins
-	errs := errors.MessageCountMap{}
+	errs := kerr.MessageCountMap{}
 	for name, p := range sched.predicates {
 		filteredNodes = callPredicatePlugin(name, &p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
 		if len(filteredNodes) == 0 {
@@ -201,7 +201,7 @@ func (sched *GenericScheduler) filter(
 	}
 
 	if len(errs) > 0 {
-		return []*v1.Node{}, core.FailedPredicateMap{}, errors.CreateAggregateFromMessageCountMap(errs)
+		return []*v1.Node{}, core.FailedPredicateMap{}, kerr.CreateAggregateFromMessageCountMap(errs)
 	}
 
 	// Extenders
@@ -223,7 +223,7 @@ func (sched *GenericScheduler) filter(
 	for _, node := range filteredNodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
-	log.L.Debugf("Filtered %v", nodeNames)
+	log.L.Debugf("Filtered nodes %v", nodeNames)
 
 	return filteredNodes, failedPredicateMap, nil
 }
@@ -270,7 +270,7 @@ func (sched *GenericScheduler) prioritize(
 	}
 
 	if len(errs) > 0 {
-		return api.HostPriorityList{}, errors.NewAggregate(errs)
+		return api.HostPriorityList{}, kerr.NewAggregate(errs)
 	}
 
 	// Extenders
@@ -285,14 +285,14 @@ func (sched *GenericScheduler) prioritize(
 		}
 	}
 
-	log.L.Debugf("Prioritized %v", prioList)
+	log.L.Debugf("Prioritized nodes %v", prioList)
 
 	return prioList, nil
 }
 
 func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (string, error) {
 	if len(priorities) == 0 {
-		return "", fmt.Errorf("empty priorities")
+		return "", errors.New("Empty priorities")
 	}
 
 	maxScores := findMaxScores(priorities)
