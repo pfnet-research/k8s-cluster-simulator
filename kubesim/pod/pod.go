@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"encoding/json"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -24,9 +25,9 @@ type Metrics struct {
 	ResourceLimit   v1.ResourceList
 	ResourceUsage   v1.ResourceList
 
-	BoundAt          clock.Clock
-	Node             string
-	ExecutedDuration time.Duration
+	BoundAt         clock.Clock
+	Node            string
+	ExecutedSeconds int32
 
 	Status Status
 }
@@ -40,6 +41,18 @@ const (
 	// OverCapacity indicates that the pod is failed to start due to capacity over.
 	OverCapacity
 )
+
+// MarshalJSON implements json.Marshaler.
+func (status Status) MarshalJSON() ([]byte, error) {
+	var s string
+	switch status {
+	case Ok:
+		s = "Ok"
+	case OverCapacity:
+		s = "OverCapacity"
+	}
+	return json.Marshal(s)
+}
 
 // NewPod creates a pod with the v1.Pod definition, the starting time, and the status.
 // Returns error if it fails to parse the simulation spec of the pod.
@@ -70,9 +83,9 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 		ResourceLimit:   pod.TotalResourceLimits(),
 		ResourceUsage:   pod.ResourceUsage(clock),
 
-		BoundAt:          pod.boundAt,
-		Node:             pod.node,
-		ExecutedDuration: pod.executedDuration(clock),
+		BoundAt:         pod.boundAt,
+		Node:            pod.node,
+		ExecutedSeconds: int32(pod.executedDuration(clock).Seconds()),
 
 		Status: pod.status,
 	}
