@@ -10,6 +10,7 @@ import (
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -17,6 +18,15 @@ import (
 type Node struct {
 	v1   *v1.Node
 	pods pod.Map
+}
+
+// Metrics is a metrics of a node at a time instance.
+type Metrics struct {
+	Capacity             v1.ResourceList
+	RunningPodsNum       int64
+	FailedPodsNum        int64
+	TotalResourceRequest v1.ResourceList
+	TotalResourceUsage   v1.ResourceList
 }
 
 // NewNode creates a new node with the v1.Node definition.
@@ -34,32 +44,43 @@ func (node *Node) ToV1() *v1.Node {
 
 // ToNodeInfo creates nodeinfo.NodeInfo object from this node.
 func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
-	pods := node.runningPodsWithStatus(clock)
+	pods := node.runningV1PodsWithStatus(clock)
 	nodeInfo := nodeinfo.NewNodeInfo(pods...)
 	nodeInfo.SetNode(node.ToV1())
 	return nodeInfo
 }
 
-// CreatePod accepts the definition of a pod and try to start it.
-// The pod will fail to be scheduled if there is not sufficient resources.
+// Metrics returns the Metrics at the time clock.
+func (node *Node) Metrics(clock clock.Clock) Metrics {
+	return Metrics{
+		Capacity:             node.ToV1().Status.Capacity,
+		RunningPodsNum:       node.runningPodsNum(clock),
+		FailedPodsNum:        node.bindingFailedPodsNum(),
+		TotalResourceRequest: node.totalResourceRequest(clock),
+		TotalResourceUsage:   node.totalResourceUsage(clock),
+	}
+}
+
+// CreatePod accepts the definition of a pod and try to start it. The pod will fail to be bound if
+// there is not sufficient resources.
 func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
-	log.L.Tracef("Node %q: CreatePod(%v, %q) called", node.v1.Name, clock, v1Pod.Name)
+	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, v1Pod.Name)
 
 	key, err := buildKey(v1Pod)
 	if err != nil {
 		return err
 	}
 
-	newTotalReq := resourceListSum(node.totalResourceRequest(clock), extractResourceRequest(v1Pod))
-	cap := node.v1.Status.Capacity
+	newTotalReq := util.ResourceListSum(node.totalResourceRequest(clock), util.PodTotalResourceRequests(v1Pod))
+	capacity := node.ToV1().Status.Capacity
 	var podStatus pod.Status
-	if !resourceListGE(cap, newTotalReq) || node.runningPodsNum(clock) >= cap.Pods().Value() {
+	if !util.ResourceListGE(capacity, newTotalReq) || node.runningPodsNum(clock) >= capacity.Pods().Value() {
 		podStatus = pod.OverCapacity
 	} else {
 		podStatus = pod.Ok
 	}
 
-	simPod, err := pod.NewPod(v1Pod, clock, podStatus)
+	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name)
 	if err != nil {
 		return err
 	}
@@ -68,43 +89,27 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
-// Pod returns the pod by name that was accepted on this node.
-// The returned pod may have failed to be scheduled.
-// Returns error if the pod is not found.
-func (node *Node) Pod(clock clock.Clock, namespace, name string) (*v1.Pod, error) {
-	log.L.Tracef("Node %q: Pod(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
-
-	pod := node.simPod(namespace, name)
-	if pod == nil {
-		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
+// Pod returns the *pod.Pod by name that was accepted on this node. The returned pod may have
+// failed to be bound. Returns nil if the pod is not found.
+func (node *Node) Pod(namespace, name string) *pod.Pod {
+	key := buildKeyFromNames(namespace, name)
+	pod, ok := node.pods.Load(key)
+	if !ok {
+		return nil
 	}
 
-	return pod.ToV1(), nil
+	return pod
 }
 
-// PodList returns the list of all pods that were accepted on this node.
-// Each of the returned pods may have failed to be scheduled.
-func (node *Node) PodList(clock clock.Clock) []*v1.Pod {
-	log.L.Tracef("Node %q: PodList(%v) called", node.v1.Name, clock)
+// PodList returns the list of all pods that were accepted on this node. Each of the returned pods
+// may have failed to be bound.
+func (node *Node) PodList() []pod.Pod {
 	return node.pods.ListPods()
 }
 
-// PodStatus returns the status of the pod by name.
-// Returns error if the pod is not found.
-func (node *Node) PodStatus(clock clock.Clock, namespace, name string) (*v1.PodStatus, error) {
-	log.L.Tracef("Node %q: PodStatus(%v, %q, %q) called", node.v1.Name, clock, namespace, name)
-
-	pod := node.simPod(namespace, name)
-	if pod == nil {
-		return nil, strongerrors.NotFound(fmt.Errorf("pod %q not found", buildKeyFromNames(namespace, name)))
-	}
-
-	status := pod.BuildStatus(clock)
-	return &status, nil
-}
-
-// runningPodsWithStatus returns all running pods at the time clock, with their status updated.
-func (node *Node) runningPodsWithStatus(clock clock.Clock) []*v1.Pod {
+// runningV1PodsWithStatus returns all running pods in *v1.Pod representation at the time clock,
+// with their status updated.
+func (node *Node) runningV1PodsWithStatus(clock clock.Clock) []*v1.Pod {
 	pods := []*v1.Pod{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		podV1 := pod.ToV1()
@@ -124,10 +129,11 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	node.pods.Range(func(_ string, pod pod.Pod) bool {
 		if pod.IsRunning(clock) {
-			total = resourceListSum(total, extractResourceRequest(pod.ToV1()))
+			total = util.ResourceListSum(total, pod.TotalResourceRequests())
 		}
 		return true
 	})
+
 	return total
 }
 
@@ -143,17 +149,29 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	return num
 }
 
-// simPod returns a *pod.Pod by name that was accepted on this node.
-// The returned pod may have failed to be scheduled.
-// Returns nil if the pod is not found.
-func (node *Node) simPod(namespace, name string) *pod.Pod {
-	key := buildKeyFromNames(namespace, name)
-	pod, ok := node.pods.Load(key)
-	if !ok {
-		return nil
-	}
+// bindingFailedPodsNum returns the number of pods that failed to be bound to this node.
+func (node *Node) bindingFailedPodsNum() int64 {
+	num := int64(0)
+	node.pods.Range(func(_ string, pod pod.Pod) bool {
+		if pod.IsBindingFailed() {
+			num++
+		}
+		return true
+	})
+	return num
+}
 
-	return pod
+// totalResourceUsage calculates the total resource usage of all running pods at the time clock.
+func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
+	total := v1.ResourceList{}
+	node.pods.Range(func(_ string, pod pod.Pod) bool {
+		if pod.IsRunning(clock) {
+			total = util.ResourceListSum(total, pod.ResourceUsage(clock))
+		}
+		return true
+	})
+
+	return total
 }
 
 // buildKey builds a key for the provided pod.
