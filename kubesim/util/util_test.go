@@ -39,3 +39,110 @@ func TestBuildResourceList(t *testing.T) {
 		t.Errorf("got: %v\nwant: error", actual)
 	}
 }
+
+func TestResourceListSum(t *testing.T) {
+	r1 := v1.ResourceList{
+		"cpu":    resource.MustParse("1"),
+		"memory": resource.MustParse("2Gi"),
+	}
+
+	r2 := v1.ResourceList{
+		"cpu":            resource.MustParse("2"),
+		"memory":         resource.MustParse("4Gi"),
+		"nvidia.com/gpu": resource.MustParse("1"),
+	}
+
+	expected := v1.ResourceList{
+		"cpu":            resource.MustParse("3"),
+		"memory":         resource.MustParse("6Gi"),
+		"nvidia.com/gpu": resource.MustParse("1"),
+	}
+
+	actual := util.ResourceListSum(r1, r2)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+
+	actual = util.ResourceListSum(r2, r1)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
+
+func TestResourceListDiff(t *testing.T) {
+	r1 := v1.ResourceList{
+		"cpu":            resource.MustParse("2"),
+		"memory":         resource.MustParse("4Gi"),
+		"nvidia.com/gpu": resource.MustParse("1"),
+	}
+
+	r2 := v1.ResourceList{
+		"cpu":    resource.MustParse("1"),
+		"memory": resource.MustParse("2Gi"),
+	}
+
+	expected := v1.ResourceList{
+		"cpu":            resource.MustParse("1"),
+		"memory":         resource.MustParse("2Gi"),
+		"nvidia.com/gpu": resource.MustParse("1"),
+	}
+
+	actual, _ := util.ResourceListDiff(r1, r2)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+
+	actual, err := util.ResourceListDiff(r2, r1)
+	if err != util.ErrResourceListDiffNotGE {
+		t.Errorf("got: %v\nwant: %v", actual, err)
+	}
+}
+
+func TestResourceListGE(t *testing.T) {
+	r1 := v1.ResourceList{
+		"cpu":            resource.MustParse("2"),
+		"memory":         resource.MustParse("4Gi"),
+		"nvidia.com/gpu": resource.MustParse("1"),
+	}
+
+	expected := true
+	actual := util.ResourceListGE(r1, r1)
+	if expected != actual {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+
+	r2 := v1.ResourceList{
+		"cpu":    resource.MustParse("1"),
+		"memory": resource.MustParse("2Gi"),
+	}
+
+	expected = true
+	actual = util.ResourceListGE(r1, r2)
+	if expected != actual {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+
+	expected = false
+	actual = util.ResourceListGE(r2, r1)
+	if expected != actual {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+
+	r3 := v1.ResourceList{
+		"cpu":            resource.MustParse("2"),
+		"memory":         resource.MustParse("2Gi"),
+		"nvidia.com/gpu": resource.MustParse("2"),
+	}
+
+	expected = false
+	actual = util.ResourceListGE(r1, r3)
+	if expected != actual {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+
+	expected = false
+	actual = util.ResourceListGE(r3, r1)
+	if expected != actual {
+		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
