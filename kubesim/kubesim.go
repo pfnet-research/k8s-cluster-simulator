@@ -243,17 +243,13 @@ func (k *KubeSim) writeMetrics() error {
 		return nil
 	}
 
-	nodesMetrics["clock"] = k.clock.ToRFC3339()
-	podsMetrics["clock"] = k.clock.ToRFC3339()
+	nodesMetrics, podsMetrics := metrics.BuildMetrics(k.clock, k.nodes)
 
-	for name, node := range k.nodes {
-		nodesMetrics[name] = node.Metrics(k.clock)
-		for _, pod := range node.PodList() {
-			if !pod.IsTerminated(k.clock) {
-				podsMetrics[pod.ToV1().Name] = pod.Metrics(k.clock)
-			}
+	for _, writer := range k.metricsWriters {
+		if err := writer.Write(nodesMetrics, podsMetrics); err != nil {
+			return err
 		}
 	}
 
-	return k.metricsWriter.Write(nodesMetrics, podsMetrics)
+	return nil
 }

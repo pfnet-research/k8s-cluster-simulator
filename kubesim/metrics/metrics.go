@@ -3,14 +3,46 @@ package metrics
 import (
 	"encoding/json"
 	"os"
-	"unsafe"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 )
 
-// NodesMetrics is a map associating node names and node.Metrics, plus "clock" to a formatted clock.
+// NodesMetrics is a map associating node names and node.Metrics,
+// plus "type" to nodesMetricsType and "clock" to a formatted clock.
 type NodesMetrics map[string]interface{}
 
-// PodsMetrics is a map associating pod names and pod.Metrics, plus "clock" to a formatted clock.
+// PodsMetrics is a map associating pod names and pod.Metrics,
+// plus "type" to podsMetricsType and "clock" to a formatted clock.
 type PodsMetrics map[string]interface{}
+
+const (
+	nodesMetricsType = "NodesMetrics"
+	podsMetricsType  = "PodsMetrics"
+)
+
+// BuildMetrics builds NodesMetrics and PodsMetrics.
+func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) (NodesMetrics, PodsMetrics) {
+	nodesMetrics := make(map[string]interface{})
+	podsMetrics := make(map[string]interface{})
+
+	nodesMetrics["clock"] = clock.ToRFC3339()
+	nodesMetrics["type"] = nodesMetricsType
+
+	podsMetrics["clock"] = clock.ToRFC3339()
+	podsMetrics["type"] = podsMetricsType
+
+	for name, node := range nodes {
+		nodesMetrics[name] = node.Metrics(clock)
+		for _, pod := range node.PodList() {
+			if !pod.IsTerminated(clock) {
+				podsMetrics[pod.ToV1().Name] = pod.Metrics(clock)
+			}
+		}
+	}
+
+	return nodesMetrics, podsMetrics
+}
 
 // Writer defines the interface of metrics writer.
 type Writer interface {
