@@ -77,6 +77,14 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		metricsWriters = append(metricsWriters, writer)
 	}
 
+	if conf.MetricsPort != 0 {
+		writer := metrics.NewWebServer(conf.MetricsPort)
+		log.L.Infof("Log written to port %d", conf.MetricsPort)
+		metricsWriters = append(metricsWriters, writer)
+
+		writer.Serve() // TODO
+	}
+
 	return &KubeSim{
 		tick:  conf.Tick,
 		clock: clock.NewClock(clk),

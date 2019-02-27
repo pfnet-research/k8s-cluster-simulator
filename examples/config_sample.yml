@@ -10,7 +10,9 @@ tick: 10
 # Optional (default: not to write metrics to a file)
 metricsFile: kubesim.log
 
-# metricsPort: 10255
+# Metrics of simulated kubernetes cluster is written to this port on localhost.
+# Optional (default: not to write metrics to a port)
+metricsPort: 10255
 
 # apiPort: 10250
 

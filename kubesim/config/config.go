@@ -17,7 +17,7 @@ type Config struct {
 	Tick        int
 	StartClock  string
 	MetricsFile string
-	// MetricsPort int
+	MetricsPort int
 	// APIPort     int
 	Cluster ClusterConfig
 }
