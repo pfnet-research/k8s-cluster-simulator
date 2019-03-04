@@ -8,6 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
@@ -16,10 +17,15 @@ type Config struct {
 	LogLevel    string
 	Tick        int
 	StartClock  string
-	MetricsFile string
+	MetricsFile MetricsFileConfig
 	// MetricsPort int
 	// APIPort     int
 	Cluster ClusterConfig
+}
+
+type MetricsFileConfig struct {
+	Path      string
+	Formatter string
 }
 
 type ClusterConfig struct {
@@ -39,6 +45,33 @@ type TaintConfig struct { // made public for the deserialization by viper
 	Key    string
 	Value  string
 	Effect string
+}
+
+// BuildMetricsFile builds a *metrics.FileFormatter with the given MetricsFileConfig.
+// Returns error if the config is invalid, failed to parse, or failed to create a FileWriter.
+func BuildMetricsFile(config MetricsFileConfig) (*metrics.FileWriter, error) {
+	if config.Path == "" && config.Formatter == "" {
+		return nil, nil
+	}
+	if config.Path == "" || config.Formatter == "" {
+		return nil, strongerrors.InvalidArgument(errors.New("either metricsFile.Path or metricsFile.Formatter not given"))
+	}
+
+	formatter, err := buildFormatter(config.Formatter)
+	if err != nil {
+		return nil, err
+	}
+
+	return metrics.NewFileWriter(config.Path, formatter)
+}
+
+func buildFormatter(config string) (metrics.Formatter, error) {
+	switch config {
+	case "JSON":
+		return &metrics.JSONFormatter{}, nil
+	default:
+		return nil, strongerrors.InvalidArgument(errors.Errorf("formatter %q is not supported", config))
+	}
 }
 
 // BuildNode builds a *v1.Node with the provided node config.

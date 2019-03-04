@@ -68,13 +68,13 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 	}
 
 	metricsWriters := []metrics.Writer{}
-	if conf.MetricsFile != "" {
-		writer, err := metrics.NewFileWriter(conf.MetricsFile)
+	fileWriter, err := config.BuildMetricsFile(conf.MetricsFile)
 		if err != nil {
 			return nil, err
 		}
-		log.L.Infof("Log written to %s", conf.MetricsFile)
-		metricsWriters = append(metricsWriters, writer)
+	if fileWriter != nil {
+		log.L.Infof("Metrics and log written to %s", fileWriter.FileName())
+		metricsWriters = append(metricsWriters, fileWriter)
 	}
 
 	return &KubeSim{
