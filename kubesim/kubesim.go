@@ -92,6 +92,11 @@ func (k *KubeSim) AddSubmitter(submitter api.Submitter) {
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
 // This method blocks until ctx is done.
 func (k *KubeSim) Run(ctx context.Context) error {
+	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -99,7 +104,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		default:
 			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
 
-			if err := k.submit(); err != nil {
+			if err := k.submit(met); err != nil {
 				return err
 			}
 
@@ -107,7 +112,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			if err := k.writeMetrics(); err != nil {
+			met, err = k.writeMetrics()
+			if err != nil {
 				return err
 			}
 
@@ -217,15 +223,13 @@ func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	return writers, nil
 }
 
-func (k *KubeSim) submit() error {
+func (k *KubeSim) submit(metrics metrics.Metrics) error {
 	if len(k.submitters) == 0 {
 		return nil
 	}
 
-	nodes, _ := k.List()
-
 	for _, submitter := range k.submitters {
-		pods, err := submitter.Submit(k.clock, nodes)
+		pods, err := submitter.Submit(k.clock, k, metrics)
 		if err != nil {
 			return err
 		}
@@ -278,21 +282,17 @@ func (k *KubeSim) schedule() error {
 	return nil
 }
 
-func (k *KubeSim) writeMetrics() error {
-	if len(k.metricsWriters) == 0 {
-		return nil
-	}
-
-	metrics, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
+func (k *KubeSim) writeMetrics() (metrics.Metrics, error) {
+	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
 	if err != nil {
-		return err
+		return metrics.Metrics{}, err
 	}
 
 	for _, writer := range k.metricsWriters {
-		if err := writer.Write(metrics); err != nil {
-			return err
+		if err := writer.Write(met); err != nil {
+			return metrics.Metrics{}, err
 		}
 	}
 
-	return nil
+	return met, nil
 }
