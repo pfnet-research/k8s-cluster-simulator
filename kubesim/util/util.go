@@ -27,8 +27,8 @@ func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, e
 	return resourceList, nil
 }
 
-// UpdatePodCondition is copied from podutil.UpdatePodCondition().
-// (We cannot call it because it uses metav1.Now().)
+// UpdatePodCondition is copied from "k8s.io/kubernetes/pkg/api/pod".UpdatePodCondition().
+// (KubeSim cannot call it because it uses metav1.Now().)
 //
 // > UpdatePodCondition updates existing pod condition or creates a new one. Sets
 // > LastTransitionTime to now if the status has changed. Returns true if pod condition has changed

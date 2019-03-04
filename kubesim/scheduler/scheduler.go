@@ -311,6 +311,7 @@ func (sched *GenericScheduler) prioritize(
 	return prioList, nil
 }
 
+// selectHost is copied from "k8s.io/kubernetes/pkg/scheduler/core".selectHost().
 func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (string, error) {
 	if len(priorities) == 0 {
 		return "", errors.New("Empty priorities")
@@ -323,6 +324,7 @@ func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (stri
 	return priorities[maxScores[idx]].Host, nil
 }
 
+// findMaxScores is copied from "k8s.io/kubernetes/pkg/scheduler/core".findMaxScores().
 func findMaxScores(priorities api.HostPriorityList) []int {
 	maxScoreIndexes := make([]int, 0, len(priorities)/2)
 	maxScore := priorities[0].Score
