@@ -16,7 +16,7 @@ metricsFile:
 # Metrics is (also) written to stdout.
 # Optional (default: not writing metrics to stdout)
 metricsStdout:
-  formatter: JSON
+  formatter: humanReadable
 
 # metricsPort: 10255
 
