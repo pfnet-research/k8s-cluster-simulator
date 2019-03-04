@@ -57,9 +57,9 @@ func (node *Node) Metrics(clock clock.Clock) Metrics {
 	}
 }
 
-// CreatePod accepts the definition of a pod and try to start it. The pod will fail to be bound if
+// BindPod accepts the definition of a pod and try to start it. The pod will fail to be bound if
 // there is not sufficient resources.
-func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
+func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) error {
 	key, err := util.PodKey(v1Pod)
 	if err != nil {
 		return err
