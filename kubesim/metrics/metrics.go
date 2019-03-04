@@ -3,31 +3,28 @@ package metrics
 import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
 )
 
-// NodesMetrics is a map associating node names and node.Metrics,
-// plus "Type" to nodesMetricsType and "Clock" to a formatted clock.
-type NodesMetrics map[string]interface{}
-
-// PodsMetrics is a map associating pod names and pod.Metrics,
-// plus "Type" to podsMetricsType and "Clock" to a formatted clock.
-type PodsMetrics map[string]interface{}
+// Metrics represents a metrics at one time point, in the following structure.
+//   Metrics[clockKey] = a formatted clock
+//   Metrics[nodesMetricsKey] = map from node name to node.Metrics
+//   Metrics[podsMetricsKey] = map from pod name to pod.Metrics
+type Metrics map[string]interface{}
 
 const (
-	nodesMetricsType = "NodesMetrics"
-	podsMetricsType  = "PodsMetrics"
+	clockKey        = "Clock"
+	nodesMetricsKey = "Nodes"
+	podsMetricsKey  = "Pods"
 )
 
-// BuildMetrics builds NodesMetrics and PodsMetrics.
-func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) (NodesMetrics, PodsMetrics) {
-	nodesMetrics := make(map[string]interface{})
-	podsMetrics := make(map[string]interface{})
+// BuildMetrics builds a Metrics at the time clock.
+func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) Metrics {
+	metrics := make(map[string]interface{})
+	metrics[clockKey] = clock.ToRFC3339()
 
-	nodesMetrics["Clock"] = clock.ToRFC3339()
-	nodesMetrics["Type"] = nodesMetricsType
-
-	podsMetrics["Clock"] = clock.ToRFC3339()
-	podsMetrics["Type"] = podsMetricsType
+	nodesMetrics := make(map[string]node.Metrics)
+	podsMetrics := make(map[string]pod.Metrics)
 
 	for name, node := range nodes {
 		nodesMetrics[name] = node.Metrics(clock)
@@ -38,20 +35,20 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) (NodesMetrics,
 		}
 	}
 
-	return nodesMetrics, podsMetrics
+	metrics[nodesMetricsKey] = nodesMetrics
+	metrics[podsMetricsKey] = podsMetrics
+
+	return metrics
 }
 
 // Formatter defines the interface of metrics formatter.
 type Formatter interface {
-	// FormatNodesMetrics formats the given NodesMetrics to a string.
-	FormatNodesMetrics(nodesMetrics NodesMetrics) (string, error)
-
-	// FormatPodsMetrics formats the given PodsMetrics to a string.
-	FormatPodsMetrics(podsMetrics PodsMetrics) (string, error)
+	// Format formats the given metrics to a string.
+	Format(metrics Metrics) (string, error)
 }
 
 // Writer defines the interface of metrics writer.
 type Writer interface {
-	// Write writes the given NodesMetrics and PodsMetrics to some location.
-	Write(nodesMetrics NodesMetrics, podsMetrics PodsMetrics) error
+	// Write writes the given metrics to some location.
+	Write(metrics Metrics) error
 }

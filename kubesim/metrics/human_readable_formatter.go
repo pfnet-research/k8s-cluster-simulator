@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
@@ -11,36 +10,69 @@ import (
 // HumanReadableFormatter formats metrics in a human-readable style.
 type HumanReadableFormatter struct{}
 
-func (h *HumanReadableFormatter) FormatNodesMetrics(nodesMetrics NodesMetrics) (string, error) {
-	clk, ok := nodesMetrics["Clock"]
+func (h *HumanReadableFormatter) Format(metrics Metrics) (string, error) {
+	// Clock
+	clk, ok := metrics[clockKey]
 	if !ok {
-		return "", errors.New("No \"Clock\" field in nodesMetrics")
+		return "", fmt.Errorf("No %q field in metrics", clockKey)
 	}
 	c, ok := clk.(string)
 	if !ok {
-		return "", fmt.Errorf("Type assertion failed: \"Clock\" field %v is not string", c)
+		return "", fmt.Errorf("Type assertion failed: %q field %v is not string", clockKey, clk)
+	}
+	str := "Metrics " + c + "\n"
+
+	// Nodes
+	str += "  Nodes\n"
+
+	nodesMetrics, ok := metrics[nodesMetricsKey]
+	if !ok {
+		return "", fmt.Errorf("No %q field in metrics", nodesMetricsKey)
+	}
+	nodesMet, ok := nodesMetrics.(map[string]node.Metrics)
+	if !ok {
+		return "", fmt.Errorf("Type assertion failed: %q field %v is not map[string]node.Metrics", nodesMetricsKey, nodesMetrics)
 	}
 
-	str := "NodesMetrics " + c + "\n"
+	s, err := formatNodesMetrics(nodesMet)
+	if err != nil {
+		return "", err
+	}
+	str += s
 
-	for nodeName, met := range nodesMetrics {
-		if nodeName == "Clock" || nodeName == "Type" {
-			continue
-		}
+	// Pods
+	str += "  Pods\n"
 
-		m, ok := met.(node.Metrics)
-		if !ok {
-			return "", fmt.Errorf("Type assertion failed: %v is not node.Metrics", met)
-		}
+	podsMetrics, ok := metrics[podsMetricsKey]
+	if !ok {
+		return "", fmt.Errorf("No %q field in metrics", podsMetricsKey)
+	}
+	podsMet, ok := podsMetrics.(map[string]pod.Metrics)
+	if !ok {
+		return "", fmt.Errorf("Type assertion failed: %q field %v is not map[string]pod.Metrics", podsMetricsKey, podsMetrics)
+	}
 
-		str += fmt.Sprintf("  %s: Pods %d/%d", nodeName, m.RunningPodsNum, m.Capacity.Pods().Value())
-		for rsrc, cap := range m.Capacity {
+	s, err = formatPodsMetrics(podsMet)
+	if err != nil {
+		return "", err
+	}
+	str += s
+
+	return str, nil
+}
+
+func formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
+	str := ""
+
+	for name, met := range metrics {
+		str += fmt.Sprintf("    %s: Pods %d/%d", name, met.RunningPodsNum, met.Capacity.Pods().Value())
+		for rsrc, cap := range met.Capacity {
 			if rsrc == "pods" {
 				continue
 			}
 
-			usage := m.TotalResourceUsage[rsrc] // !ok -> usage == 0
-			req := m.TotalResourceRequest[rsrc]
+			usage := met.TotalResourceUsage[rsrc] // !ok -> usage == 0
+			req := met.TotalResourceRequest[rsrc]
 
 			if rsrc == "memory" {
 				d := int64(1 << 20)
@@ -50,40 +82,22 @@ func (h *HumanReadableFormatter) FormatNodesMetrics(nodesMetrics NodesMetrics) (
 			}
 		}
 
-		str += fmt.Sprintf(", Failed %d\n", m.FailedPodsNum)
+		str += fmt.Sprintf(", Failed %d\n", met.FailedPodsNum)
 	}
 
 	return str, nil
 }
 
-func (h *HumanReadableFormatter) FormatPodsMetrics(podsMetrics PodsMetrics) (string, error) {
-	clk, ok := podsMetrics["Clock"]
-	if !ok {
-		return "", errors.New("No \"Clock\" field in podsMetrics")
-	}
-	c, ok := clk.(string)
-	if !ok {
-		return "", fmt.Errorf("Type assertion failed: \"Clock\" field %v is not string", c)
-	}
+func formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
+	str := ""
 
-	str := "PodsMetrics " + c + "\n"
+	for name, met := range metrics {
+		str += fmt.Sprintf("    %s: bound on %s at %s, status %s, elapsed %d s",
+			name, met.BoundAt.ToRFC3339(), met.Node, met.Status, met.ExecutedSeconds)
 
-	for podName, met := range podsMetrics {
-		if podName == "Clock" || podName == "Type" {
-			continue
-		}
-
-		m, ok := met.(pod.Metrics)
-		if !ok {
-			return "", fmt.Errorf("Type assertion failed: %v is not pod.Metrics", met)
-		}
-
-		str += fmt.Sprintf("  %s: bound on %s at %s, status %s, elapsed %d s",
-			podName, m.BoundAt.ToRFC3339(), m.Node, m.Status, m.ExecutedSeconds)
-
-		for rsrc, req := range m.ResourceRequest {
-			lim := m.ResourceLimit[rsrc] // !ok -> usage == 0
-			usage := m.ResourceUsage[rsrc]
+		for rsrc, req := range met.ResourceRequest {
+			lim := met.ResourceLimit[rsrc] // !ok -> usage == 0
+			usage := met.ResourceUsage[rsrc]
 
 			if rsrc == "memory" {
 				d := int64(1 << 20)

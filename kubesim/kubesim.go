@@ -277,10 +277,9 @@ func (k *KubeSim) writeMetrics() error {
 		return nil
 	}
 
-	nodesMetrics, podsMetrics := metrics.BuildMetrics(k.clock, k.nodes)
-
+	metrics := metrics.BuildMetrics(k.clock, k.nodes)
 	for _, writer := range k.metricsWriters {
-		if err := writer.Write(nodesMetrics, podsMetrics); err != nil {
+		if err := writer.Write(metrics); err != nil {
 			return err
 		}
 	}

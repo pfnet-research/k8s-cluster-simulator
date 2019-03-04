@@ -27,19 +27,12 @@ func NewFileWriter(path string, formatter Formatter) (*FileWriter, error) {
 // FileName returns the name of file underlying this FileWriter.
 func (w *FileWriter) FileName() string { return w.file.Name() }
 
-func (w *FileWriter) Write(nodesMetrics NodesMetrics, podsMetrics PodsMetrics) error {
-	nodesStr, err := w.formatter.FormatNodesMetrics(nodesMetrics)
+func (w *FileWriter) Write(metrics Metrics) error {
+	str, err := w.formatter.Format(metrics)
 	if err != nil {
 		return err
 	}
-	w.file.WriteString(nodesStr)
-	w.file.Write([]byte{'\n'})
-
-	podsStr, err := w.formatter.FormatPodsMetrics(podsMetrics)
-	if err != nil {
-		return err
-	}
-	w.file.WriteString(podsStr)
+	w.file.WriteString(str)
 	w.file.Write([]byte{'\n'})
 
 	return nil
