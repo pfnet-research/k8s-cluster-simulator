@@ -18,6 +18,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
@@ -234,7 +235,12 @@ func (k *KubeSim) submit() error {
 			pod.Status.Phase = v1.PodPending
 
 			log.L.Tracef("Submit %v", pod)
-			log.L.Debugf("Submit %s", pod.Name)
+
+			key, err := util.PodKey(pod)
+			if err != nil {
+				return err
+			}
+			log.L.Debugf("Submit %s", key)
 
 			k.podQueue.Push(pod)
 		}
@@ -277,7 +283,11 @@ func (k *KubeSim) writeMetrics() error {
 		return nil
 	}
 
-	metrics := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
+	metrics, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
+	if err != nil {
+		return err
+	}
+
 	for _, writer := range k.metricsWriters {
 		if err := writer.Write(metrics); err != nil {
 			return err

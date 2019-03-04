@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -81,22 +83,6 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 // ErrResourceListDiffNotGE is returned from diffResourceList.
 var ErrResourceListDiffNotGE = errors.New("ResourceList is not greater equal")
 
-// // ResourceListDiff returns a difference between two resource lists.
-// // r1 must be greater or equal than r2, otherwise errResourceListDiffNotGE will be returned.
-// func ResourceListDiff(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
-// 	if !ResourceListGE(r1, r2) {
-// 		return v1.ResourceList{}, ErrResourceListDiffNotGE
-// 	}
-
-// 	diff := r1.DeepCopy()
-// 	for r2Key, r2Val := range r2 {
-// 		r1Val := diff[r2Key]
-// 		r1Val.Sub(r2Val)
-// 		diff[r2Key] = r1Val
-// 	}
-// 	return diff, nil
-// }
-
 // ResourceListGE returns true when r1 >= r2, false otherwise.
 func ResourceListGE(r1, r2 v1.ResourceList) bool {
 	for r2Key, r2Val := range r2 {
@@ -107,4 +93,23 @@ func ResourceListGE(r1, r2 v1.ResourceList) bool {
 		}
 	}
 	return true
+}
+
+// PodKey builds a key for the given pod.
+// Returns error if the pod does not have valid (= non-empty) namespace and name.
+func PodKey(pod *v1.Pod) (string, error) {
+	if pod.ObjectMeta.Namespace == "" {
+		return "", strongerrors.InvalidArgument(errors.New("Empty pod namespace"))
+	}
+
+	if pod.ObjectMeta.Name == "" {
+		return "", strongerrors.InvalidArgument(errors.New("Empty pod name"))
+	}
+
+	return PodKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name), nil
+}
+
+// PodKeyFromNames builds a key from the namespace and pod name.
+func PodKeyFromNames(namespace string, name string) string {
+	return fmt.Sprintf("%s/%s", namespace, name)
 }
