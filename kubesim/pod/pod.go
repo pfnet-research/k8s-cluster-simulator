@@ -42,16 +42,22 @@ const (
 	OverCapacity
 )
 
-// MarshalJSON implements json.Marshaler.
-func (status Status) MarshalJSON() ([]byte, error) {
-	var s string
+// String returns a string representation of this status.
+func (status Status) String() string {
 	switch status {
 	case Ok:
-		s = "Ok"
+		return "Ok"
 	case OverCapacity:
-		s = "OverCapacity"
+		return "OverCapacity"
+	default:
+		// unreachable
+		panic("Unknown pod.Status")
 	}
-	return json.Marshal(s)
+}
+
+// MarshalJSON implements json.Marshaler.
+func (status Status) MarshalJSON() ([]byte, error) {
+	return json.Marshal(status.String())
 }
 
 // NewPod creates a pod with the v1.Pod definition, the starting time, and the status.
