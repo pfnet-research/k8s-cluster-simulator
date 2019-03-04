@@ -12,8 +12,6 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
 
-// TODO: Place these functions at more proper location
-
 // BuildResourceList parses a map from resource names to quantities to v1.ResourceList.
 func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, error) {
 	resourceList := v1.ResourceList{}
