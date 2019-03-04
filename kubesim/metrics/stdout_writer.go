@@ -16,18 +16,12 @@ func NewStdoutWriter(formatter Formatter) StdoutWriter {
 	}
 }
 
-func (w *StdoutWriter) Write(nodesMetrics NodesMetrics, podsMetrics PodsMetrics) error {
-	nodesStr, err := w.formatter.FormatNodesMetrics(nodesMetrics)
+func (w *StdoutWriter) Write(metrics Metrics) error {
+	str, err := w.formatter.Format(metrics)
 	if err != nil {
 		return err
 	}
-	fmt.Println(nodesStr)
-
-	podsStr, err := w.formatter.FormatPodsMetrics(podsMetrics)
-	if err != nil {
-		return err
-	}
-	fmt.Println(podsStr)
+	fmt.Println(str)
 
 	return nil
 }
