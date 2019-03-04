@@ -5,6 +5,7 @@ import (
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 )
 
 // HumanReadableFormatter formats metrics in a human-readable style.
@@ -53,6 +54,24 @@ func (h *HumanReadableFormatter) Format(metrics Metrics) (string, error) {
 	}
 
 	s, err = formatPodsMetrics(podsMet)
+	if err != nil {
+		return "", err
+	}
+	str += s
+
+	// Queue
+	str += "  Queue\n"
+
+	queueMetrics, ok := metrics[queueMetricsKey]
+	if !ok {
+		return "", fmt.Errorf("No %q field in metrics", queueMetricsKey)
+	}
+	queueMet, ok := queueMetrics.(queue.Metrics)
+	if !ok {
+		return "", fmt.Errorf("Type assertion failed: %q field %v is not queue.Metrics", queueMetricsKey, queueMetrics)
+	}
+
+	s, err = formatQueueMetrics(queueMet)
 	if err != nil {
 		return "", err
 	}
@@ -111,6 +130,10 @@ func formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
 	}
 
 	return str, nil
+}
+
+func formatQueueMetrics(metrics queue.Metrics) (string, error) {
+	return fmt.Sprintf("    PendingPods %d\n", metrics.PendingPodsNum), nil
 }
 
 var _ = Formatter(&HumanReadableFormatter{})
