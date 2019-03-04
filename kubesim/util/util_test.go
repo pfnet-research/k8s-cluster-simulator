@@ -131,35 +131,6 @@ func TestPodTotalResourceRequests(t *testing.T) {
 	}
 }
 
-// func TestResourceListDiff(t *testing.T) {
-// 	r1 := v1.ResourceList{
-// 		"cpu":            resource.MustParse("2"),
-// 		"memory":         resource.MustParse("4Gi"),
-// 		"nvidia.com/gpu": resource.MustParse("1"),
-// 	}
-
-// 	r2 := v1.ResourceList{
-// 		"cpu":    resource.MustParse("1"),
-// 		"memory": resource.MustParse("2Gi"),
-// 	}
-
-// 	expected := v1.ResourceList{
-// 		"cpu":            resource.MustParse("1"),
-// 		"memory":         resource.MustParse("2Gi"),
-// 		"nvidia.com/gpu": resource.MustParse("1"),
-// 	}
-
-// 	actual, _ := util.ResourceListDiff(r1, r2)
-// 	if !resourceListEq(expected, actual) {
-// 		t.Errorf("got: %v\nwant: %v", actual, expected)
-// 	}
-
-// 	actual, err := util.ResourceListDiff(r2, r1)
-// 	if err != util.ErrResourceListDiffNotGE {
-// 		t.Errorf("got: %v\nwant: %v", actual, err)
-// 	}
-// }
-
 func TestResourceListGE(t *testing.T) {
 	r1 := v1.ResourceList{
 		"cpu":            resource.MustParse("2"),

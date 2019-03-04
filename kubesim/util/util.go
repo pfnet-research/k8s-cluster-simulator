@@ -81,22 +81,6 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 // ErrResourceListDiffNotGE is returned from diffResourceList.
 var ErrResourceListDiffNotGE = errors.New("ResourceList is not greater equal")
 
-// // ResourceListDiff returns a difference between two resource lists.
-// // r1 must be greater or equal than r2, otherwise errResourceListDiffNotGE will be returned.
-// func ResourceListDiff(r1, r2 v1.ResourceList) (v1.ResourceList, error) {
-// 	if !ResourceListGE(r1, r2) {
-// 		return v1.ResourceList{}, ErrResourceListDiffNotGE
-// 	}
-
-// 	diff := r1.DeepCopy()
-// 	for r2Key, r2Val := range r2 {
-// 		r1Val := diff[r2Key]
-// 		r1Val.Sub(r2Val)
-// 		diff[r2Key] = r1Val
-// 	}
-// 	return diff, nil
-// }
-
 // ResourceListGE returns true when r1 >= r2, false otherwise.
 func ResourceListGE(r1, r2 v1.ResourceList) bool {
 	for r2Key, r2Val := range r2 {
