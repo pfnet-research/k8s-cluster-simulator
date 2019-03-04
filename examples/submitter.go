@@ -6,8 +6,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 )
 
 type mySubmitter struct {
@@ -15,7 +17,7 @@ type mySubmitter struct {
 	submissionCnt uint64
 }
 
-func (s *mySubmitter) Submit(clock clock.Clock, nodes []*v1.Node) ([]*v1.Pod, error) {
+func (s *mySubmitter) Submit(clock clock.Clock, _ algorithm.NodeLister, _ metrics.Metrics) ([]*v1.Pod, error) {
 	if s.submissionCnt == 0 {
 		s.startClock = clock
 	}
@@ -23,7 +25,7 @@ func (s *mySubmitter) Submit(clock clock.Clock, nodes []*v1.Node) ([]*v1.Pod, er
 	pods := []*v1.Pod{}
 	elapsedSec := clock.Sub(s.startClock).Seconds()
 
-	for s.submissionCnt <= uint64(elapsedSec)/10 {
+	for s.submissionCnt <= uint64(elapsedSec)/21 {
 		pods = append(pods, newPod(s.submissionCnt, clock))
 		s.submissionCnt++
 	}
