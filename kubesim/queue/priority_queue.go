@@ -28,27 +28,19 @@ func NewPriorityQueue() *PriorityQueue {
 
 // NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator function.
 func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
-	rawPq := rawPriorityQueue{
-		items:      make([]*item, 0),
-		comparator: comparator,
-	}
-	heap.Init(&rawPq)
-
-	return &PriorityQueue{
-		inner: rawPq,
-	}
+	return newWithItems(make([]*item, 0), comparator)
 }
 
 // Reorder creates a new PriorityQueue. All pods stored in the original PriorityQueue are moved to
 // the new one, in the sorted order according to the given comparator.
 func (pq *PriorityQueue) Reorder(comparator Compare) *PriorityQueue {
 	pods := pq.inner.pendingPods()
-	pqNew := NewPriorityQueueWithComparator(comparator)
-	for _, pod := range pods {
-		pqNew.Push(pod)
+	items := make([]*item, 0, len(pods))
+	for index, pod := range pods {
+		items = append(items, &item{pod, index})
 	}
 
-	return pqNew
+	return newWithItems(items, comparator)
 }
 
 func (pq *PriorityQueue) Push(pod *v1.Pod) {
@@ -140,6 +132,18 @@ func DefaultComparator(pod0, pod1 *v1.Pod) bool {
 	ts1 := getPodTimestamp(pod1)
 
 	return (prio0 > prio1) || (prio0 == prio1 && ts0.Before(ts1))
+}
+
+func newWithItems(items []*item, comparator Compare) *PriorityQueue {
+	rawPq := rawPriorityQueue{
+		items:      items,
+		comparator: comparator,
+	}
+	heap.Init(&rawPq)
+
+	return &PriorityQueue{
+		inner: rawPq,
+	}
 }
 
 func getPodPriority(pod *v1.Pod) int32 {
