@@ -31,4 +31,10 @@ func (fifo *FIFOQueue) Front() (*v1.Pod, error) {
 	return fifo.q[0], nil
 }
 
+func (fifo *FIFOQueue) Metrics() Metrics {
+	return Metrics{
+		PendingPodsNum: len(fifo.q),
+	}
+}
+
 var _ = PodQueue(&FIFOQueue{})

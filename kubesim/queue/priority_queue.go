@@ -69,6 +69,12 @@ func (pq *PriorityQueue) Front() (*v1.Pod, error) {
 	return pq.inner.items[0].pod, nil
 }
 
+func (pq *PriorityQueue) Metrics() Metrics {
+	return Metrics{
+		PendingPodsNum: pq.inner.Len(),
+	}
+}
+
 var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
 
 type item struct {

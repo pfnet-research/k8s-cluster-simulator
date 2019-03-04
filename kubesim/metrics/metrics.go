@@ -4,6 +4,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 )
 
 // Metrics represents a metrics at one time point, in the following structure.
@@ -16,10 +17,11 @@ const (
 	clockKey        = "Clock"
 	nodesMetricsKey = "Nodes"
 	podsMetricsKey  = "Pods"
+	queueMetricsKey = "Queue"
 )
 
 // BuildMetrics builds a Metrics at the time clock.
-func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) Metrics {
+func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue) Metrics {
 	metrics := make(map[string]interface{})
 	metrics[clockKey] = clock.ToRFC3339()
 
@@ -37,6 +39,7 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node) Metrics {
 
 	metrics[nodesMetricsKey] = nodesMetrics
 	metrics[podsMetricsKey] = podsMetrics
+	metrics[queueMetricsKey] = queue.Metrics()
 
 	return metrics
 }
