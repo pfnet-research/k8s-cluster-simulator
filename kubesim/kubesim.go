@@ -270,7 +270,7 @@ func (k *KubeSim) schedule() error {
 			return errors.Errorf("No node named %q", nodeName)
 		}
 
-		if err := node.CreatePod(k.clock, result.Pod); err != nil {
+		if err := node.BindPod(k.clock, result.Pod); err != nil {
 			return err
 		}
 	}
