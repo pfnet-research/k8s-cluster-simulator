@@ -43,43 +43,24 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		return nil, errors.Errorf("Error configuring logging: %s", err.Error())
 	}
 
-	clk := time.Now()
-	if conf.StartClock != "" {
-		var err error
-		clk, err = time.Parse(time.RFC3339, conf.StartClock)
-		if err != nil {
-			return nil, err
-		}
+	clk, err := buildClock(conf.StartClock)
+	if err != nil {
+		return nil, err
 	}
 
-	nodes := map[string]*node.Node{}
-	for _, nodeConf := range conf.Cluster.Nodes {
-		log.L.Debugf("Node config %+v", nodeConf)
-
-		nodeV1, err := config.BuildNode(nodeConf, conf.StartClock)
-		if err != nil {
-			return nil, errors.Errorf("Error building node config: %s", err.Error())
-		}
-
-		n := node.NewNode(nodeV1)
-		nodes[nodeV1.Name] = &n
-
-		log.L.Debugf("Node %s created", nodeV1.Name)
+	nodes, err := buildCluster(conf)
+	if err != nil {
+		return nil, err
 	}
 
-	metricsWriters := []metrics.Writer{}
-	if conf.MetricsFile != "" {
-		writer, err := metrics.NewFileWriter(conf.MetricsFile)
-		if err != nil {
-			return nil, err
-		}
-		log.L.Infof("Log written to %s", conf.MetricsFile)
-		metricsWriters = append(metricsWriters, writer)
+	metricsWriters, err := buildMetricsWriters(conf)
+	if err != nil {
+		return nil, err
 	}
 
 	return &KubeSim{
 		tick:  conf.Tick,
-		clock: clock.NewClock(clk),
+		clock: clk,
 
 		nodes:    nodes,
 		podQueue: queue,
@@ -154,12 +135,8 @@ func readConfig(path string) (*config.Config, error) {
 	log.G(context.TODO()).Debugf("Config file %s", viper.ConfigFileUsed())
 
 	var conf = config.Config{
-		LogLevel:   "info",
-		Tick:       10,
-		StartClock: "",
-		// APIPort:     10250,
-		// MetricsPort: 10255,
-		Cluster: config.ClusterConfig{Nodes: []config.NodeConfig{}},
+		LogLevel: "info",
+		Tick:     10,
 	}
 
 	if err := viper.Unmarshal(&conf); err != nil {
@@ -180,6 +157,53 @@ func configLog(logLevel string) error {
 	log.L = logger
 
 	return nil
+}
+
+func buildClock(startClock string) (clock.Clock, error) {
+	clk := clock.NewClock(time.Now())
+
+	if startClock != "" {
+		c, err := time.Parse(time.RFC3339, startClock)
+		if err != nil {
+			return clk, err
+		}
+		clk = clock.NewClock(c)
+	}
+
+	return clk, nil
+}
+
+func buildCluster(conf *config.Config) (map[string]*node.Node, error) {
+	nodes := map[string]*node.Node{}
+	for _, nodeConf := range conf.Cluster.Nodes {
+		log.L.Debugf("Node config %+v", nodeConf)
+
+		nodeV1, err := config.BuildNode(nodeConf, conf.StartClock)
+		if err != nil {
+			return map[string]*node.Node{}, errors.Errorf("Error building node config: %s", err.Error())
+		}
+
+		n := node.NewNode(nodeV1)
+		nodes[nodeV1.Name] = &n
+
+		log.L.Debugf("Node %s created", nodeV1.Name)
+	}
+
+	return nodes, nil
+}
+
+func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
+	writers := []metrics.Writer{}
+	fileWriter, err := config.BuildMetricsFile(conf.MetricsFile)
+	if err != nil {
+		return []metrics.Writer{}, err
+	}
+	if fileWriter != nil {
+		log.L.Infof("Metrics and log written to %s", fileWriter.FileName())
+		writers = append(writers, fileWriter)
+	}
+
+	return writers, nil
 }
 
 func (k *KubeSim) submit() error {

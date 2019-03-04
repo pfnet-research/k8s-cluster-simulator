@@ -8,7 +8,9 @@ tick: 10
 
 # Metrics of simulated kubernetes cluster is written to a file at this path.
 # Optional (default: not to write metrics to a file)
-metricsFile: kubesim.log
+metricsFile:
+  path: kubesim.log
+  formatter: JSON 
 
 # metricsPort: 10255
 

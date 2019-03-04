@@ -5,10 +5,50 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestBuildMetricsFile(t *testing.T) {
+	actual, err := BuildMetricsFile(MetricsFileConfig{
+		Path:      "",
+		Formatter: "",
+	})
+	if actual != nil || err != nil {
+		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
+	}
+
+	actual, err = BuildMetricsFile(MetricsFileConfig{
+		Path:      "",
+		Formatter: "foo",
+	})
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
+	}
+
+	actual, err = BuildMetricsFile(MetricsFileConfig{
+		Path:      "foo",
+		Formatter: "",
+	})
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
+	}
+}
+
+func TestBuildFormatter(t *testing.T) {
+	actual, _ := buildFormatter("JSON")
+	expected := &metrics.JSONFormatter{}
+	if actual != expected {
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
+	}
+
+	_, err := buildFormatter("Invalid")
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
+	}
+}
 
 func TestBuildNode(t *testing.T) {
 	nowStr := time.Now().Format(time.RFC3339)
