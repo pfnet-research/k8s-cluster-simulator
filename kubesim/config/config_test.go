@@ -37,6 +37,29 @@ func TestBuildMetricsFile(t *testing.T) {
 	}
 }
 
+func TestBuildMetricsStdout(t *testing.T) {
+	actual, err := BuildMetricsStdout(MetricsStdoutConfig{
+		Formatter: "",
+	})
+	if actual != nil || err != nil {
+		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
+	}
+
+	_, err = BuildMetricsStdout(MetricsStdoutConfig{
+		Formatter: "foo",
+	})
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
+	}
+
+	_, err = BuildMetricsStdout(MetricsStdoutConfig{
+		Formatter: "JSON",
+	})
+	if err != nil {
+		t.Errorf("got: %+v\nwant: metrics.StdoutWriter", err)
+	}
+}
+
 func TestBuildFormatter(t *testing.T) {
 	actual, _ := buildFormatter("JSON")
 	expected := &metrics.JSONFormatter{}
