@@ -6,6 +6,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// Metrics represents a metrics of a queue.
+type Metrics struct {
+	PendingPodsNum int
+}
+
 // ErrEmptyQueue is returned from Pop.
 var ErrEmptyQueue = errors.New("No pod queued")
 
@@ -21,4 +26,7 @@ type PodQueue interface {
 	// Front refers (not pops) the pod on the "front" of this queue.
 	// Immediately returns ErrEmptyQueue if the queue is empty.
 	Front() (*v1.Pod, error)
+
+	// Metrics returns a metrics of this queue.
+	Metrics() Metrics
 }
