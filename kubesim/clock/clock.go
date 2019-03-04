@@ -1,6 +1,7 @@
 package clock
 
 import (
+	"encoding/json"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,4 +51,9 @@ func (c Clock) String() string {
 // ToRFC3339 formats this clock to a string in RFC3339 format.
 func (c Clock) ToRFC3339() string {
 	return c.inner.Format(time.RFC3339)
+}
+
+// MarshalJSON implements json.Marshaler.
+func (c Clock) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.ToRFC3339())
 }
