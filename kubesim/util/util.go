@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -91,4 +93,23 @@ func ResourceListGE(r1, r2 v1.ResourceList) bool {
 		}
 	}
 	return true
+}
+
+// PodKey builds a key for the given pod.
+// Returns error if the pod does not have valid (= non-empty) namespace and name.
+func PodKey(pod *v1.Pod) (string, error) {
+	if pod.ObjectMeta.Namespace == "" {
+		return "", strongerrors.InvalidArgument(errors.New("Empty pod namespace"))
+	}
+
+	if pod.ObjectMeta.Name == "" {
+		return "", strongerrors.InvalidArgument(errors.New("Empty pod name"))
+	}
+
+	return PodKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name), nil
+}
+
+// PodKeyFromNames builds a key from the namespace and pod name.
+func PodKeyFromNames(namespace string, name string) string {
+	return fmt.Sprintf("%s/%s", namespace, name)
 }

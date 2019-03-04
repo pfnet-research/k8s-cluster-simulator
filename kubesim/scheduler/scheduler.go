@@ -91,7 +91,12 @@ func (sched *GenericScheduler) Schedule(
 		}
 
 		log.L.Tracef("Trying to schedule pod %v", pod)
-		log.L.Debugf("Trying to schedule pod %s", pod.Name)
+
+		podKey, err := util.PodKey(pod)
+		if err != nil {
+			return results, err
+		}
+		log.L.Debugf("Trying to schedule pod %s", podKey)
 
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap)
 		if err != nil {
@@ -99,7 +104,7 @@ func (sched *GenericScheduler) Schedule(
 
 			if _, ok := err.(*core.FitError); ok {
 				log.L.Tracef("Pod %v does not fit in any node", pod)
-				log.L.Debugf("Pod %s does not fit in any node", pod.Name)
+				log.L.Debugf("Pod %s does not fit in any node", podKey)
 				break
 			} else {
 				return []ScheduleBinding{}, nil

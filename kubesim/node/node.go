@@ -1,10 +1,6 @@
 package node
 
 import (
-	"errors"
-	"fmt"
-
-	"github.com/cpuguy83/strongerrors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
@@ -64,12 +60,12 @@ func (node *Node) Metrics(clock clock.Clock) Metrics {
 // CreatePod accepts the definition of a pod and try to start it. The pod will fail to be bound if
 // there is not sufficient resources.
 func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
-	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, v1Pod.Name)
-
-	key, err := buildKey(v1Pod)
+	key, err := util.PodKey(v1Pod)
 	if err != nil {
 		return err
 	}
+
+	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, key)
 
 	newTotalReq := util.ResourceListSum(node.totalResourceRequest(clock), util.PodTotalResourceRequests(v1Pod))
 	capacity := node.ToV1().Status.Capacity
@@ -92,7 +88,7 @@ func (node *Node) CreatePod(clock clock.Clock, v1Pod *v1.Pod) error {
 // Pod returns the *pod.Pod by name that was accepted on this node. The returned pod may have
 // failed to be bound. Returns nil if the pod is not found.
 func (node *Node) Pod(namespace, name string) *pod.Pod {
-	key := buildKeyFromNames(namespace, name)
+	key := util.PodKeyFromNames(namespace, name)
 	pod, ok := node.pods.Load(key)
 	if !ok {
 		return nil
@@ -172,23 +168,4 @@ func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 	})
 
 	return total
-}
-
-// buildKey builds a key for the provided pod.
-// Returns error if the pod does not have valid (= non-empty) namespace and name.
-func buildKey(pod *v1.Pod) (string, error) {
-	if pod.ObjectMeta.Namespace == "" {
-		return "", strongerrors.InvalidArgument(errors.New("Empty pod namespace"))
-	}
-
-	if pod.ObjectMeta.Name == "" {
-		return "", strongerrors.InvalidArgument(errors.New("Empty pod name"))
-	}
-
-	return buildKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name), nil
-}
-
-// buildKeyFromNames builds a key from the namespace and pod name.
-func buildKeyFromNames(namespace string, name string) string {
-	return fmt.Sprintf("%s/%s", namespace, name)
 }

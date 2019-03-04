@@ -6,6 +6,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
@@ -177,5 +178,41 @@ func TestResourceListGE(t *testing.T) {
 	actual = util.ResourceListGE(r3, r1)
 	if expected != actual {
 		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
+
+func TestPodKey(t *testing.T) {
+	actual, _ := util.PodKey(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "namespace-0",
+			Name:      "name-0",
+		},
+	})
+	expected := "namespace-0/name-0"
+
+	if actual != expected {
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
+	}
+
+	_, err := util.PodKey(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "",
+			Name:      "name-0",
+		},
+	})
+
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
+	}
+
+	_, err = util.PodKey(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "namespace-0",
+			Name:      "",
+		},
+	})
+
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
 	}
 }
