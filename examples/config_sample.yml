@@ -7,10 +7,16 @@ logLevel: debug
 tick: 10
 
 # Metrics of simulated kubernetes cluster is written to a file at this path.
-# Optional (default: not to write metrics to a file)
+# The metrics is formatted with the given formatter.
+# Optional (default: not writing metrics to a file)
 metricsFile:
   path: kubesim.log
   formatter: JSON 
+
+# Metrics is (also) written to stdout.
+# Optional (default: not writing metrics to stdout)
+metricsStdout:
+  formatter: JSON
 
 # metricsPort: 10255
 

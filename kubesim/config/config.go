@@ -14,10 +14,11 @@ import (
 
 // Config represents a user-specified simulator config.
 type Config struct {
-	LogLevel    string
-	Tick        int
-	StartClock  string
-	MetricsFile MetricsFileConfig
+	LogLevel      string
+	Tick          int
+	StartClock    string
+	MetricsFile   MetricsFileConfig
+	MetricsStdout MetricsStdoutConfig
 	// MetricsPort int
 	// APIPort     int
 	Cluster ClusterConfig
@@ -25,6 +26,10 @@ type Config struct {
 
 type MetricsFileConfig struct {
 	Path      string
+	Formatter string
+}
+
+type MetricsStdoutConfig struct {
 	Formatter string
 }
 
@@ -47,7 +52,7 @@ type TaintConfig struct { // made public for the deserialization by viper
 	Effect string
 }
 
-// BuildMetricsFile builds a *metrics.FileFormatter with the given MetricsFileConfig.
+// BuildMetricsFile builds a metrics.FileWriter with the given MetricsFileConfig.
 // Returns error if the config is invalid, failed to parse, or failed to create a FileWriter.
 func BuildMetricsFile(config MetricsFileConfig) (*metrics.FileWriter, error) {
 	if config.Path == "" && config.Formatter == "" {
@@ -63,6 +68,22 @@ func BuildMetricsFile(config MetricsFileConfig) (*metrics.FileWriter, error) {
 	}
 
 	return metrics.NewFileWriter(config.Path, formatter)
+}
+
+// BuildMetricsStdout builds a metrics.StdoutWriter with the given MetricsStdoutConfig.
+// Returns error if parsing failed.
+func BuildMetricsStdout(config MetricsStdoutConfig) (*metrics.StdoutWriter, error) {
+	if config.Formatter == "" {
+		return nil, nil
+	}
+
+	formatter, err := buildFormatter(config.Formatter)
+	if err != nil {
+		return nil, err
+	}
+
+	w := metrics.NewStdoutWriter(formatter)
+	return &w, nil
 }
 
 func buildFormatter(config string) (metrics.Formatter, error) {

@@ -194,6 +194,7 @@ func buildCluster(conf *config.Config) (map[string]*node.Node, error) {
 
 func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	writers := []metrics.Writer{}
+
 	fileWriter, err := config.BuildMetricsFile(conf.MetricsFile)
 	if err != nil {
 		return []metrics.Writer{}, err
@@ -201,6 +202,15 @@ func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	if fileWriter != nil {
 		log.L.Infof("Metrics and log written to %s", fileWriter.FileName())
 		writers = append(writers, fileWriter)
+	}
+
+	stdoutWriter, err := config.BuildMetricsStdout(conf.MetricsStdout)
+	if err != nil {
+		return []metrics.Writer{}, err
+	}
+	if stdoutWriter != nil {
+		log.L.Info("Metrics and log written to Stdout")
+		writers = append(writers, stdoutWriter)
 	}
 
 	return writers, nil
