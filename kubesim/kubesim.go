@@ -123,8 +123,6 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			// k.gcTerminatedPodsInNodes()
-
 			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
 			if err != nil {
 				return err
@@ -135,6 +133,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				if err = k.writeMetrics(met); err != nil {
 					return err
 				}
+
+				k.gcTerminatedPodsInNodes()
 			}
 
 			k.clock = k.clock.Add(k.tick)
