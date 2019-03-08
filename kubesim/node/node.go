@@ -85,9 +85,14 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) error {
 	return nil
 }
 
-// DeletePod deltes TODO
-func (node *Node) DeletePod(clock clock.Clock, pod *v1.Pod) error {
-	return nil
+// DeletePod deletes the pod from this node. Returns true if the pod is found in this node, or
+// false otherwise.
+func (node *Node) DeletePod(clock clock.Clock, podNamespace, podName string) (bool, error) {
+	key := util.PodKeyFromNames(podNamespace, podName)
+	_, ok := node.pods[key]
+	delete(node.pods, key)
+
+	return ok, nil
 }
 
 // Pod returns the *pod.Pod by name that was accepted on this node. The returned pod may have
