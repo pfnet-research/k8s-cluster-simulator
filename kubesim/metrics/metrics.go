@@ -9,22 +9,27 @@ import (
 )
 
 // Metrics represents a metrics at one time point, in the following structure.
-//   Metrics[clockKey] = a formatted clock
-//   Metrics[nodesMetricsKey] = map from node name to node.Metrics
-//   Metrics[podsMetricsKey] = map from pod name to pod.Metrics
+//   Metrics[ClockKey] = a formatted clock
+//   Metrics[NodesMetricsKey] = map from node name to node.Metrics
+//   Metrics[PodsMetricsKey] = map from pod name to pod.Metrics
+// 	 Metrics[QueueMetricsKey] = queue.Metrics
 type Metrics map[string]interface{}
 
 const (
-	clockKey        = "Clock"
-	nodesMetricsKey = "Nodes"
-	podsMetricsKey  = "Pods"
-	queueMetricsKey = "Queue"
+	// ClockKey is the key associated to clock.
+	ClockKey = "Clock"
+	// NodesMetricsKey is the key associated to a map of node.Metrics.
+	NodesMetricsKey = "Nodes"
+	// PodsMetricsKey is the key associated to a map of pod.Metrics.
+	PodsMetricsKey = "Pods"
+	// QueueMetricsKey is the key associated to queue.Metrics.
+	QueueMetricsKey = "Queue"
 )
 
 // BuildMetrics builds a Metrics at the time clock.
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue) (Metrics, error) {
 	metrics := make(map[string]interface{})
-	metrics[clockKey] = clock.ToRFC3339()
+	metrics[ClockKey] = clock.ToRFC3339()
 
 	nodesMetrics := make(map[string]node.Metrics)
 	podsMetrics := make(map[string]pod.Metrics)
@@ -42,9 +47,9 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 		}
 	}
 
-	metrics[nodesMetricsKey] = nodesMetrics
-	metrics[podsMetricsKey] = podsMetrics
-	metrics[queueMetricsKey] = queue.Metrics()
+	metrics[NodesMetricsKey] = nodesMetrics
+	metrics[PodsMetricsKey] = podsMetrics
+	metrics[QueueMetricsKey] = queue.Metrics()
 
 	return metrics, nil
 }
