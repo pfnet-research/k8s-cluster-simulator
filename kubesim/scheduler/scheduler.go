@@ -19,12 +19,6 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
-// ScheduleBinding represents a binding of a pod to a node.
-type ScheduleBinding struct {
-	Pod    *v1.Pod
-	Result core.ScheduleResult
-}
-
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
 	// Schedule makes scheduling decisions for each pods produced by the podQueue.
@@ -33,8 +27,34 @@ type Scheduler interface {
 		clock clock.Clock,
 		podQueue queue.PodQueue,
 		nodeLister algorithm.NodeLister,
-		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleBinding, error)
+		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]Event, error)
 }
+
+// Event defines the interface of a scheduling event.
+type Event interface {
+	IsSchedulerEvent() bool
+}
+
+// BindEvent represents an event of deciding the binding of a pod to a node.
+type BindEvent struct {
+	Pod            *v1.Pod
+	ScheduleResult core.ScheduleResult
+}
+
+func (b *BindEvent) IsSchedulerEvent() bool { return true }
+
+var _ = Event(&BindEvent{})
+
+// DeleteEvent represents an event of the deleting a bound pod on a node.
+type DeleteEvent struct {
+	PodNamespace string
+	PodName      string
+	NodeName     string
+}
+
+func (d *DeleteEvent) IsSchedulerEvent() bool { return true }
+
+var _ = Event(&DeleteEvent{})
 
 // GenericScheduler makes scheduling decision for each given pod in the one-by-one manner.
 // This type is similar to "k8s.io/pkg/Scheduler/Scheduler/core".genericScheduler, which implements
@@ -76,9 +96,9 @@ func (sched *GenericScheduler) Schedule(
 	clock clock.Clock,
 	podQueue queue.PodQueue,
 	nodeLister algorithm.NodeLister,
-	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]ScheduleBinding, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]Event, error) {
 
-	results := []ScheduleBinding{}
+	results := []Event{}
 
 	for {
 		pod, err := podQueue.Front()
@@ -107,7 +127,7 @@ func (sched *GenericScheduler) Schedule(
 				log.L.Debugf("Pod %s does not fit in any node", podKey)
 				break
 			} else {
-				return []ScheduleBinding{}, nil
+				return []Event{}, nil
 			}
 		}
 
@@ -118,11 +138,11 @@ func (sched *GenericScheduler) Schedule(
 
 		nodeInfo, ok := nodeInfoMap[result.SuggestedHost]
 		if !ok {
-			return []ScheduleBinding{}, fmt.Errorf("No node named %s", result.SuggestedHost)
+			return []Event{}, fmt.Errorf("No node named %s", result.SuggestedHost)
 		}
 		nodeInfo.AddPod(pod)
 
-		results = append(results, ScheduleBinding{pod, result})
+		results = append(results, &BindEvent{Pod: pod, ScheduleResult: result})
 	}
 
 	return results, nil
@@ -136,7 +156,7 @@ func (sched *GenericScheduler) Schedule(
 // 	cleanupNominatedPods []*v1.Pod, e error) {
 // }
 
-var _ = Scheduler(&GenericScheduler{}) // Making sure that GenericScheduler implements Scheduler
+var _ = Scheduler(&GenericScheduler{})
 
 // scheduleOne makes scheduling decision for the given pod and nodes.
 // Returns core.ErrNoNodesAvailable if nodeLister lists zero nodes, or core.FitError if the given

@@ -274,23 +274,30 @@ func (k *KubeSim) schedule() error {
 		nodeInfoMap[name] = node.ToNodeInfo(k.clock)
 	}
 
-	results, err := k.scheduler.Schedule(k.clock, k.podQueue, k, nodeInfoMap)
+	events, err := k.scheduler.Schedule(k.clock, k.podQueue, k, nodeInfoMap)
 	if err != nil {
 		return err
 	}
 
-	for _, result := range results {
-		nodeName := result.Result.SuggestedHost
+	for _, e := range events {
+		if bind, ok := e.(*scheduler.BindEvent); ok {
+			nodeName := bind.ScheduleResult.SuggestedHost
 		node, ok := k.nodes[nodeName]
 
 		if ok {
-			result.Pod.Spec.NodeName = nodeName
+				bind.Pod.Spec.NodeName = nodeName
 		} else {
 			return errors.Errorf("No node named %q", nodeName)
 		}
 
-		if err := node.BindPod(k.clock, result.Pod); err != nil {
+			if err := node.BindPod(k.clock, bind.Pod); err != nil {
 			return err
+		}
+		} else if delete, ok := e.(*scheduler.DeleteEvent); ok {
+			_ = delete
+			panic("Unimplemented")
+		} else {
+			panic("Unknown scheduler event")
 		}
 	}
 
