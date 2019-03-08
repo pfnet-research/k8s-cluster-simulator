@@ -15,15 +15,15 @@ func newPod(name string) *v1.Pod {
 			Kind:       "Pod",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
 			Namespace: "default",
+			Name:      name,
 		},
 	}
 	return &pod
 }
 
 func TestFIFOQueuePushAndPop(t *testing.T) {
-	q := queue.FIFOQueue{}
+	q := queue.NewFIFOQueue()
 
 	q.Push(newPod("pod-0"))
 	q.Push(newPod("pod-1"))
@@ -51,7 +51,7 @@ func TestFIFOQueuePushAndPop(t *testing.T) {
 }
 
 func TestFIFOQueueFront(t *testing.T) {
-	q := queue.FIFOQueue{}
+	q := queue.NewFIFOQueue()
 
 	q.Push(newPod("pod-0"))
 	q.Push(newPod("pod-1"))
@@ -78,5 +78,32 @@ func TestFIFOQueueFront(t *testing.T) {
 	_, err := q.Front()
 	if err != queue.ErrEmptyQueue {
 		t.Errorf("got: %v\nwant: %v", err, queue.ErrEmptyQueue)
+	}
+}
+
+func TestFIFOQueueDelete(t *testing.T) {
+	q := queue.NewFIFOQueue()
+
+	q.Push(newPod("pod-0"))
+	q.Push(newPod("pod-1"))
+
+	ok, _ := q.Delete("default", "pod-0")
+	if !ok {
+		t.Errorf("got: false\nwant: true")
+	}
+
+	ok, _ = q.Delete("default", "pod-0")
+	if ok {
+		t.Errorf("got: true\nwant: false")
+	}
+
+	ok, _ = q.Delete("default", "pod-1")
+	if !ok {
+		t.Errorf("got: false\nwant: true")
+	}
+
+	_, err := q.Pop()
+	if err != queue.ErrEmptyQueue {
+		t.Errorf("got: %+v\nwant: %+v", err, queue.ErrEmptyQueue)
 	}
 }

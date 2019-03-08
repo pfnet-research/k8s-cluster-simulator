@@ -8,6 +8,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
 
 // PriorityQueue stores pods in a priority queue.
@@ -29,23 +30,32 @@ func NewPriorityQueue() *PriorityQueue {
 
 // NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator function.
 func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
-	return newWithItems(make([]*item, 0), comparator)
+	return newWithItems(map[string]*item{}, comparator)
 }
 
 // Reorder creates a new PriorityQueue. All pods stored in the original PriorityQueue are moved to
 // the new one, in the sorted order according to the given comparator.
-func (pq *PriorityQueue) Reorder(comparator Compare) *PriorityQueue {
+func (pq *PriorityQueue) Reorder(comparator Compare) (*PriorityQueue, error) {
 	pods := pq.inner.pendingPods()
-	items := make([]*item, 0, len(pods))
-	for index, pod := range pods {
-		items = append(items, &item{pod, index})
+	items := make(map[string]*item, len(pods))
+	for idx, pod := range pods {
+		key, err := util.PodKey(pod)
+		if err != nil {
+			return nil, err
+		}
+		items[key] = &item{pod, idx}
 	}
 
-	return newWithItems(items, comparator)
+	return newWithItems(items, comparator), nil
 }
 
-func (pq *PriorityQueue) Push(pod *v1.Pod) {
+func (pq *PriorityQueue) Push(pod *v1.Pod) error {
+	if _, err := util.PodKey(pod); err != nil {
+		return err
+	}
+
 	heap.Push(&pq.inner, &item{pod: pod})
+	return nil
 }
 
 func (pq *PriorityQueue) Pop() (*v1.Pod, error) {
@@ -59,7 +69,18 @@ func (pq *PriorityQueue) Front() (*v1.Pod, error) {
 	if pq.inner.Len() == 0 {
 		return nil, ErrEmptyQueue
 	}
-	return pq.inner.items[0].pod, nil
+	return pq.inner.items[pq.inner.keys[0]].pod, nil
+}
+
+func (pq *PriorityQueue) Delete(podNamespace, podName string) (bool, error) {
+	key := util.PodKeyFromNames(podNamespace, podName)
+	item, ok := pq.inner.items[key]
+	if ok {
+		heap.Remove(&pq.inner, item.index) // Don't swap these two lines
+		delete(pq.inner.items, key)
+	}
+
+	return ok, nil
 }
 
 func (pq *PriorityQueue) Metrics() Metrics {
@@ -68,7 +89,7 @@ func (pq *PriorityQueue) Metrics() Metrics {
 	}
 }
 
-var _ = PodQueue(&PriorityQueue{}) // Making sure that PriorityQueue implements PodQueue.
+var _ = PodQueue(&PriorityQueue{})
 
 type item struct {
 	pod   *v1.Pod
@@ -76,42 +97,54 @@ type item struct {
 }
 
 type rawPriorityQueue struct {
-	items      []*item
+	// Each pod exists in keys iff it also exists in items
+	items      map[string]*item
+	keys       []string
 	comparator Compare
 }
 
 // Len, Less, and Swap are required to implement sort.Interface, which is included in heap.Interface.
-func (pq rawPriorityQueue) Len() int { return len(pq.items) }
+func (pq rawPriorityQueue) Len() int { return len(pq.keys) }
 
 func (pq rawPriorityQueue) Less(i, j int) bool {
-	pod0 := pq.items[i].pod
-	pod1 := pq.items[j].pod
-
+	pod0 := pq.items[pq.keys[i]].pod
+	pod1 := pq.items[pq.keys[j]].pod
 	return (pq.comparator)(pod0, pod1)
 }
 
 func (pq rawPriorityQueue) Swap(i, j int) {
-	items := pq.items
-	items[i], items[j] = items[j], items[i]
-	items[i].index = i
-	items[j].index = j
+	pq.keys[i], pq.keys[j] = pq.keys[j], pq.keys[i]
+
+	pq.items[pq.keys[i]].index = i
+	pq.items[pq.keys[j]].index = j
 }
 
 // Push and Pop are required to implement heap.Interface.
 func (pq *rawPriorityQueue) Push(itm interface{}) {
 	item := itm.(*item)
 	item.index = len(pq.items)
-	pq.items = append(pq.items, item)
+
+	key, _ := util.PodKey(item.pod) // Error check is performed in PriorityQueue.Push
+	pq.items[key] = item
+	pq.keys = append(pq.keys, key)
 }
 
 func (pq *rawPriorityQueue) Pop() interface{} {
-	pqOld := pq.items
-	n := len(pqOld)
-	item := pqOld[n-1]
+	keysOld := pq.keys
+	n := len(keysOld)
+
+	key := keysOld[n-1]
+	item := pq.items[key]
 	item.index = -1 // for safety
-	pq.items = pqOld[0 : n-1]
+
+	delete(pq.items, key)
+	pq.keys = keysOld[0 : n-1]
 
 	return item
+}
+
+func (pq *rawPriorityQueue) front() *item {
+	return pq.items[pq.keys[0]]
 }
 
 func (pq *rawPriorityQueue) pendingPods() []*v1.Pod {
@@ -135,9 +168,15 @@ func DefaultComparator(pod0, pod1 *v1.Pod) bool {
 	return (prio0 > prio1) || (prio0 == prio1 && ts0.Before(ts1))
 }
 
-func newWithItems(items []*item, comparator Compare) *PriorityQueue {
+func newWithItems(items map[string]*item, comparator Compare) *PriorityQueue {
+	keys := make([]string, 0, len(items))
+	for key := range items {
+		keys = append(keys, key)
+	}
+
 	rawPq := rawPriorityQueue{
 		items:      items,
+		keys:       keys,
 		comparator: comparator,
 	}
 	heap.Init(&rawPq)
