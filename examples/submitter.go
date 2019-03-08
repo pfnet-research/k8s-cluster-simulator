@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -10,51 +12,67 @@ import (
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 )
 
 type mySubmitter struct {
-	startClock    clock.Clock
-	submissionCnt uint64
+	podIdx        uint64
+	targetPodsNum int
 }
 
-func (s *mySubmitter) Submit(clock clock.Clock, _ algorithm.NodeLister, _ metrics.Metrics) ([]*v1.Pod, error) {
-	if s.submissionCnt == 0 {
-		s.startClock = clock
+func newMySubmitter(targetPodsNum int) *mySubmitter {
+	rand.Seed(time.Now().UnixNano())
+
+	return &mySubmitter{
+		podIdx:        0,
+		targetPodsNum: targetPodsNum,
+	}
+}
+
+func (s *mySubmitter) Submit(clock clock.Clock, _ algorithm.NodeLister, met metrics.Metrics) ([]*v1.Pod, error) {
+	queueMetrics := met[metrics.QueueMetricsKey].(queue.Metrics)
+	submissionNum := s.targetPodsNum - queueMetrics.PendingPodsNum
+
+	if submissionNum <= 0 {
+		return []*v1.Pod{}, nil
 	}
 
-	pods := []*v1.Pod{}
-	elapsedSec := clock.Sub(s.startClock).Seconds()
-
-	for s.submissionCnt <= uint64(elapsedSec)/21 {
-		pods = append(pods, newPod(s.submissionCnt, clock))
-		s.submissionCnt++
+	pods := make([]*v1.Pod, 0, submissionNum)
+	for i := 0; i < submissionNum; i++ {
+		pods = append(pods, newPod(s.podIdx))
+		s.podIdx++
 	}
 
 	return pods, nil
 }
 
-func newPod(n uint64, clock clock.Clock) *v1.Pod {
+func newPod(idx uint64) *v1.Pod {
+	simSpec := ""
+	for i := 0; i < rand.Intn(4)+1; i++ {
+		sec := rand.Intn(60*60 + 1)
+		cpu := rand.Intn(4 + 1)
+		mem := rand.Intn(4 + 1)
+		gpu := rand.Intn(1 + 1)
+
+		simSpec += fmt.Sprintf(`
+- seconds: %d
+  resourceUsage:
+    cpu: %d
+    memory: %dGi
+    nvidia.com/gpu: %d
+`, sec, cpu, mem, gpu)
+	}
+
 	pod := v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Pod",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("pod-%d", n),
+			Name:      fmt.Sprintf("pod-%d", idx),
 			Namespace: "default",
 			Annotations: map[string]string{
-				"simSpec": `
-- seconds: 60
-  resourceUsage:
-    cpu: 1
-    memory: 2Gi
-    nvidia.com/gpu: 0
-- seconds: 90
-  resourceUsage:
-    cpu: 2
-    memory: 4Gi
-    nvidia.com/gpu: 1
-`,
+				"simSpec": simSpec,
 			},
 		},
 		Spec: v1.PodSpec{
@@ -64,12 +82,12 @@ func newPod(n uint64, clock clock.Clock) *v1.Pod {
 					Image: "container",
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							"cpu":            resource.MustParse("3"),
-							"memory":         resource.MustParse("5Gi"),
+							"cpu":            resource.MustParse("4"),
+							"memory":         resource.MustParse("4Gi"),
 							"nvidia.com/gpu": resource.MustParse("1"),
 						},
 						Limits: v1.ResourceList{
-							"cpu":            resource.MustParse("4"),
+							"cpu":            resource.MustParse("6"),
 							"memory":         resource.MustParse("6Gi"),
 							"nvidia.com/gpu": resource.MustParse("1"),
 						},
