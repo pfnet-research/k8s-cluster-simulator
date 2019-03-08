@@ -39,7 +39,6 @@ type ClusterConfig struct {
 }
 
 type NodeConfig struct {
-	Namespace   string
 	Name        string
 	Capacity    map[v1.ResourceName]string
 	Labels      map[string]string
@@ -130,7 +129,6 @@ func BuildNode(config NodeConfig, startClock string) (*v1.Node, error) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.Name,
-			Namespace:   config.Namespace,
 			Labels:      config.Labels,
 			Annotations: config.Annotations,
 		},

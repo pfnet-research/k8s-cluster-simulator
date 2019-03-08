@@ -78,8 +78,7 @@ func TestBuildNode(t *testing.T) {
 	nowParsed, _ := time.Parse(time.RFC3339, nowStr)
 
 	actual, _ := BuildNode(NodeConfig{
-		Namespace: "default",
-		Name:      "node0",
+		Name: "node0",
 		Capacity: map[v1.ResourceName]string{
 			"cpu":            "2",
 			"memory":         "4Gi",
@@ -103,7 +102,6 @@ func TestBuildNode(t *testing.T) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "node0",
-			Namespace:   "default",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},
 		},

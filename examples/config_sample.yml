@@ -33,8 +33,7 @@ metricsStdout:
 # Cluster configration
 cluster:
   nodes:
-  - namespace: default
-    name: node-0
+  - name: node-0
     capacity:
       cpu: 4
       memory: 8Gi
@@ -42,8 +41,7 @@ cluster:
       pods: 2
     labels:
       beta.kubernetes.io/os: simulated
-  - namespace: default
-    name: node-1
+  - name: node-1
     capacity:
       cpu: 8
       memory: 16Gi
