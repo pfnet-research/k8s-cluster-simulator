@@ -358,7 +358,7 @@ func (k *KubeSim) gcTerminatedPodsInNodes() {
 
 func (k *KubeSim) deletePodFromNode(podNamespace, podName string) error {
 	key := util.PodKeyFromNames(podNamespace, podName)
-	k.boundPods[key].Delete()
+	k.boundPods[key].Delete(k.clock)
 
 	nodeName := k.boundPods[key].ToV1().Spec.NodeName
 	deletedFromNode, err := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)

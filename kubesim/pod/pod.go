@@ -12,11 +12,12 @@ import (
 
 // Pod represents a simulated pod.
 type Pod struct {
-	v1      *v1.Pod
-	spec    spec
-	boundAt clock.Clock
-	status  Status
-	node    string
+	v1        *v1.Pod
+	spec      spec
+	boundAt   clock.Clock
+	status    Status
+	node      string
+	deletedAt clock.Clock
 }
 
 // Metrics is a metrics of a pod at a time instance.
@@ -37,10 +38,12 @@ type Status int
 
 const (
 	// Ok indicates that the pod has been successfully bound to a node.
-	// Whether the pod is running or has been terminated is determined by its total execution time
-	// and the clock.
+	// Whether the pod is running or has spontaneously terminated is determined by its total
+	// execution time and the clock.
 	Ok Status = iota
 	// Deleted indicates that the pod has been deleted from the cluster.
+	// Whether the pod is terminating (during grace period) or has been deleted is determined by its
+	// grace period and the clock.
 	Deleted
 	// OverCapacity indicates that the pod is failed to start due to capacity over.
 	OverCapacity
@@ -147,14 +150,25 @@ func (pod *Pod) IsTerminated(clock clock.Clock) bool {
 	return pod.status == Ok && pod.executedDuration(clock) >= pod.totalExecutionDuration()
 }
 
-// IsDeleted returns whether the pod has been deleted.
-func (pod *Pod) IsDeleted() bool {
-	return pod.status == Deleted
+// IsTerminating returns whether the pod is terminating, during its grace period.
+func (pod *Pod) IsTerminating(clock clock.Clock) bool {
+	return pod.status == Deleted && !pod.IsDeleted(clock)
 }
 
-// Delete marks the pod as deleted.
-func (pod *Pod) Delete() {
+// IsDeleted returns whether the pod has been deleted.
+func (pod *Pod) IsDeleted(clock clock.Clock) bool {
+	gp := int64(v1.DefaultTerminationGracePeriodSeconds)
+	if pod.v1.Spec.TerminationGracePeriodSeconds != nil {
+		gp = *pod.v1.Spec.TerminationGracePeriodSeconds
+}
+
+	return pod.status == Deleted && clock.Sub(pod.deletedAt) >= time.Duration(gp)*time.Second
+}
+
+// Delete starts deleting this pod.
+func (pod *Pod) Delete(clock clock.Clock) {
 	pod.status = Deleted
+	pod.deletedAt = clock
 }
 
 // IsBindingFailed returns whether the pod failed to be bound to a node.
@@ -233,10 +247,14 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 // executedDuration returns elapsed duration after the pod started, assuming it has not been
 // deleted. Returns 0 if the pod was failed to be bound.
 func (pod *Pod) executedDuration(clock clock.Clock) time.Duration {
-	if pod.status != Ok {
+	switch pod.status {
+	case Ok:
+		return clock.Sub(pod.boundAt)
+	case Deleted:
+		return pod.deletedAt.Sub(pod.boundAt)
+	default:
 		return 0
 	}
-	return clock.Sub(pod.boundAt)
 }
 
 // totalExecutionDuration returns total duration of the pod.
