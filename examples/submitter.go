@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
+	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
@@ -29,21 +30,20 @@ func newMySubmitter(targetPodsNum int) *mySubmitter {
 	}
 }
 
-func (s *mySubmitter) Submit(clock clock.Clock, _ algorithm.NodeLister, met metrics.Metrics) ([]*v1.Pod, error) {
+func (s *mySubmitter) Submit(clock clock.Clock, _ algorithm.NodeLister, met metrics.Metrics) ([]api.SubmitterEvent, error) {
 	queueMetrics := met[metrics.QueueMetricsKey].(queue.Metrics)
 	submissionNum := s.targetPodsNum - queueMetrics.PendingPodsNum
-
 	if submissionNum <= 0 {
-		return []*v1.Pod{}, nil
+		return []api.SubmitterEvent{}, nil
 	}
 
-	pods := make([]*v1.Pod, 0, submissionNum)
+	events := make([]api.SubmitterEvent, 0, submissionNum)
 	for i := 0; i < submissionNum; i++ {
-		pods = append(pods, newPod(s.podIdx))
+		events = append(events, &api.SubmitEvent{Pod: newPod(s.podIdx)})
 		s.podIdx++
 	}
 
-	return pods, nil
+	return events, nil
 }
 
 func newPod(idx uint64) *v1.Pod {
