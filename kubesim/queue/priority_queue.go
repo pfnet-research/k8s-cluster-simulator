@@ -215,7 +215,7 @@ func podPriority(pod *v1.Pod) int32 {
 	return prio
 }
 
-// Copied from "k8s.io/kubernetes/pkg/scheduler/internal/queue".podTimestamp()
+// podTimestamp was copied from "k8s.io/kubernetes/pkg/scheduler/internal/queue".podTimestamp()
 func podTimestamp(pod *v1.Pod) clock.Clock {
 	_, condition := v1pod.GetPodCondition(&pod.Status, v1.PodScheduled)
 	if condition == nil {
