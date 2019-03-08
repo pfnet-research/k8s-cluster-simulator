@@ -15,6 +15,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/submitter"
@@ -29,7 +30,7 @@ type KubeSim struct {
 
 	nodes       map[string]*node.Node
 	pendingPods queue.PodQueue
-	boundPods   map[string]*v1.Pod
+	boundPods   map[string]*pod.Pod
 
 	submitters []submitter.Submitter
 	scheduler  scheduler.Scheduler
@@ -72,7 +73,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 
 		nodes:       nodes,
 		pendingPods: queue,
-		boundPods:   map[string]*v1.Pod{},
+		boundPods:   map[string]*pod.Pod{},
 
 		submitters: []submitter.Submitter{},
 		scheduler:  sched,
@@ -266,14 +267,14 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				log.L.Debugf("Submit %s", key)
 
 				k.pendingPods.Push(pod)
-			} else if delete, ok := e.(*submitter.DeleteEvent); ok {
-				deletedFromQueue, err := k.pendingPods.Delete(delete.PodNamespace, delete.PodName)
+			} else if del, ok := e.(*submitter.DeleteEvent); ok {
+				deletedFromQueue, err := k.pendingPods.Delete(del.PodNamespace, del.PodName)
 				if err != nil {
 					return err
 				}
 
 				if !deletedFromQueue {
-					if err := k.deletePodFromNode(delete.PodNamespace, delete.PodName); err != nil {
+					if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
 						return err
 					}
 				}
@@ -315,7 +316,8 @@ func (k *KubeSim) schedule() error {
 			}
 			bind.Pod.Spec.NodeName = nodeName
 
-			if err := node.BindPod(k.clock, bind.Pod); err != nil {
+			pod, err := node.BindPod(k.clock, bind.Pod)
+			if err != nil {
 				return err
 			}
 
@@ -323,9 +325,9 @@ func (k *KubeSim) schedule() error {
 			if err != nil {
 				return err
 			}
-			k.boundPods[key] = bind.Pod
-		} else if delete, ok := e.(*scheduler.DeleteEvent); ok {
-			if err := k.deletePodFromNode(delete.PodNamespace, delete.PodName); err != nil {
+			k.boundPods[key] = pod
+		} else if del, ok := e.(*scheduler.DeleteEvent); ok {
+			if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
 				return err
 			}
 		} else {
@@ -348,8 +350,9 @@ func (k *KubeSim) writeMetrics(met metrics.Metrics) error {
 
 func (k *KubeSim) deletePodFromNode(podNamespace, podName string) error {
 	key := util.PodKeyFromNames(podNamespace, podName)
-	nodeName := k.boundPods[key].Spec.NodeName
+	k.boundPods[key].Delete()
 
+	nodeName := k.boundPods[key].ToV1().Spec.NodeName
 	deletedFromNode, err := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)
 	if err != nil {
 		return err

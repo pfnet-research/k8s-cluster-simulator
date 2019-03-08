@@ -13,7 +13,7 @@ import (
 // Node represents a simulated computing node.
 type Node struct {
 	v1   *v1.Node
-	pods map[string]pod.Pod
+	pods map[string]*pod.Pod
 }
 
 // Metrics is a metrics of a node at a time instance.
@@ -29,7 +29,7 @@ type Metrics struct {
 func NewNode(node *v1.Node) Node {
 	return Node{
 		v1:   node,
-		pods: map[string]pod.Pod{},
+		pods: map[string]*pod.Pod{},
 	}
 }
 
@@ -58,11 +58,11 @@ func (node *Node) Metrics(clock clock.Clock) Metrics {
 }
 
 // BindPod accepts the definition of a pod and try to start it. The pod will fail to be bound if
-// there is not sufficient resources.
-func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) error {
+// there is not sufficient resources. Returns the bound pod in pod.Pod representation.
+func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 	key, err := util.PodKey(v1Pod)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, key)
@@ -78,11 +78,11 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) error {
 
 	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	node.pods[key] = *simPod
-	return nil
+	node.pods[key] = simPod
+	return simPod, nil
 }
 
 // DeletePod deletes the pod from this node. Returns true if the pod is found in this node, or
@@ -104,13 +104,13 @@ func (node *Node) Pod(namespace, name string) *pod.Pod {
 		return nil
 	}
 
-	return &pod
+	return pod
 }
 
 // PodList returns the list of all pods that were accepted on this node. Each of the returned pods
 // may have failed to be bound.
-func (node *Node) PodList() []pod.Pod {
-	podList := make([]pod.Pod, 0, len(node.pods))
+func (node *Node) PodList() []*pod.Pod {
+	podList := make([]*pod.Pod, 0, len(node.pods))
 	for _, pod := range node.pods {
 		podList = append(podList, pod)
 	}
