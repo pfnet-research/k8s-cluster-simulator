@@ -4,6 +4,7 @@ import (
 	"container/heap"
 
 	v1 "k8s.io/api/core/v1"
+	v1pod "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
@@ -125,11 +126,11 @@ func (pq *rawPriorityQueue) pendingPods() []*v1.Pod {
 // If the priorities are equal, it compares the timestamps and returns true if pod0 is older than
 // pod1.
 func DefaultComparator(pod0, pod1 *v1.Pod) bool {
-	prio0 := getPodPriority(pod0)
-	prio1 := getPodPriority(pod1)
+	prio0 := podPriority(pod0)
+	prio1 := podPriority(pod1)
 
-	ts0 := getPodTimestamp(pod0)
-	ts1 := getPodTimestamp(pod1)
+	ts0 := podTimestamp(pod0)
+	ts1 := podTimestamp(pod1)
 
 	return (prio0 > prio1) || (prio0 == prio1 && ts0.Before(ts1))
 }
@@ -146,7 +147,7 @@ func newWithItems(items []*item, comparator Compare) *PriorityQueue {
 	}
 }
 
-func getPodPriority(pod *v1.Pod) int32 {
+func podPriority(pod *v1.Pod) int32 {
 	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
 	if pod.Spec.Priority != nil {
 		prio = *pod.Spec.Priority
@@ -154,14 +155,15 @@ func getPodPriority(pod *v1.Pod) int32 {
 	return prio
 }
 
-func getPodTimestamp(pod *v1.Pod) clock.Clock {
-	// _, condition := podutil.GetPodCondition(&pod.Status, v1.PodScheduled)
-	// if condition == nil {
-	ts := clock.NewClockWithMetaV1(pod.CreationTimestamp)
-	return ts
-	// }
-	// if condition.LastProbeTime.IsZero() {
-	// 	return &condition.LastTransitionTime
-	// }
-	// return &condition.LastProbeTime
+// Copied from "k8s.io/kubernetes/pkg/scheduler/internal/queue".podTimestamp()
+func podTimestamp(pod *v1.Pod) clock.Clock {
+	_, condition := v1pod.GetPodCondition(&pod.Status, v1.PodScheduled)
+	if condition == nil {
+		return clock.NewClockWithMetaV1(pod.CreationTimestamp)
+	}
+
+	if condition.LastProbeTime.IsZero() {
+		return clock.NewClockWithMetaV1(condition.LastTransitionTime)
+	}
+	return clock.NewClockWithMetaV1(condition.LastProbeTime)
 }
