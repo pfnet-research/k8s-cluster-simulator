@@ -118,6 +118,15 @@ func (node *Node) PodList() []*pod.Pod {
 	return podList
 }
 
+// GCTerminatedPods deletes terminated pods at the time clock from this node.
+func (node *Node) GCTerminatedPods(clock clock.Clock) {
+	for name, pod := range node.pods {
+		if pod.IsTerminated(clock) {
+			delete(node.pods, name)
+		}
+	}
+}
+
 // runningV1PodsWithStatus returns all running pods in *v1.Pod representation at the time clock,
 // with their status updated.
 func (node *Node) runningV1PodsWithStatus(clock clock.Clock) []*v1.Pod {

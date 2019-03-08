@@ -123,6 +123,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
+			// k.gcTerminatedPodsInNodes()
+
 			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
 			if err != nil {
 				return err
@@ -346,6 +348,12 @@ func (k *KubeSim) writeMetrics(met metrics.Metrics) error {
 	}
 
 	return nil
+}
+
+func (k *KubeSim) gcTerminatedPodsInNodes() {
+	for _, node := range k.nodes {
+		node.GCTerminatedPods(k.clock)
+	}
 }
 
 func (k *KubeSim) deletePodFromNode(podNamespace, podName string) error {
