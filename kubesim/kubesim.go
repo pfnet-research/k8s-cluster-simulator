@@ -244,24 +244,32 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 	}
 
 	for _, submitter := range k.submitters {
-		pods, err := submitter.Submit(k.clock, k, metrics)
+		events, err := submitter.Submit(k.clock, k, metrics)
 		if err != nil {
 			return err
 		}
 
-		for _, pod := range pods {
-			pod.CreationTimestamp = k.clock.ToMetaV1()
-			pod.Status.Phase = v1.PodPending
+		for _, e := range events {
+			if submitted, ok := e.(*api.SubmitEvent); ok {
+				pod := submitted.Pod
+				pod.CreationTimestamp = k.clock.ToMetaV1()
+				pod.Status.Phase = v1.PodPending
 
-			log.L.Tracef("Submit %v", pod)
+				log.L.Tracef("Submit %v", pod)
 
-			key, err := util.PodKey(pod)
-			if err != nil {
-				return err
+				key, err := util.PodKey(pod)
+				if err != nil {
+					return err
+				}
+				log.L.Debugf("Submit %s", key)
+
+				k.podQueue.Push(pod)
+			} else if deleted, ok := e.(*api.DeleteEvent); ok {
+				_ = deleted
+				panic("Unimplemented")
+			} else {
+				panic("Unknown submitter event")
 			}
-			log.L.Debugf("Submit %s", key)
-
-			k.podQueue.Push(pod)
 		}
 	}
 
@@ -282,17 +290,17 @@ func (k *KubeSim) schedule() error {
 	for _, e := range events {
 		if bind, ok := e.(*scheduler.BindEvent); ok {
 			nodeName := bind.ScheduleResult.SuggestedHost
-		node, ok := k.nodes[nodeName]
+			node, ok := k.nodes[nodeName]
 
-		if ok {
+			if ok {
 				bind.Pod.Spec.NodeName = nodeName
-		} else {
-			return errors.Errorf("No node named %q", nodeName)
-		}
+			} else {
+				return errors.Errorf("No node named %q", nodeName)
+			}
 
 			if err := node.BindPod(k.clock, bind.Pod); err != nil {
-			return err
-		}
+				return err
+			}
 		} else if delete, ok := e.(*scheduler.DeleteEvent); ok {
 			_ = delete
 			panic("Unimplemented")

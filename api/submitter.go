@@ -8,14 +8,35 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 )
 
-// Submitter interface
+type SubmitterEvent interface {
+	IsSubmitterEvent() bool
+}
+
+type SubmitEvent struct {
+	Pod *v1.Pod
+}
+
+func (s *SubmitEvent) IsSubmitterEvent() bool { return true }
+
+var _ = SubmitterEvent(&SubmitEvent{})
+
+type DeleteEvent struct {
+	PodName      string
+	PodNamespace string
+	NodeName     string
+}
+
+func (s *DeleteEvent) IsSubmitterEvent() bool { return true }
+
+var _ = SubmitterEvent(&DeleteEvent{})
+
+// Submitter defines the submitter interface.
 type Submitter interface {
-	// Submitter submits pods to the simulated cluster.
-	// They are called in the same order that they are registered.
-	//
-	// These functions must not block the main loop of the simulator.
+	// Submitter submits pods to the simulated cluster. They are called in the same order that they
+	// are registered.
+	// These functions must *not* block.
 	Submit(
 		clock clock.Clock,
 		nodeLister algorithm.NodeLister,
-		metrics metrics.Metrics) (pods []*v1.Pod, err error)
+		metrics metrics.Metrics) ([]SubmitterEvent, error)
 }
