@@ -104,8 +104,8 @@ func TestPriorityQueueIsSortedWithCustomComparator(t *testing.T) {
 }
 
 func lowPriority(pod0, pod1 *v1.Pod) bool {
-	prio0 := getPodPriority(pod0)
-	prio1 := getPodPriority(pod1)
+	prio0 := podPriority(pod0)
+	prio1 := podPriority(pod1)
 	return prio0 < prio1
 }
 

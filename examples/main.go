@@ -48,8 +48,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Register a submitter
-		submitter := mySubmitter{}
-		kubesim.AddSubmitter(&submitter)
+		kubesim.AddSubmitter(newMySubmitter(8))
 
 		// SIGINT (Ctrl-C) cancels the sumbitter and kubesim.Run()
 		sig := make(chan os.Signal, 1)

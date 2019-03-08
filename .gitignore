@@ -1,4 +1,6 @@
 /bin/
 
 /AUTHORS
+
 /config.yaml
+/kubesim.log
