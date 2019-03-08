@@ -11,13 +11,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/submitter"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 	"github.com/ordovicia/kubernetes-simulator/log"
 )
@@ -30,7 +30,7 @@ type KubeSim struct {
 	nodes    map[string]*node.Node
 	podQueue queue.PodQueue
 
-	submitters []api.Submitter
+	submitters []submitter.Submitter
 	scheduler  scheduler.Scheduler
 
 	metricsWriters []metrics.Writer
@@ -72,7 +72,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		nodes:    nodes,
 		podQueue: queue,
 
-		submitters: []api.Submitter{},
+		submitters: []submitter.Submitter{},
 		scheduler:  sched,
 
 		metricsTick:    time.Duration(metricsTick) * time.Second,
@@ -92,7 +92,7 @@ func NewKubeSimFromConfigPath(confPath string, queue queue.PodQueue, sched sched
 }
 
 // AddSubmitter adds a new submitter plugin to this KubeSim.
-func (k *KubeSim) AddSubmitter(submitter api.Submitter) {
+func (k *KubeSim) AddSubmitter(submitter submitter.Submitter) {
 	k.submitters = append(k.submitters, submitter)
 }
 
@@ -243,14 +243,14 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 		return nil
 	}
 
-	for _, submitter := range k.submitters {
-		events, err := submitter.Submit(k.clock, k, metrics)
+	for _, subm := range k.submitters {
+		events, err := subm.Submit(k.clock, k, metrics)
 		if err != nil {
 			return err
 		}
 
 		for _, e := range events {
-			if submitted, ok := e.(*api.SubmitEvent); ok {
+			if submitted, ok := e.(*submitter.SubmitEvent); ok {
 				pod := submitted.Pod
 				pod.CreationTimestamp = k.clock.ToMetaV1()
 				pod.Status.Phase = v1.PodPending
@@ -264,7 +264,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				log.L.Debugf("Submit %s", key)
 
 				k.podQueue.Push(pod)
-			} else if delete, ok := e.(*api.DeleteEvent); ok {
+			} else if delete, ok := e.(*submitter.DeleteEvent); ok {
 				deletedFromQueue, err := k.podQueue.Delete(delete.PodNamespace, delete.PodName)
 				if err != nil {
 					return err
@@ -273,7 +273,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				if !deletedFromQueue {
 					// TODO
 				}
-			} else if update, ok := e.(*api.UpdateEvent); ok {
+			} else if update, ok := e.(*submitter.UpdateEvent); ok {
 				updatedInQueue, err := k.podQueue.Update(update.PodNamespace, update.PodName, update.NewPod)
 				if err != nil {
 					return err
