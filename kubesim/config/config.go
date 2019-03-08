@@ -17,6 +17,7 @@ type Config struct {
 	LogLevel      string
 	Tick          int
 	StartClock    string
+	MetricsTick   int
 	MetricsFile   MetricsFileConfig
 	MetricsStdout MetricsStdoutConfig
 	// MetricsPort int
