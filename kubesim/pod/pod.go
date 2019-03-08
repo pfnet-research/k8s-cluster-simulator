@@ -122,7 +122,7 @@ func (pod *Pod) TotalResourceLimits() v1.ResourceList {
 
 // ResourceUsage returns resource usage of the pod at the clock.
 func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
-	if !pod.IsRunning(clock) {
+	if !(pod.IsRunning(clock) || pod.IsTerminating(clock)) {
 		return v1.ResourceList{}
 	}
 
@@ -160,7 +160,7 @@ func (pod *Pod) IsDeleted(clock clock.Clock) bool {
 	gp := int64(v1.DefaultTerminationGracePeriodSeconds)
 	if pod.v1.Spec.TerminationGracePeriodSeconds != nil {
 		gp = *pod.v1.Spec.TerminationGracePeriodSeconds
-}
+	}
 
 	return pod.status == Deleted && clock.Sub(pod.deletedAt) >= time.Duration(gp)*time.Second
 }
@@ -177,7 +177,7 @@ func (pod *Pod) IsBindingFailed() bool {
 }
 
 // BuildStatus builds a status of this pod at the clock.
-// Assuming that this pod has not been deleted.
+// Assuming that this pod has not been deleted (but it can be terminating during its grace period).
 func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 	status := pod.ToV1().Status
 
@@ -188,12 +188,14 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 		status.Reason = "CapacityExceeded"
 		status.Message = "Pod cannot be started due to the requested resource exceeds the capacity"
 	case Ok:
+		fallthrough
+	case Deleted:
 		startTime := pod.boundAt.ToMetaV1()
 
 		status.StartTime = &startTime
 
 		var containerState v1.ContainerState
-		if pod.IsRunning(clock) {
+		if pod.IsRunning(clock) || pod.IsTerminating(clock) { // TODO?
 			status.Phase = v1.PodRunning
 			containerState = v1.ContainerState{
 				Running: &v1.ContainerStateRunning{

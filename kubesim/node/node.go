@@ -121,20 +121,20 @@ func (node *Node) PodList() []*pod.Pod {
 // GCTerminatedPods deletes terminated pods at the time clock from this node.
 func (node *Node) GCTerminatedPods(clock clock.Clock) {
 	for name, pod := range node.pods {
-		if pod.IsTerminated(clock) {
+		if pod.IsTerminated(clock) || pod.IsDeleted(clock) {
 			delete(node.pods, name)
 		}
 	}
 }
 
-// runningV1PodsWithStatus returns all running pods in *v1.Pod representation at the time clock,
-// with their status updated.
+// runningV1PodsWithStatus returns all running and terminating pods in *v1.Pod representation at
+// the time clock, with their status updated.
 func (node *Node) runningV1PodsWithStatus(clock clock.Clock) []*v1.Pod {
 	podList := []*v1.Pod{}
 	for _, pod := range node.pods {
 		podV1 := pod.ToV1()
 		podV1.Status = pod.BuildStatus(clock)
-		if pod.IsRunning(clock) {
+		if pod.IsRunning(clock) || pod.IsTerminating(clock) {
 			podList = append(podList, podV1)
 		}
 	}
@@ -142,12 +142,12 @@ func (node *Node) runningV1PodsWithStatus(clock clock.Clock) []*v1.Pod {
 	return podList
 }
 
-// totalResourceRequest calculates the total resource request (not usage) of all running pods at the
-// time clock.
+// totalResourceRequest calculates the total resource request (not usage) of all running and
+// terminating pods at the time clock.
 func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	for _, pod := range node.pods {
-		if pod.IsRunning(clock) {
+		if pod.IsRunning(clock) || pod.IsTerminating(clock) {
 			total = util.ResourceListSum(total, pod.TotalResourceRequests())
 		}
 	}
@@ -179,11 +179,12 @@ func (node *Node) bindingFailedPodsNum() int64 {
 	return num
 }
 
-// totalResourceUsage calculates the total resource usage of all running pods at the time clock.
+// totalResourceUsage calculates the total resource usage of all running and terminating pods at
+// the time clock.
 func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	for _, pod := range node.pods {
-		if pod.IsRunning(clock) {
+		if pod.IsRunning(clock) || pod.IsTerminating(clock) {
 			total = util.ResourceListSum(total, pod.ResourceUsage(clock))
 		}
 	}
