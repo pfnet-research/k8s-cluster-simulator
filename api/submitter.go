@@ -16,19 +16,20 @@ type SubmitEvent struct {
 	Pod *v1.Pod
 }
 
-func (s *SubmitEvent) IsSubmitterEvent() bool { return true }
-
-var _ = SubmitterEvent(&SubmitEvent{})
-
 type DeleteEvent struct {
 	PodName      string
 	PodNamespace string
-	NodeName     string
 }
 
-func (s *DeleteEvent) IsSubmitterEvent() bool { return true }
+type UpdateEvent struct {
+	PodName      string
+	PodNamespace string
+	NewPod       *v1.Pod
+}
 
-var _ = SubmitterEvent(&DeleteEvent{})
+func (s *SubmitEvent) IsSubmitterEvent() bool { return true }
+func (d *DeleteEvent) IsSubmitterEvent() bool { return true }
+func (u *UpdateEvent) IsSubmitterEvent() bool { return true }
 
 // Submitter defines the submitter interface.
 type Submitter interface {
