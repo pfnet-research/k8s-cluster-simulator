@@ -264,13 +264,22 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				log.L.Debugf("Submit %s", key)
 
 				k.podQueue.Push(pod)
-			} else if deleted, ok := e.(*api.DeleteEvent); ok {
-				deletedFromQueue, err := k.podQueue.Delete(deleted.PodNamespace, deleted.PodName)
+			} else if delete, ok := e.(*api.DeleteEvent); ok {
+				deletedFromQueue, err := k.podQueue.Delete(delete.PodNamespace, delete.PodName)
 				if err != nil {
 					return err
 				}
 
 				if !deletedFromQueue {
+					// TODO
+				}
+			} else if update, ok := e.(*api.UpdateEvent); ok {
+				updatedInQueue, err := k.podQueue.Update(update.PodNamespace, update.PodName, update.NewPod)
+				if err != nil {
+					return err
+				}
+
+				if !updatedInQueue {
 					// TODO
 				}
 			} else {
