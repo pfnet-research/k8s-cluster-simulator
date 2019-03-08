@@ -163,8 +163,39 @@ func TestPriorityReorder(t *testing.T) {
 		t.Error("PriorityQueue is not sorted")
 	}
 
-	q = q.Reorder(lowPriority)
+	q, err := q.Reorder(lowPriority)
+	if err != nil {
+		t.Errorf("got: %v\nwant: nil", err)
+	}
 	if !q.isSorted(lowPriority) {
 		t.Error("PriorityQueue is not sorted")
+	}
+}
+
+func TestPriorityQueueDelete(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	q.Push(newPodWithPriority("pod-0", nil, now))
+	q.Push(newPodWithPriority("pod-1", nil, now))
+
+	ok, _ := q.Delete("default", "pod-0")
+	if !ok {
+		t.Errorf("got: false\nwant: true")
+	}
+
+	ok, _ = q.Delete("default", "pod-0")
+	if ok {
+		t.Errorf("got: true\nwant: false")
+	}
+
+	ok, _ = q.Delete("default", "pod-1")
+	if !ok {
+		t.Errorf("got: false\nwant: true")
+	}
+
+	_, err := q.Pop()
+	if err != ErrEmptyQueue {
+		t.Errorf("got: %+v\nwant: %+v", err, ErrEmptyQueue)
 	}
 }
