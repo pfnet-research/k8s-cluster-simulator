@@ -265,8 +265,14 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 
 				k.podQueue.Push(pod)
 			} else if deleted, ok := e.(*api.DeleteEvent); ok {
-				_ = deleted
-				panic("Unimplemented")
+				deletedFromQueue, err := k.podQueue.Delete(deleted.PodNamespace, deleted.PodName)
+				if err != nil {
+					return err
+				}
+
+				if !deletedFromQueue {
+					// TODO
+				}
 			} else {
 				panic("Unknown submitter event")
 			}

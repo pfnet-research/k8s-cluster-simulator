@@ -30,14 +30,24 @@ func newMySubmitter(targetPodsNum int) *mySubmitter {
 	}
 }
 
-func (s *mySubmitter) Submit(clock clock.Clock, _ algorithm.NodeLister, met metrics.Metrics) ([]api.SubmitterEvent, error) {
+func (s *mySubmitter) Submit(
+	clock clock.Clock,
+	_ algorithm.NodeLister,
+	met metrics.Metrics) ([]api.SubmitterEvent, error) {
+
 	queueMetrics := met[metrics.QueueMetricsKey].(queue.Metrics)
 	submissionNum := s.targetPodsNum - queueMetrics.PendingPodsNum
 	if submissionNum <= 0 {
 		return []api.SubmitterEvent{}, nil
 	}
 
-	events := make([]api.SubmitterEvent, 0, submissionNum)
+	events := make([]api.SubmitterEvent, 0, submissionNum+1)
+
+	if s.podIdx > 0 { // Test deleting previously submitted pod
+		podName := fmt.Sprintf("pod-%d", s.podIdx-1)
+		events = append(events, &api.DeleteEvent{PodNamespace: "default", PodName: podName})
+	}
+
 	for i := 0; i < submissionNum; i++ {
 		events = append(events, &api.SubmitEvent{Pod: newPod(s.podIdx)})
 		s.podIdx++
