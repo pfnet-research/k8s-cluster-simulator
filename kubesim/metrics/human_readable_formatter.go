@@ -84,7 +84,7 @@ func formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
 	str := ""
 
 	for name, met := range metrics {
-		str += fmt.Sprintf("    %s: Pods %d/%d", name, met.RunningPodsNum, met.Capacity.Pods().Value())
+		str += fmt.Sprintf("    %s: Pods %d(%d)/%d", name, met.RunningPodsNum, met.TerminatingPodsNum, met.Capacity.Pods().Value())
 		for rsrc, cap := range met.Capacity {
 			if rsrc == "pods" {
 				continue

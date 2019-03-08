@@ -20,6 +20,7 @@ type Node struct {
 type Metrics struct {
 	Capacity             v1.ResourceList
 	RunningPodsNum       int64
+	TerminatingPodsNum   int64
 	FailedPodsNum        int64
 	TotalResourceRequest v1.ResourceList
 	TotalResourceUsage   v1.ResourceList
@@ -51,6 +52,7 @@ func (node *Node) Metrics(clock clock.Clock) Metrics {
 	return Metrics{
 		Capacity:             node.ToV1().Status.Capacity,
 		RunningPodsNum:       node.runningPodsNum(clock),
+		TerminatingPodsNum:   node.terminatingPodsNum(clock),
 		FailedPodsNum:        node.bindingFailedPodsNum(),
 		TotalResourceRequest: node.totalResourceRequest(clock),
 		TotalResourceUsage:   node.totalResourceUsage(clock),
@@ -160,6 +162,18 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	num := int64(0)
 	for _, pod := range node.pods {
 		if pod.IsRunning(clock) {
+			num++
+		}
+	}
+
+	return num
+}
+
+// terminatingPodsNum returns the number of all terminating pods at the time clock.
+func (node *Node) terminatingPodsNum(clock clock.Clock) int64 {
+	num := int64(0)
+	for _, pod := range node.pods {
+		if pod.IsTerminating(clock) {
 			num++
 		}
 	}
