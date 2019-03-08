@@ -10,10 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
-	"github.com/ordovicia/kubernetes-simulator/api"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/submitter"
 )
 
 type mySubmitter struct {
@@ -33,23 +33,23 @@ func newMySubmitter(targetPodsNum int) *mySubmitter {
 func (s *mySubmitter) Submit(
 	clock clock.Clock,
 	_ algorithm.NodeLister,
-	met metrics.Metrics) ([]api.SubmitterEvent, error) {
+	met metrics.Metrics) ([]submitter.Event, error) {
 
 	queueMetrics := met[metrics.QueueMetricsKey].(queue.Metrics)
 	submissionNum := s.targetPodsNum - queueMetrics.PendingPodsNum
 	if submissionNum <= 0 {
-		return []api.SubmitterEvent{}, nil
+		return []submitter.Event{}, nil
 	}
 
-	events := make([]api.SubmitterEvent, 0, submissionNum+1)
+	events := make([]submitter.Event, 0, submissionNum+1)
 
 	if s.podIdx > 0 { // Test deleting previously submitted pod
 		podName := fmt.Sprintf("pod-%d", s.podIdx-1)
-		events = append(events, &api.DeleteEvent{PodNamespace: "default", PodName: podName})
+		events = append(events, &submitter.DeleteEvent{PodNamespace: "default", PodName: podName})
 	}
 
 	for i := 0; i < submissionNum; i++ {
-		events = append(events, &api.SubmitEvent{Pod: newPod(s.podIdx)})
+		events = append(events, &submitter.SubmitEvent{Pod: newPod(s.podIdx)})
 		s.podIdx++
 	}
 
