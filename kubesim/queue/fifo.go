@@ -74,6 +74,22 @@ func (fifo *FIFOQueue) Delete(podNamespace, podName string) (bool, error) {
 	return ok, nil
 }
 
+func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {
+	keyOrig := util.PodKeyFromNames(podNamespace, podName)
+	keyNew, err := util.PodKey(newPod)
+	if err != nil {
+		return false, err
+	}
+	if keyOrig != keyNew {
+		return false, ErrDifferentNames
+	}
+
+	_, ok := fifo.pods[keyOrig]
+	fifo.pods[keyOrig] = newPod
+
+	return ok, nil
+}
+
 func (fifo *FIFOQueue) Metrics() Metrics {
 	return Metrics{
 		PendingPodsNum: len(fifo.queue),

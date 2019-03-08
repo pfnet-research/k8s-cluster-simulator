@@ -83,6 +83,27 @@ func (pq *PriorityQueue) Delete(podNamespace, podName string) (bool, error) {
 	return ok, nil
 }
 
+func (pq *PriorityQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {
+	keyOrig := util.PodKeyFromNames(podNamespace, podName)
+	keyNew, err := util.PodKey(newPod)
+	if err != nil {
+		return false, err
+	}
+	if keyOrig != keyNew {
+		return false, ErrDifferentNames
+	}
+
+	_, ok := pq.inner.items[keyOrig]
+	if ok {
+		pq.inner.items[keyOrig].pod = newPod
+		heap.Fix(&pq.inner, pq.inner.items[keyOrig].index)
+	} else {
+		heap.Push(&pq.inner, &item{pod: newPod})
+	}
+
+	return ok, nil
+}
+
 func (pq *PriorityQueue) Metrics() Metrics {
 	return Metrics{
 		PendingPodsNum: pq.inner.Len(),

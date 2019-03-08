@@ -199,3 +199,24 @@ func TestPriorityQueueDelete(t *testing.T) {
 		t.Errorf("got: %+v\nwant: %+v", err, ErrEmptyQueue)
 	}
 }
+
+func TestPriorityQueueUpdate(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	prio0 := int32(0)
+	q.Push(newPodWithPriority("pod-0", &prio0, now))
+	prio1 := int32(1)
+	q.Push(newPodWithPriority("pod-1", &prio1, now))
+
+	prio2 := int32(2)
+	ok, _ := q.Update("default", "pod-0", newPodWithPriority("pod-0", &prio2, now))
+	if !ok {
+		t.Errorf("got: false\nwant: true")
+	}
+
+	pod, _ := q.Pop()
+	if pod.Name != "pod-0" {
+		t.Errorf("got: %+v\nwant: prio-0", pod.Name)
+	}
+}
