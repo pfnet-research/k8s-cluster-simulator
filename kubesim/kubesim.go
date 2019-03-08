@@ -24,7 +24,7 @@ import (
 
 // KubeSim represents a kubernetes cluster simulator.
 type KubeSim struct {
-	tick  int
+	tick  time.Duration
 	clock clock.Clock
 
 	nodes    map[string]*node.Node
@@ -34,6 +34,7 @@ type KubeSim struct {
 	scheduler  scheduler.Scheduler
 
 	metricsWriters []metrics.Writer
+	metricsTick    time.Duration
 }
 
 // NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
@@ -54,13 +55,18 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		return nil, err
 	}
 
+	metricsTick := conf.Tick
+	if conf.MetricsTick != 0 {
+		metricsTick = conf.MetricsTick
+	}
+
 	metricsWriters, err := buildMetricsWriters(conf)
 	if err != nil {
 		return nil, err
 	}
 
 	return &KubeSim{
-		tick:  conf.Tick,
+		tick:  time.Duration(conf.Tick) * time.Second,
 		clock: clk,
 
 		nodes:    nodes,
@@ -69,6 +75,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		submitters: []api.Submitter{},
 		scheduler:  sched,
 
+		metricsTick:    time.Duration(metricsTick) * time.Second,
 		metricsWriters: metricsWriters,
 	}, nil
 }
@@ -92,6 +99,7 @@ func (k *KubeSim) AddSubmitter(submitter api.Submitter) {
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
 // This method blocks until ctx is done.
 func (k *KubeSim) Run(ctx context.Context) error {
+	preMetricsClock := k.clock
 	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
 	if err != nil {
 		return err
@@ -104,20 +112,27 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		default:
 			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
 
-			if err := k.submit(met); err != nil {
+			if err = k.submit(met); err != nil {
 				return err
 			}
 
-			if err := k.schedule(); err != nil {
+			if err = k.schedule(); err != nil {
 				return err
 			}
 
-			met, err = k.writeMetrics()
+			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
 			if err != nil {
 				return err
 			}
 
-			k.clock = k.clock.Add(time.Duration(k.tick) * time.Second)
+			if k.clock.Sub(preMetricsClock) > k.metricsTick {
+				preMetricsClock = k.clock
+				if err = k.writeMetrics(met); err != nil {
+					return err
+				}
+			}
+
+			k.clock = k.clock.Add(k.tick)
 		}
 	}
 }
@@ -282,17 +297,12 @@ func (k *KubeSim) schedule() error {
 	return nil
 }
 
-func (k *KubeSim) writeMetrics() (metrics.Metrics, error) {
-	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
-	if err != nil {
-		return metrics.Metrics{}, err
-	}
-
+func (k *KubeSim) writeMetrics(met metrics.Metrics) error {
 	for _, writer := range k.metricsWriters {
 		if err := writer.Write(met); err != nil {
-			return metrics.Metrics{}, err
+			return err
 		}
 	}
 
-	return met, nil
+	return nil
 }

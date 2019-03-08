@@ -6,6 +6,14 @@ logLevel: debug
 # Optional (default: 10)
 tick: 10
 
+# Start time at which the simulation starts, in RFC3339 format.
+# Optional (default: now)
+startClock: 2019-01-01T00:00:00+09:00
+
+# Interval duration for logging metrics of the cluster, in seconds.
+# Optional (default: same as tick)
+metricsTick: 60
+
 # Metrics of simulated kubernetes cluster is written to a file at this path.
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics to a file)
@@ -21,10 +29,6 @@ metricsStdout:
 # metricsPort: 10255
 
 # apiPort: 10250
-
-# Start time at which the simulation starts, in RFC3339 format.
-# Optional (default: now)
-startClock: 2019-01-01T00:00:00+09:00
 
 # Cluster configration
 cluster:
