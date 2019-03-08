@@ -15,6 +15,7 @@ import (
 	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/submitter"
@@ -27,8 +28,9 @@ type KubeSim struct {
 	tick  time.Duration
 	clock clock.Clock
 
-	nodes    map[string]*node.Node
-	podQueue queue.PodQueue
+	nodes       map[string]*node.Node
+	pendingPods queue.PodQueue
+	boundPods   map[string]*pod.Pod
 
 	submitters []submitter.Submitter
 	scheduler  scheduler.Scheduler
@@ -69,8 +71,9 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		tick:  time.Duration(conf.Tick) * time.Second,
 		clock: clk,
 
-		nodes:    nodes,
-		podQueue: queue,
+		nodes:       nodes,
+		pendingPods: queue,
+		boundPods:   map[string]*pod.Pod{},
 
 		submitters: []submitter.Submitter{},
 		scheduler:  sched,
@@ -100,7 +103,7 @@ func (k *KubeSim) AddSubmitter(submitter submitter.Submitter) {
 // This method blocks until ctx is done.
 func (k *KubeSim) Run(ctx context.Context) error {
 	preMetricsClock := k.clock
-	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
+	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
 	if err != nil {
 		return err
 	}
@@ -120,7 +123,9 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.podQueue)
+			// k.gcTerminatedPodsInNodes()
+
+			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
 			if err != nil {
 				return err
 			}
@@ -263,24 +268,26 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				}
 				log.L.Debugf("Submit %s", key)
 
-				k.podQueue.Push(pod)
-			} else if delete, ok := e.(*submitter.DeleteEvent); ok {
-				deletedFromQueue, err := k.podQueue.Delete(delete.PodNamespace, delete.PodName)
+				k.pendingPods.Push(pod)
+			} else if del, ok := e.(*submitter.DeleteEvent); ok {
+				deletedFromQueue, err := k.pendingPods.Delete(del.PodNamespace, del.PodName)
 				if err != nil {
 					return err
 				}
 
 				if !deletedFromQueue {
-					// TODO
+					if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
+						return err
+					}
 				}
 			} else if update, ok := e.(*submitter.UpdateEvent); ok {
-				updatedInQueue, err := k.podQueue.Update(update.PodNamespace, update.PodName, update.NewPod)
+				updatedInQueue, err := k.pendingPods.Update(update.PodNamespace, update.PodName, update.NewPod)
 				if err != nil {
 					return err
 				}
 
 				if !updatedInQueue {
-					// TODO
+					//
 				}
 			} else {
 				panic("Unknown submitter event")
@@ -297,7 +304,7 @@ func (k *KubeSim) schedule() error {
 		nodeInfoMap[name] = node.ToNodeInfo(k.clock)
 	}
 
-	events, err := k.scheduler.Schedule(k.clock, k.podQueue, k, nodeInfoMap)
+	events, err := k.scheduler.Schedule(k.clock, k.pendingPods, k, nodeInfoMap)
 	if err != nil {
 		return err
 	}
@@ -306,19 +313,25 @@ func (k *KubeSim) schedule() error {
 		if bind, ok := e.(*scheduler.BindEvent); ok {
 			nodeName := bind.ScheduleResult.SuggestedHost
 			node, ok := k.nodes[nodeName]
-
-			if ok {
-				bind.Pod.Spec.NodeName = nodeName
-			} else {
+			if !ok {
 				return errors.Errorf("No node named %q", nodeName)
 			}
+			bind.Pod.Spec.NodeName = nodeName
 
-			if err := node.BindPod(k.clock, bind.Pod); err != nil {
+			pod, err := node.BindPod(k.clock, bind.Pod)
+			if err != nil {
 				return err
 			}
-		} else if delete, ok := e.(*scheduler.DeleteEvent); ok {
-			_ = delete
-			panic("Unimplemented")
+
+			key, err := util.PodKey(bind.Pod)
+			if err != nil {
+				return err
+			}
+			k.boundPods[key] = pod
+		} else if del, ok := e.(*scheduler.DeleteEvent); ok {
+			if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
+				return err
+			}
 		} else {
 			panic("Unknown scheduler event")
 		}
@@ -332,6 +345,29 @@ func (k *KubeSim) writeMetrics(met metrics.Metrics) error {
 		if err := writer.Write(met); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (k *KubeSim) gcTerminatedPodsInNodes() {
+	for _, node := range k.nodes {
+		node.GCTerminatedPods(k.clock)
+	}
+}
+
+func (k *KubeSim) deletePodFromNode(podNamespace, podName string) error {
+	key := util.PodKeyFromNames(podNamespace, podName)
+	k.boundPods[key].Delete()
+
+	nodeName := k.boundPods[key].ToV1().Spec.NodeName
+	deletedFromNode, err := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)
+	if err != nil {
+		return err
+	}
+
+	if !deletedFromNode {
+		//
 	}
 
 	return nil

@@ -32,10 +32,6 @@ type BindEvent struct {
 	ScheduleResult core.ScheduleResult
 }
 
-func (b *BindEvent) IsSchedulerEvent() bool { return true }
-
-var _ = Event(&BindEvent{})
-
 // DeleteEvent represents an event of the deleting a bound pod on a node.
 type DeleteEvent struct {
 	PodNamespace string
@@ -43,6 +39,5 @@ type DeleteEvent struct {
 	NodeName     string
 }
 
+func (b *BindEvent) IsSchedulerEvent() bool   { return true }
 func (d *DeleteEvent) IsSchedulerEvent() bool { return true }
-
-var _ = Event(&DeleteEvent{})

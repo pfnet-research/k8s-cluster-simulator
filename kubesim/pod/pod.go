@@ -36,8 +36,12 @@ type Metrics struct {
 type Status int
 
 const (
-	// Ok indicates that the pod is successfully bound to a node.
+	// Ok indicates that the pod has been successfully bound to a node.
+	// Whether the pod is running or has been terminated is determined by its total execution time
+	// and the clock.
 	Ok Status = iota
+	// Deleted indicates that the pod has been deleted from the cluster.
+	Deleted
 	// OverCapacity indicates that the pod is failed to start due to capacity over.
 	OverCapacity
 )
@@ -47,6 +51,8 @@ func (status Status) String() string {
 	switch status {
 	case Ok:
 		return "Ok"
+	case Deleted:
+		return "Deleted"
 	case OverCapacity:
 		return "OverCapacity"
 	default:
@@ -126,8 +132,7 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 		}
 	}
 
-	// unreachable
-	return v1.ResourceList{}
+	panic("Unreachable")
 }
 
 // IsRunning returns whether the pod is running at the clock.
@@ -142,12 +147,23 @@ func (pod *Pod) IsTerminated(clock clock.Clock) bool {
 	return pod.status == Ok && pod.executedDuration(clock) >= pod.totalExecutionDuration()
 }
 
+// IsDeleted returns whether the pod has been deleted.
+func (pod *Pod) IsDeleted() bool {
+	return pod.status == Deleted
+}
+
+// Delete marks the pod as deleted.
+func (pod *Pod) Delete() {
+	pod.status = Deleted
+}
+
 // IsBindingFailed returns whether the pod failed to be bound to a node.
 func (pod *Pod) IsBindingFailed() bool {
-	return pod.status != Ok
+	return pod.status == OverCapacity
 }
 
 // BuildStatus builds a status of this pod at the clock.
+// Assuming that this pod has not been deleted.
 func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 	status := pod.ToV1().Status
 
@@ -159,7 +175,6 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 		status.Message = "Pod cannot be started due to the requested resource exceeds the capacity"
 	case Ok:
 		startTime := pod.boundAt.ToMetaV1()
-		finishTime := pod.finishClock().ToMetaV1()
 
 		status.StartTime = &startTime
 
@@ -179,7 +194,7 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 					Reason:     "Succeeded",
 					Message:    "All containers in the pod have voluntarily terminated",
 					StartedAt:  startTime,
-					FinishedAt: finishTime,
+					FinishedAt: pod.finishClock().ToMetaV1(),
 					// ContainerID:
 				}}
 		}
@@ -215,8 +230,8 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 	return status
 }
 
-// executedDuration returns elapsed duration after the pod started.
-// Returns 0 if the pod failed to be bound.
+// executedDuration returns elapsed duration after the pod started, assuming it has not been
+// deleted. Returns 0 if the pod was failed to be bound.
 func (pod *Pod) executedDuration(clock clock.Clock) time.Duration {
 	if pod.status != Ok {
 		return 0
@@ -233,7 +248,7 @@ func (pod *Pod) totalExecutionDuration() time.Duration {
 	return time.Duration(phaseSecondsTotal) * time.Second
 }
 
-// finishClock returns the clock at which this pod finishes.
+// finishClock returns the clock at which this pod will finish.
 func (pod *Pod) finishClock() clock.Clock {
 	return pod.boundAt.Add(pod.totalExecutionDuration())
 }
