@@ -18,7 +18,7 @@ type Config struct {
 	Tick          int
 	StartClock    string
 	MetricsTick   int
-	MetricsFile   MetricsFileConfig
+	MetricsFile   []MetricsFileConfig
 	MetricsStdout MetricsStdoutConfig
 	// MetricsPort int
 	// APIPort     int
@@ -52,22 +52,33 @@ type TaintConfig struct { // made public for the deserialization by viper
 	Effect string
 }
 
-// BuildMetricsFile builds a metrics.FileWriter with the given MetricsFileConfig.
+// BuildMetricsFile builds metrics.FileWriter with the given MetricsFileConfig.
 // Returns error if the config is invalid, failed to parse, or failed to create a FileWriter.
-func BuildMetricsFile(config MetricsFileConfig) (*metrics.FileWriter, error) {
-	if config.Path == "" && config.Formatter == "" {
-		return nil, nil
-	}
-	if config.Path == "" || config.Formatter == "" {
-		return nil, strongerrors.InvalidArgument(errors.New("either metricsFile.Path or metricsFile.Formatter not given"))
+func BuildMetricsFile(config []MetricsFileConfig) ([]*metrics.FileWriter, error) {
+	writers := make([]*metrics.FileWriter, 0, len(config))
+
+	for _, conf := range config {
+		if conf.Path == "" && conf.Formatter == "" {
+			return nil, nil
+		}
+		if conf.Path == "" || conf.Formatter == "" {
+			return nil, strongerrors.InvalidArgument(errors.New("either metricsFile.Path or metricsFile.Formatter not given"))
+		}
+
+		formatter, err := buildFormatter(conf.Formatter)
+		if err != nil {
+			return nil, err
+		}
+
+		writer, err := metrics.NewFileWriter(conf.Path, formatter)
+		if err != nil {
+			return nil, err
+		}
+
+		writers = append(writers, writer)
 	}
 
-	formatter, err := buildFormatter(config.Formatter)
-	if err != nil {
-		return nil, err
-	}
-
-	return metrics.NewFileWriter(config.Path, formatter)
+	return writers, nil
 }
 
 // BuildMetricsStdout builds a metrics.StdoutWriter with the given MetricsStdoutConfig.

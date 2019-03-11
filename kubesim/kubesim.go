@@ -222,13 +222,14 @@ func buildCluster(conf *config.Config) (map[string]*node.Node, error) {
 func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	writers := []metrics.Writer{}
 
-	fileWriter, err := config.BuildMetricsFile(conf.MetricsFile)
+	fileWriters, err := config.BuildMetricsFile(conf.MetricsFile)
 	if err != nil {
 		return []metrics.Writer{}, err
 	}
-	if fileWriter != nil {
-		log.L.Infof("Metrics and log written to %s", fileWriter.FileName())
-		writers = append(writers, fileWriter)
+
+	for _, writer := range fileWriters {
+		log.L.Infof("Metrics and log written to %s", writer.FileName())
+		writers = append(writers, writer)
 	}
 
 	stdoutWriter, err := config.BuildMetricsStdout(conf.MetricsStdout)

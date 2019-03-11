@@ -12,27 +12,41 @@ import (
 )
 
 func TestBuildMetricsFile(t *testing.T) {
-	actual, err := BuildMetricsFile(MetricsFileConfig{
+	actual, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "",
 		Formatter: "",
-	})
+	}})
 	if actual != nil || err != nil {
 		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
 	}
 
-	actual, err = BuildMetricsFile(MetricsFileConfig{
+	actual, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "",
 		Formatter: "foo",
-	})
+	}})
 	if err == nil {
 		t.Errorf("got: nil\nwant: error")
 	}
 
-	actual, err = BuildMetricsFile(MetricsFileConfig{
+	actual, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "foo",
 		Formatter: "",
-	})
+	}})
 	if err == nil {
+		t.Errorf("got: nil\nwant: error")
+	}
+
+	actual, err = BuildMetricsFile([]MetricsFileConfig{
+		MetricsFileConfig{
+			Path:      "",
+			Formatter: "",
+		},
+		MetricsFileConfig{
+			Path:      "",
+			Formatter: "",
+		},
+	})
+	if err != nil {
 		t.Errorf("got: nil\nwant: error")
 	}
 }
