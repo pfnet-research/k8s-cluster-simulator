@@ -4,10 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
-	"github.com/ordovicia/kubernetes-simulator/log"
 	v1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
@@ -16,6 +12,11 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/api"
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
+	"github.com/ordovicia/kubernetes-simulator/log"
 )
 
 // GenericScheduler makes scheduling decision for each given pod in the one-by-one manner.
@@ -194,7 +195,7 @@ func (sched *GenericScheduler) filter(
 	errs := kerr.MessageCountMap{}
 	for name, p := range sched.predicates {
 		var err error
-		filteredNodes, err = callPredicatePlugin(name, &p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
+		filteredNodes, err = callPredicatePlugin(name, p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
 		if err != nil {
 			return []*v1.Node{}, core.FailedPredicateMap{}, err
 		}
@@ -303,37 +304,6 @@ func (sched *GenericScheduler) prioritize(
 	return prioList, nil
 }
 
-// selectHost was copied from "k8s.io/kubernetes/pkg/scheduler/core".selectHost().
-func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (string, error) {
-	if len(priorities) == 0 {
-		return "", errors.New("Empty priorities")
-	}
-
-	maxScores := findMaxScores(priorities)
-	idx := int(sched.lastNodeIndex % uint64(len(maxScores)))
-	sched.lastNodeIndex++
-
-	return priorities[maxScores[idx]].Host, nil
-}
-
-// findMaxScores was copied from "k8s.io/kubernetes/pkg/scheduler/core".findMaxScores().
-func findMaxScores(priorities api.HostPriorityList) []int {
-	maxScoreIndexes := make([]int, 0, len(priorities)/2)
-	maxScore := priorities[0].Score
-
-	for idx, prio := range priorities {
-		if prio.Score > maxScore {
-			maxScore = prio.Score
-			maxScoreIndexes = maxScoreIndexes[:0]
-			maxScoreIndexes = append(maxScoreIndexes, idx)
-		} else if prio.Score == maxScore {
-			maxScoreIndexes = append(maxScoreIndexes, idx)
-		}
-	}
-
-	return maxScoreIndexes
-}
-
 func updatePodStatusSchedulingSucceess(clock clock.Clock, pod *v1.Pod) {
 	util.UpdatePodCondition(clock, &pod.Status, &v1.PodCondition{
 		Type:          v1.PodScheduled,
@@ -435,7 +405,7 @@ func (sched *GenericScheduler) findPreemption(
 
 	potentialNodes := nodesWherePreemptionMightHelp(allNodes, fitError.FailedPredicates)
 	if len(potentialNodes) == 0 {
-		log.L.Tracef("Preemption will not help schedule pod %s on any node.", preemptorKey)
+		log.L.Debugf("Preemption will not help schedule pod %s on any node.", preemptorKey)
 		// In this case, we should clean-up any existing nominated node name of the pod.
 		return nil, nil, []*v1.Pod{preemptor}, nil
 	}
