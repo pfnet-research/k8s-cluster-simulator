@@ -90,6 +90,20 @@ func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) (boo
 	return ok, nil
 }
 
+func (fifo *FIFOQueue) UpdateNominatedNode(pod *v1.Pod, nodeName string) error {
+	// FIFOQueue does nothing
+	return nil
+}
+
+func (fifo *FIFOQueue) RemoveNominatedNode(pod *v1.Pod) error {
+	// FIFOQueue does nothing
+	return nil
+}
+
+func (fifo *FIFOQueue) NominatedPods(nodeName string) []*v1.Pod {
+	return []*v1.Pod{}
+}
+
 func (fifo *FIFOQueue) Metrics() Metrics {
 	return Metrics{
 		PendingPodsNum: len(fifo.queue),

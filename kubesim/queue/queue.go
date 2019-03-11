@@ -40,6 +40,15 @@ type PodQueue interface {
 	// ErrDifferentNames.
 	Update(podNamespace, podName string, newPod *v1.Pod) (bool, error)
 
+	// NominatedPods returns a list of pods for which the node is nominated for scheduling.
+	NominatedPods(nodeName string) []*v1.Pod
+
+	// UpdateNominatedNode updates the node nomination for the pod.
+	UpdateNominatedNode(pod *v1.Pod, nodeName string) error
+
+	// RemoveNominatedNode removes the node nomination for the pod.
+	RemoveNominatedNode(pod *v1.Pod) error
+
 	// Metrics returns a metrics of this queue.
 	Metrics() Metrics
 }

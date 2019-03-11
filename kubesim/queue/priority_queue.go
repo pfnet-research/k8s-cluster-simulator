@@ -16,7 +16,8 @@ import (
 //
 // PriorityQueue wraps rawPriorityQueue for type-safetiness.
 type PriorityQueue struct {
-	inner rawPriorityQueue
+	inner         rawPriorityQueue
+	nominatedPods map[string]map[string]*v1.Pod
 }
 
 // Compare returns true if pod0 has higher priority than pod1.
@@ -102,6 +103,53 @@ func (pq *PriorityQueue) Update(podNamespace, podName string, newPod *v1.Pod) (b
 	}
 
 	return ok, nil
+}
+
+func (pq *PriorityQueue) UpdateNominatedNode(pod *v1.Pod, nodeName string) error {
+	if err := pq.RemoveNominatedNode(pod); err != nil {
+		return err
+	}
+
+	pod.Status.NominatedNodeName = nodeName
+	key, err := util.PodKey(pod)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := pq.nominatedPods[nodeName]; !ok {
+		pq.nominatedPods[nodeName] = map[string]*v1.Pod{}
+	}
+	pq.nominatedPods[nodeName][key] = pod
+
+	return nil
+}
+
+func (pq *PriorityQueue) RemoveNominatedNode(pod *v1.Pod) error {
+	nodeName := pod.Status.NominatedNodeName
+	if nodeName == "" {
+		return nil
+	}
+
+	key, err := util.PodKey(pod)
+	if err != nil {
+		return err
+	}
+
+	pod.Status.NominatedNodeName = ""
+	if pods, ok := pq.nominatedPods[nodeName]; ok {
+		delete(pods, key)
+	}
+
+	return nil
+}
+
+func (pq *PriorityQueue) NominatedPods(nodeName string) []*v1.Pod {
+	pods := make([]*v1.Pod, 0, len(pq.nominatedPods[nodeName]))
+	for _, pod := range pq.nominatedPods[nodeName] {
+		pods = append(pods, pod)
+	}
+
+	return pods
 }
 
 func (pq *PriorityQueue) Metrics() Metrics {
@@ -203,7 +251,8 @@ func newWithItems(items map[string]*item, comparator Compare) *PriorityQueue {
 	heap.Init(&rawPq)
 
 	return &PriorityQueue{
-		inner: rawPq,
+		inner:         rawPq,
+		nominatedPods: map[string]map[string]*v1.Pod{},
 	}
 }
 

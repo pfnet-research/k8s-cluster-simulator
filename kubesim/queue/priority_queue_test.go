@@ -220,3 +220,20 @@ func TestPriorityQueueUpdate(t *testing.T) {
 		t.Errorf("got: %+v\nwant: prio-0", pod.Name)
 	}
 }
+
+func TestPriorityQueueNomination(t *testing.T) {
+	now := metav1.Now()
+	q := NewPriorityQueue()
+
+	pod0 := newPodWithPriority("pod-0", nil, now)
+	// pod1 := newPodWithPriority("pod-1", nil, now)
+
+	q.Push(pod0)
+	// q.Push(pod1)
+
+	_ = q.UpdateNominatedNode(pod0, "node-0")
+	pods := q.NominatedPods("node-0")
+	if len(pods) != 1 || pods[0].Name != "pod-0" {
+		t.Errorf("got: %v\nwant: [\"pod-0\"]", pods)
+	}
+}
