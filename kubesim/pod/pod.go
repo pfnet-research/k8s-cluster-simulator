@@ -136,7 +136,7 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 		}
 	}
 
-	panic("Unreachable")
+	panic("Unreachable code in pod.ResourceUsage()")
 }
 
 // IsRunning returns whether the pod is running at the clock.
@@ -169,6 +169,10 @@ func (pod *Pod) IsDeleted(clk clock.Clock) bool {
 
 // Delete starts deleting this pod.
 func (pod *Pod) Delete(clock clock.Clock) {
+	if !pod.IsRunning(clock) {
+		return
+	}
+
 	pod.status = Deleted
 	deletedAt := clock.ToMetaV1()
 	pod.ToV1().DeletionTimestamp = &deletedAt
@@ -254,7 +258,12 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 func (pod *Pod) executedDuration(clock clock.Clock) time.Duration {
 	switch pod.status {
 	case Ok:
-		return clock.Sub(pod.boundAt)
+		elapsed := clock.Sub(pod.boundAt)
+		total := pod.totalExecutionDuration()
+		if elapsed < total {
+			return elapsed
+		}
+		return total
 	case Deleted:
 		return pod.ToV1().DeletionTimestamp.Sub(pod.boundAt.ToMetaV1().Time)
 	default:

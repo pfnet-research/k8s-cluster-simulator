@@ -24,7 +24,7 @@ func (d *dummyPredicateMetadata) RemovePod(pod *v1.Pod) error                   
 
 func callPredicatePlugin(
 	name string,
-	pred *predicates.FitPredicate,
+	pred predicates.FitPredicate,
 	pod *v1.Pod,
 	nodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
@@ -47,7 +47,7 @@ func callPredicatePlugin(
 			return []*v1.Node{}, fmt.Errorf("No node named %s", node.Name)
 		}
 
-		fits, failureReason, err := (*pred)(pod, &dummyPredicateMetadata{}, nodeInfo)
+		fits, failureReason, err := pred(pod, &dummyPredicateMetadata{}, nodeInfo)
 		if err != nil {
 			errs[err.Error()]++
 		}
