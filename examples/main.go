@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 
 		// Create a KubeSim with a queue and a scheduler.
-		queue := queue.NewPriorityQueueWithComparator(lifo)
+		queue := queue.NewPriorityQueue() // queue.NewPriorityQueueWithComparator(lifo)
 		sched := buildScheduler()
 		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, sched)
 		if err != nil {
@@ -66,7 +66,7 @@ var rootCmd = &cobra.Command{
 }
 
 func buildScheduler() scheduler.Scheduler {
-	sched := scheduler.NewGenericScheduler()
+	sched := scheduler.NewGenericScheduler(true)
 
 	// Add an extender
 	sched.AddExtender(

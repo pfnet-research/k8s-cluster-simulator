@@ -8,6 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
@@ -73,6 +74,8 @@ func newPod(idx uint64) *v1.Pod {
 `, sec, cpu, mem, gpu)
 	}
 
+	prio := rand.Int31n(2 + 1)
+
 	pod := v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -86,6 +89,7 @@ func newPod(idx uint64) *v1.Pod {
 			},
 		},
 		Spec: v1.PodSpec{
+			Priority: &prio,
 			Containers: []v1.Container{
 				v1.Container{
 					Name:  "container",
@@ -106,6 +110,8 @@ func newPod(idx uint64) *v1.Pod {
 			},
 		},
 	}
+
+	pod.ObjectMeta.UID = types.UID(pod.ObjectMeta.Name) // FIXME
 
 	return &pod
 }
