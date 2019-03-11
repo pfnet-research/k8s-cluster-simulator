@@ -12,8 +12,8 @@ import (
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
-	// Schedule makes scheduling decisions for each pods produced by the podQueue.
-	// The return value is a list of bindings of a pod to a node.
+	// Schedule makes scheduling decisions for (subset of) pending pods and running pods.
+	// The return value is a list of scheduling events.
 	Schedule(
 		clock clock.Clock,
 		podQueue queue.PodQueue,
