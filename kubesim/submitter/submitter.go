@@ -10,8 +10,8 @@ import (
 
 // Submitter defines the submitter interface.
 type Submitter interface {
-	// Submitter submits pods to the simulated cluster. They are called in the same order that they
-	// are registered.
+	// Submit submits pods to the simulated cluster.
+	// They are called in the same order that they are registered.
 	// These functions must *not* block.
 	Submit(
 		clock clock.Clock,

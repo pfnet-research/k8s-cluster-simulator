@@ -50,7 +50,7 @@ var rootCmd = &cobra.Command{
 		// Register a submitter
 		kubesim.AddSubmitter(newMySubmitter(8))
 
-		// SIGINT (Ctrl-C) cancels the sumbitter and kubesim.Run()
+		// SIGINT (Ctrl-C) and SIGTERM cancels the sumbitter and kubesim.Run()
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
@@ -68,7 +68,7 @@ var rootCmd = &cobra.Command{
 func buildScheduler() scheduler.Scheduler {
 	sched := scheduler.NewGenericScheduler(true)
 
-	// Add an extender
+	// Register an extender
 	sched.AddExtender(
 		scheduler.Extender{
 			Name:             "MyExtender",
@@ -79,7 +79,7 @@ func buildScheduler() scheduler.Scheduler {
 		},
 	)
 
-	// Add plugins
+	// Register plugins
 	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
 	sched.AddPrioritizer(priorities.PriorityConfig{
 		Name:   "BalancedResourceAllocation",
