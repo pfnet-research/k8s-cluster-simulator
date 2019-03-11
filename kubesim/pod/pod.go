@@ -12,12 +12,11 @@ import (
 
 // Pod represents a simulated pod.
 type Pod struct {
-	v1        *v1.Pod
-	spec      spec
-	boundAt   clock.Clock
-	status    Status
-	node      string
-	deletedAt clock.Clock
+	v1      *v1.Pod
+	spec    spec
+	boundAt clock.Clock
+	status  Status
+	node    string
 }
 
 // Metrics is a metrics of a pod at a time instance.
@@ -156,19 +155,21 @@ func (pod *Pod) IsTerminating(clock clock.Clock) bool {
 }
 
 // IsDeleted returns whether the pod has been deleted.
-func (pod *Pod) IsDeleted(clock clock.Clock) bool {
+func (pod *Pod) IsDeleted(clk clock.Clock) bool {
 	gp := int64(v1.DefaultTerminationGracePeriodSeconds)
 	if pod.v1.Spec.TerminationGracePeriodSeconds != nil {
 		gp = *pod.v1.Spec.TerminationGracePeriodSeconds
 	}
 
-	return pod.status == Deleted && clock.Sub(pod.deletedAt) >= time.Duration(gp)*time.Second
+	return pod.status == Deleted &&
+		clk.Sub(clock.NewClockWithMetaV1(*pod.ToV1().DeletionTimestamp)) >= time.Duration(gp)*time.Second
 }
 
 // Delete starts deleting this pod.
 func (pod *Pod) Delete(clock clock.Clock) {
 	pod.status = Deleted
-	pod.deletedAt = clock
+	deletedAt := clock.ToMetaV1()
+	pod.ToV1().DeletionTimestamp = &deletedAt
 }
 
 // IsBindingFailed returns whether the pod failed to be bound to a node.
@@ -253,7 +254,7 @@ func (pod *Pod) executedDuration(clock clock.Clock) time.Duration {
 	case Ok:
 		return clock.Sub(pod.boundAt)
 	case Deleted:
-		return pod.deletedAt.Sub(pod.boundAt)
+		return pod.ToV1().DeletionTimestamp.Sub(pod.boundAt.ToMetaV1().Time)
 	default:
 		return 0
 	}
