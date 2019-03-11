@@ -5,7 +5,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	v1pod "k8s.io/kubernetes/pkg/api/v1/pod"
-	"k8s.io/kubernetes/pkg/apis/scheduling"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
@@ -228,8 +227,8 @@ func (pq *rawPriorityQueue) pendingPods() []*v1.Pod {
 // If the priorities are equal, it compares the timestamps and returns true if pod0 is older than
 // pod1.
 func DefaultComparator(pod0, pod1 *v1.Pod) bool {
-	prio0 := podPriority(pod0)
-	prio1 := podPriority(pod1)
+	prio0 := util.PodPriority(pod0)
+	prio1 := util.PodPriority(pod1)
 
 	ts0 := podTimestamp(pod0)
 	ts1 := podTimestamp(pod1)
@@ -254,14 +253,6 @@ func newWithItems(items map[string]*item, comparator Compare) *PriorityQueue {
 		inner:         rawPq,
 		nominatedPods: map[string]map[string]*v1.Pod{},
 	}
-}
-
-func podPriority(pod *v1.Pod) int32 {
-	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
-	if pod.Spec.Priority != nil {
-		prio = *pod.Spec.Priority
-	}
-	return prio
 }
 
 // podTimestamp was copied from "k8s.io/kubernetes/pkg/scheduler/internal/queue".podTimestamp()

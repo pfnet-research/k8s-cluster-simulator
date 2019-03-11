@@ -111,8 +111,8 @@ func formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
 	str := ""
 
 	for name, met := range metrics {
-		str += fmt.Sprintf("    %s: bound at %s on %s, status %s, elapsed %d s",
-			name, met.BoundAt.ToRFC3339(), met.Node, met.Status, met.ExecutedSeconds)
+		str += fmt.Sprintf("    %s: prio %d, bound at %s on %s, status %s, elapsed %d s",
+			name, met.Priority, met.BoundAt.ToRFC3339(), met.Node, met.Status, met.ExecutedSeconds)
 
 		for rsrc, req := range met.ResourceRequest {
 			lim := met.ResourceLimit[rsrc] // !ok -> usage == 0
