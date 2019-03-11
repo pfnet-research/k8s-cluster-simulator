@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -104,8 +105,8 @@ func TestPriorityQueueIsSortedWithCustomComparator(t *testing.T) {
 }
 
 func lowPriority(pod0, pod1 *v1.Pod) bool {
-	prio0 := podPriority(pod0)
-	prio1 := podPriority(pod1)
+	prio0 := util.PodPriority(pod0)
+	prio1 := util.PodPriority(pod1)
 	return prio0 < prio1
 }
 

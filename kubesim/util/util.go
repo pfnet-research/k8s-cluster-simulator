@@ -8,6 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
+	"k8s.io/kubernetes/pkg/apis/scheduling"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
@@ -91,6 +92,15 @@ func ResourceListGE(r1, r2 v1.ResourceList) bool {
 		}
 	}
 	return true
+}
+
+// PodPriority returns the priority of the pod.
+func PodPriority(pod *v1.Pod) int32 {
+	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
+	if pod.Spec.Priority != nil {
+		prio = *pod.Spec.Priority
+	}
+	return prio
 }
 
 // PodKey builds a key for the given pod.

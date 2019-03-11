@@ -7,6 +7,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/apis/scheduling"
 
 	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
 )
@@ -178,6 +179,26 @@ func TestResourceListGE(t *testing.T) {
 	actual = util.ResourceListGE(r3, r1)
 	if expected != actual {
 		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
+
+func TestPodPriority(t *testing.T) {
+	expected := int32(9)
+	actual := util.PodPriority(&v1.Pod{
+		Spec: v1.PodSpec{
+			Priority: &expected,
+		},
+	})
+
+	if actual != expected {
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
+	}
+
+	actual = util.PodPriority(&v1.Pod{})
+	expected = int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
+
+	if actual != expected {
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
 
