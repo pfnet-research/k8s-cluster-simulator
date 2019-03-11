@@ -29,7 +29,8 @@ type Metrics struct {
 	Node            string
 	ExecutedSeconds int32
 
-	Status Status
+	Priority int32
+	Status   Status
 }
 
 // Status represents status of a Pod.
@@ -101,7 +102,8 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 		Node:            pod.node,
 		ExecutedSeconds: int32(pod.executedDuration(clock).Seconds()),
 
-		Status: pod.status,
+		Priority: util.PodPriority(pod.ToV1()),
+		Status:   pod.status,
 	}
 }
 
