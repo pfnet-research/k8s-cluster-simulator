@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+// TODO modification statement
+
 package log
 
 import (
@@ -87,4 +89,8 @@ func Tracef(e *logrus.Entry, format string, args ...interface{}) {
 	if level >= TraceLevel {
 		e.Debugf(format, args...)
 	}
+}
+
+func IsDebugEnabled() bool {
+	return logrus.GetLevel() >= logrus.DebugLevel
 }

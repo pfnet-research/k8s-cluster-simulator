@@ -265,11 +265,13 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 
 				log.L.Tracef("Submit %v", pod)
 
-				key, err := util.PodKey(pod)
-				if err != nil {
-					return err
+				if log.IsDebugEnabled() {
+					key, err := util.PodKey(pod)
+					if err != nil {
+						return err
+					}
+					log.L.Debugf("Submit %s", key)
 				}
-				log.L.Debugf("Submit %s", key)
 
 				k.pendingPods.Push(pod)
 			} else if del, ok := e.(*submitter.DeleteEvent); ok {

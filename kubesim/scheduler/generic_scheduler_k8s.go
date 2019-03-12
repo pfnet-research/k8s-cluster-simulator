@@ -188,12 +188,14 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 			removePod(p)
 			victims = append(victims, p)
 
-			key, err := util.PodKey(p)
-			if err != nil {
-				log.L.Warnf("Encountered error while building key of pod %v: %v", p, err)
-				return fits
+			if log.IsDebugEnabled() {
+				key, err := util.PodKey(p)
+				if err != nil {
+					log.L.Warnf("Encountered error while building key of pod %v: %v", p, err)
+					return fits
+				}
+				log.L.Debugf("Pod %s is a potential preemption victim on node %s.", key, nodeInfoCopy.Node().Name)
 			}
-			log.L.Debugf("Pod %s is a potential preemption victim on node %s.", key, nodeInfoCopy.Node().Name)
 		}
 
 		return fits
