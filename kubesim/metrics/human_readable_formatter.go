@@ -11,31 +11,19 @@ import (
 // HumanReadableFormatter formats metrics in a human-readable style.
 type HumanReadableFormatter struct{}
 
-func (h *HumanReadableFormatter) Format(metrics Metrics) (string, error) {
+func (h *HumanReadableFormatter) Format(metrics *Metrics) (string, error) {
+	if err := validateMetrics(metrics); err != nil {
+		return "", err
+	}
+
 	// Clock
-	clk, ok := metrics[ClockKey]
-	if !ok {
-		return "", fmt.Errorf("No %q field in metrics", ClockKey)
-	}
-	c, ok := clk.(string)
-	if !ok {
-		return "", fmt.Errorf("Type assertion failed: %q field %v is not string", ClockKey, clk)
-	}
-	str := "Metrics " + c + "\n"
+	clk := (*metrics)[ClockKey].(string)
+	str := "Metrics " + clk + "\n"
 
 	// Nodes
 	str += "  Nodes\n"
-
-	nodesMetrics, ok := metrics[NodesMetricsKey]
-	if !ok {
-		return "", fmt.Errorf("No %q field in metrics", NodesMetricsKey)
-	}
-	nodesMet, ok := nodesMetrics.(map[string]node.Metrics)
-	if !ok {
-		return "", fmt.Errorf("Type assertion failed: %q field %v is not map[string]node.Metrics", NodesMetricsKey, nodesMetrics)
-	}
-
-	s, err := formatNodesMetrics(nodesMet)
+	nodesMet := (*metrics)[NodesMetricsKey].(map[string]node.Metrics)
+	s, err := h.formatNodesMetrics(nodesMet)
 	if err != nil {
 		return "", err
 	}
@@ -43,17 +31,8 @@ func (h *HumanReadableFormatter) Format(metrics Metrics) (string, error) {
 
 	// Pods
 	str += "  Pods\n"
-
-	podsMetrics, ok := metrics[PodsMetricsKey]
-	if !ok {
-		return "", fmt.Errorf("No %q field in metrics", PodsMetricsKey)
-	}
-	podsMet, ok := podsMetrics.(map[string]pod.Metrics)
-	if !ok {
-		return "", fmt.Errorf("Type assertion failed: %q field %v is not map[string]pod.Metrics", PodsMetricsKey, podsMetrics)
-	}
-
-	s, err = formatPodsMetrics(podsMet)
+	podsMet := (*metrics)[PodsMetricsKey].(map[string]pod.Metrics)
+	s, err = h.formatPodsMetrics(podsMet)
 	if err != nil {
 		return "", err
 	}
@@ -61,17 +40,8 @@ func (h *HumanReadableFormatter) Format(metrics Metrics) (string, error) {
 
 	// Queue
 	str += "  Queue\n"
-
-	queueMetrics, ok := metrics[QueueMetricsKey]
-	if !ok {
-		return "", fmt.Errorf("No %q field in metrics", QueueMetricsKey)
-	}
-	queueMet, ok := queueMetrics.(queue.Metrics)
-	if !ok {
-		return "", fmt.Errorf("Type assertion failed: %q field %v is not queue.Metrics", QueueMetricsKey, queueMetrics)
-	}
-
-	s, err = formatQueueMetrics(queueMet)
+	queueMet := (*metrics)[QueueMetricsKey].(queue.Metrics)
+	s, err = h.formatQueueMetrics(queueMet)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +50,31 @@ func (h *HumanReadableFormatter) Format(metrics Metrics) (string, error) {
 	return str, nil
 }
 
-func formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
+func validateMetrics(metrics *Metrics) error {
+	keys := []string{ClockKey, NodesMetricsKey, PodsMetricsKey, QueueMetricsKey}
+	for _, key := range keys {
+		if _, ok := (*metrics)[key]; !ok {
+			return fmt.Errorf("No key %q in metrics", key)
+		}
+	}
+
+	if _, ok := (*metrics)[ClockKey].(string); !ok {
+		return fmt.Errorf("Type assertion failed: %q field of metrics is not string", ClockKey)
+	}
+	if _, ok := (*metrics)[NodesMetricsKey].(map[string]node.Metrics); !ok {
+		return fmt.Errorf("Type assertion failed: %q field of metrics is not map[string]node.Metrics", NodesMetricsKey)
+	}
+	if _, ok := (*metrics)[PodsMetricsKey].(map[string]pod.Metrics); !ok {
+		return fmt.Errorf("Type assertion failed: %q field of metrics is not map[string]pod.Metrics", PodsMetricsKey)
+	}
+	if _, ok := (*metrics)[QueueMetricsKey].(queue.Metrics); !ok {
+		return fmt.Errorf("Type assertion failed: %q field of metrics is not queue.Metrics", QueueMetricsKey)
+	}
+
+	return nil
+}
+
+func (h *HumanReadableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
 	str := ""
 
 	for name, met := range metrics {
@@ -90,7 +84,7 @@ func formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
 				continue
 			}
 
-			usage := met.TotalResourceUsage[rsrc] // !ok -> usage == 0
+			usage := met.TotalResourceUsage[rsrc]
 			req := met.TotalResourceRequest[rsrc]
 
 			if rsrc == "memory" {
@@ -107,7 +101,7 @@ func formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
 	return str, nil
 }
 
-func formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
+func (h *HumanReadableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
 	str := ""
 
 	for name, met := range metrics {
@@ -132,7 +126,7 @@ func formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
 	return str, nil
 }
 
-func formatQueueMetrics(metrics queue.Metrics) (string, error) {
+func (h *HumanReadableFormatter) formatQueueMetrics(metrics queue.Metrics) (string, error) {
 	return fmt.Sprintf("    PendingPods %d\n", metrics.PendingPodsNum), nil
 }
 
