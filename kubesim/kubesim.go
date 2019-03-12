@@ -130,7 +130,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 
 			if k.clock.Sub(preMetricsClock) > k.metricsTick {
 				preMetricsClock = k.clock
-				if err = k.writeMetrics(met); err != nil {
+				if err = k.writeMetrics(&met); err != nil {
 					return err
 				}
 
@@ -341,7 +341,7 @@ func (k *KubeSim) schedule() error {
 	return nil
 }
 
-func (k *KubeSim) writeMetrics(met metrics.Metrics) error {
+func (k *KubeSim) writeMetrics(met *metrics.Metrics) error {
 	for _, writer := range k.metricsWriters {
 		if err := writer.Write(met); err != nil {
 			return err

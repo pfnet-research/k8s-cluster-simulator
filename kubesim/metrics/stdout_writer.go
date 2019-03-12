@@ -16,7 +16,7 @@ func NewStdoutWriter(formatter Formatter) StdoutWriter {
 	}
 }
 
-func (w *StdoutWriter) Write(metrics Metrics) error {
+func (w *StdoutWriter) Write(metrics *Metrics) error {
 	str, err := w.formatter.Format(metrics)
 	if err != nil {
 		return err

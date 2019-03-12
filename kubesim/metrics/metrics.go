@@ -57,11 +57,11 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 // Formatter defines the interface of metrics formatter.
 type Formatter interface {
 	// Format formats the given metrics to a string.
-	Format(metrics Metrics) (string, error)
+	Format(metrics *Metrics) (string, error)
 }
 
 // Writer defines the interface of metrics writer.
 type Writer interface {
 	// Write writes the given metrics to some location.
-	Write(metrics Metrics) error
+	Write(metrics *Metrics) error
 }
