@@ -11,10 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/submitter"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/metrics"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/submitter"
 )
 
 type mySubmitter struct {

@@ -11,16 +11,16 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/config"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/submitter"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
-	"github.com/ordovicia/kubernetes-simulator/log"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/config"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/metrics"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/node"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/pod"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/scheduler"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/submitter"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 // KubeSim represents a kubernetes cluster simulator.

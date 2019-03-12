@@ -10,7 +10,7 @@ import (
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
 )
 
 // BuildResourceList parses a map from resource names to quantities to v1.ResourceList.

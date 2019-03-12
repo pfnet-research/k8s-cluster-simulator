@@ -6,7 +6,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
 )
 
 func newPod(name string) *v1.Pod {

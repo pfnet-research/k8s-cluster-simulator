@@ -12,10 +12,10 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/scheduler"
-	"github.com/ordovicia/kubernetes-simulator/log"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/scheduler"
+	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 func main() {

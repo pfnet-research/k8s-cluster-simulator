@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/metrics"
 )
 
 func TestBuildMetricsFile(t *testing.T) {
