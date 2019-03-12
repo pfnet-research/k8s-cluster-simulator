@@ -8,7 +8,7 @@ See [examples](examples) directory.
 
 ```go
 // 1. Create a KubeSim with a pod queue and a scheduler.
-queue := queue.NewPriorityQueue() 
+queue := queue.NewPriorityQueue()
 sched := buildScheduler() // see below
 kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, sched)
 if err != nil {
@@ -37,8 +37,8 @@ if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled 
 }
 
 func buildScheduler() scheduler.Scheduler {
-    // 1. Create a generic scheduler that mimics a kube-scheduler.
-	sched := scheduler.NewGenericScheduler(/* preemption enabled */ true)
+	// 1. Create a generic scheduler that mimics a kube-scheduler.
+	sched := scheduler.NewGenericScheduler( /* preemption enabled */ true)
 
 	// 2. Register extender(s)
 	sched.AddExtender(
@@ -51,10 +51,10 @@ func buildScheduler() scheduler.Scheduler {
 		},
 	)
 
-    // 2. Register plugin(s)
-    // Predicate 
-    sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
-    // Prioritizer 
+	// 2. Register plugin(s)
+	// Predicate
+	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+	// Prioritizer
 	sched.AddPrioritizer(priorities.PriorityConfig{
 		Name:   "BalancedResourceAllocation",
 		Map:    priorities.BalancedResourceAllocationMap,
@@ -82,28 +82,28 @@ See [kubesim/submitter/submitter.go](kubesim/submitter/submitter.go) and [kubesi
 type Submitter interface {
     // Submit submits pods to the simulated cluster.
     // They are called in the same order that they are registered.
-	// These functions must *not* block.
-	Submit(clock clock.Clock, nodeLister algorithm.NodeLister, metrics metrics.Metrics) ([]Event, error)
+    // These functions must *not* block.
+    Submit(clock clock.Clock, nodeLister algorithm.NodeLister, metrics metrics.Metrics) ([]Event, error)
 }
 
 // Submit can returns any of the following types of events.
 
 // Submit a pod to the cluster.
 type SubmitEvent struct {
-	Pod *v1.Pod
+    Pod *v1.Pod
 }
 
 // Delete a pending or running pod from the cluster.
 type DeleteEvent struct {
-	PodName      string
-	PodNamespace string
+    PodName      string
+    PodNamespace string
 }
 
 // Update manifest of a pending pod to a new one.
 type UpdateEvent struct {
-	PodName      string
-	PodNamespace string
-	NewPod       *v1.Pod
+    PodName      string
+    PodNamespace string
+    NewPod       *v1.Pod
 }
 ```
 
@@ -118,28 +118,28 @@ The interfaces of predicates and prioritizers are similar to that of kube-schedu
 
 ```go
 type Extender struct {
-	// Name identifies the Extender.
-	Name string
+    // Name identifies the Extender.
+    Name string
 
-	// Filter filters out the nodes that cannot run the given pod.
-	// This function can be nil.
-	Filter func(api.ExtenderArgs) api.ExtenderFilterResult
+    // Filter filters out the nodes that cannot run the given pod.
+    // This function can be nil.
+    Filter func(api.ExtenderArgs) api.ExtenderFilterResult
 
-	// Prioritize ranks each node that has passed the filtering stage.
-	// The weighted scores are summed up and the total score is used for the node selection.
-	Prioritize func(api.ExtenderArgs) api.HostPriorityList
-	Weight     int
+    // Prioritize ranks each node that has passed the filtering stage.
+    // The weighted scores are summed up and the total score is used for the node selection.
+    Prioritize func(api.ExtenderArgs) api.HostPriorityList
+    Weight     int
 
-	// NodeCacheCapable specifies that the extender is capable of caching node information, so the
-	// scheduler should only send minimal information about the eligible nodes assuming that the
-	// extender already cached full details of all nodes in the cluster.
-	// Specifically, ExtenderArgs.NodeNames is populated only if NodeCacheCapable == true, and
-	// ExtenderArgs.Nodes.Items is populated only if NodeCacheCapable == false.
-	NodeCacheCapable bool
+    // NodeCacheCapable specifies that the extender is capable of caching node information, so the
+    // scheduler should only send minimal information about the eligible nodes assuming that the
+    // extender already cached full details of all nodes in the cluster.
+    // Specifically, ExtenderArgs.NodeNames is populated only if NodeCacheCapable == true, and
+    // ExtenderArgs.Nodes.Items is populated only if NodeCacheCapable == false.
+    NodeCacheCapable bool
 
     // Ignorable specifies whether the extender is ignorable, i.e., scheduling should not fail when
     // the extender returns an error.
-	Ignorable bool
+    Ignorable bool
 }
 
 func (sched *GenericScheduler) AddExtender(extender Extender)
@@ -155,28 +155,28 @@ decisions for (subset of) pending pods and running pods, given the cluster state
 
 ```go
 type Scheduler interface {
-	// Schedule makes scheduling decisions for (subset of) pending pods and running pods.
-	// The return value is a list of scheduling events.
-	Schedule(
-		clock clock.Clock,
-		podQueue queue.PodQueue,
-		nodeLister algorithm.NodeLister,
-		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]Event, error)
+    // Schedule makes scheduling decisions for (subset of) pending pods and running pods.
+    // The return value is a list of scheduling events.
+    Schedule(
+        clock clock.Clock,
+        podQueue queue.PodQueue,
+        nodeLister algorithm.NodeLister,
+        nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]Event, error)
 }
 
-// Schedule can return any of the following types of events. 
+// Schedule can return any of the following types of events.
 
 // Bind a pod to a node.
 type BindEvent struct {
-	Pod            *v1.Pod
-	ScheduleResult core.ScheduleResult
+    Pod            *v1.Pod
+    ScheduleResult core.ScheduleResult
 }
 
 // Delete (preempt) a running pod on a node.
 type DeleteEvent struct {
-	PodNamespace string
-	PodName      string
-	NodeName     string
+    PodNamespace string
+    PodName      string
+    NodeName     string
 }
 ```
 
@@ -207,7 +207,7 @@ TODO
 
 ```go
 v1.Pod{
-	ObjectMeta: metav1.ObjectMeta{
+    ObjectMeta: metav1.ObjectMeta{
         CreationTimestamp, // when submitted
     },
     Spec: v1.PodSpec {
@@ -215,7 +215,7 @@ v1.Pod{
     },
     Status: v1.PodStatus{
         Phase, // Pending -> Running -> Succeeded xor Failed
-        Conditions,  
+        Conditions,
         Reason,
         Message,
         StartTime, // when started in a node

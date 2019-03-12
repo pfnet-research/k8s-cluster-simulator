@@ -39,18 +39,18 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		// Create a KubeSim with a queue and a scheduler.
-		queue := queue.NewPriorityQueue() // queue.NewPriorityQueueWithComparator(lifo)
-		sched := buildScheduler()
+		// 1. Create a KubeSim with a pod queue and a scheduler.
+		queue := queue.NewPriorityQueue()
+		sched := buildScheduler() // see below
 		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, sched)
 		if err != nil {
 			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
 		}
 
-		// Register a submitter
+		// 2. Register one or more pod submitters to KubeSim.
 		kubesim.AddSubmitter(newMySubmitter(8))
 
-		// SIGINT (Ctrl-C) and SIGTERM cancels the sumbitter and kubesim.Run()
+		// SIGINT (Ctrl-C) and SIGTERM cancel the sumbitter and kubesim.Run().
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
@@ -58,7 +58,12 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
-		// Run the main loop
+		// 3. Run the main loop of KubeSim.
+		//    In each execution of the loop, KubeSim
+		//      1) stores pods submitted from the registered submitters to its queue,
+		//      2) invokes scheduler with pending pods and cluster state,
+		//      3) emits cluster metrics to designated location(s) if enabled
+		//      4) progresses the simulated clock
 		if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
 			log.L.Fatal(err)
 		}
@@ -66,9 +71,10 @@ var rootCmd = &cobra.Command{
 }
 
 func buildScheduler() scheduler.Scheduler {
-	sched := scheduler.NewGenericScheduler(true)
+	// 1. Create a generic scheduler that mimics a kube-scheduler.
+	sched := scheduler.NewGenericScheduler( /* preemption enabled */ true)
 
-	// Register an extender
+	// 2. Register extender(s)
 	sched.AddExtender(
 		scheduler.Extender{
 			Name:             "MyExtender",
@@ -79,8 +85,10 @@ func buildScheduler() scheduler.Scheduler {
 		},
 	)
 
-	// Register plugins
+	// 2. Register plugin(s)
+	// Predicate
 	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+	// Prioritizer
 	sched.AddPrioritizer(priorities.PriorityConfig{
 		Name:   "BalancedResourceAllocation",
 		Map:    priorities.BalancedResourceAllocationMap,

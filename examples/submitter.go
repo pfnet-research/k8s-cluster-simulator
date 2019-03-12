@@ -60,10 +60,10 @@ func (s *mySubmitter) Submit(
 func newPod(idx uint64) *v1.Pod {
 	simSpec := ""
 	for i := 0; i < rand.Intn(4)+1; i++ {
-		sec := rand.Intn(60*60 + 1)
-		cpu := rand.Intn(4 + 1)
-		mem := rand.Intn(4 + 1)
-		gpu := rand.Intn(1 + 1)
+		sec := 60 * rand.Intn(60)
+		cpu := 1 + rand.Intn(4)
+		mem := 1 + rand.Intn(4)
+		gpu := rand.Intn(2)
 
 		simSpec += fmt.Sprintf(`
 - seconds: %d
@@ -74,7 +74,7 @@ func newPod(idx uint64) *v1.Pod {
 `, sec, cpu, mem, gpu)
 	}
 
-	prio := rand.Int31n(2 + 1)
+	prio := rand.Int31n(3) / 2 // 0, 0, 1
 
 	pod := v1.Pod{
 		TypeMeta: metav1.TypeMeta{

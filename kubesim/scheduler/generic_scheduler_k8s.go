@@ -168,7 +168,7 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 		}
 
 		log.L.Debugf(
-			"Preemptor does not fit in node %s even when all lower-priority pods are removed",
+			"Preemptor does not fit in node %s even if all lower-priority pods were removed",
 			nodeInfoCopy.Node().Name)
 		return nil, 0, false
 	}
