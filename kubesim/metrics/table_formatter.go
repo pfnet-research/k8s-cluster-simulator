@@ -55,7 +55,7 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 	nodes, resourceTypes := t.sortedNodeNamesAndResourceTypes(metrics)
 
 	// Header
-	str := "Node     Pods   Termi- Failed Capa-  "
+	str := "Node             Pods   Termi- Failed Capa-  "
 	for _, r := range resourceTypes {
 		if r == "pods" {
 			continue
@@ -66,7 +66,7 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 		}
 	}
 	str += "\n"
-	str += "                nating        city   "
+	str += "                        nating        city   "
 	line := ""
 	for _, r := range resourceTypes {
 		if r == "pods" {
@@ -77,14 +77,14 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 		}
 	}
 	str += "\n"
-	str += "-------------------------------------" + line + "\n"
+	str += "---------------------------------------------" + line + "\n"
 
 	// Body
 	for _, node := range nodes {
 		met := metrics[node]
 
 		str += fmt.Sprintf(
-			"%-8s %-6d %-6d %-6d %-6d ",
+			"%-16s %-6d %-6d %-6d %-6d ",
 			node, met.RunningPodsNum, met.TerminatingPodsNum, met.FailedPodsNum, met.Capacity.Pods().Value())
 
 		for _, rsrc := range resourceTypes {
