@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
@@ -258,6 +259,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 		for _, e := range events {
 			if submitted, ok := e.(*submitter.SubmitEvent); ok {
 				pod := submitted.Pod
+				pod.UID = types.UID(pod.Name) // FIXME
 				pod.CreationTimestamp = k.clock.ToMetaV1()
 				pod.Status.Phase = v1.PodPending
 

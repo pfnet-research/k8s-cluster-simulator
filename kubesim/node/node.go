@@ -83,6 +83,8 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 		return nil, err
 	}
 
+	v1Pod.Status = simPod.BuildStatus(clock)
+
 	node.pods[key] = simPod
 	return simPod, nil
 }
