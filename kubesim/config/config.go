@@ -103,6 +103,8 @@ func buildFormatter(config string) (metrics.Formatter, error) {
 		return &metrics.JSONFormatter{}, nil
 	case "humanReadable":
 		return &metrics.HumanReadableFormatter{}, nil
+	case "table":
+		return &metrics.TableFormatter{}, nil
 	default:
 		return nil, strongerrors.InvalidArgument(errors.Errorf("formatter %q is not supported", config))
 	}

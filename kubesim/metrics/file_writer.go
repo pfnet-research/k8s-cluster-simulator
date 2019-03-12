@@ -27,7 +27,7 @@ func NewFileWriter(path string, formatter Formatter) (*FileWriter, error) {
 // FileName returns the name of file underlying this FileWriter.
 func (w *FileWriter) FileName() string { return w.file.Name() }
 
-func (w *FileWriter) Write(metrics Metrics) error {
+func (w *FileWriter) Write(metrics *Metrics) error {
 	str, err := w.formatter.Format(metrics)
 	if err != nil {
 		return err
