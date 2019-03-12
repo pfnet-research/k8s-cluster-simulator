@@ -4,9 +4,7 @@ import (
 	"container/heap"
 
 	v1 "k8s.io/api/core/v1"
-	v1pod "k8s.io/kubernetes/pkg/api/v1/pod"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )
 
@@ -101,8 +99,8 @@ func (pq *PriorityQueue) Update(podNamespace, podName string, newPod *v1.Pod) er
 		return &ErrNoMatchingPod{key: keyOrig}
 	}
 
-		pq.inner.items[keyOrig].pod = newPod
-		heap.Fix(&pq.inner, pq.inner.items[keyOrig].index)
+	pq.inner.items[keyOrig].pod = newPod
+	heap.Fix(&pq.inner, pq.inner.items[keyOrig].index)
 
 	return nil
 }
@@ -254,17 +252,4 @@ func newWithItems(items map[string]*item, comparator Compare) *PriorityQueue {
 		inner:         rawPq,
 		nominatedPods: map[string]map[string]*v1.Pod{},
 	}
-}
-
-// podTimestamp was copied from "k8s.io/kubernetes/pkg/scheduler/internal/queue".podTimestamp()
-func podTimestamp(pod *v1.Pod) clock.Clock {
-	_, condition := v1pod.GetPodCondition(&pod.Status, v1.PodScheduled)
-	if condition == nil {
-		return clock.NewClockWithMetaV1(pod.CreationTimestamp)
-	}
-
-	if condition.LastProbeTime.IsZero() {
-		return clock.NewClockWithMetaV1(condition.LastTransitionTime)
-	}
-	return clock.NewClockWithMetaV1(condition.LastProbeTime)
 }
