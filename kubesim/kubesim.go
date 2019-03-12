@@ -293,7 +293,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 					//
 				}
 			} else {
-				panic("Unknown submitter event")
+				log.L.Panic("Unknown submitter event")
 			}
 		}
 	}
@@ -336,7 +336,7 @@ func (k *KubeSim) schedule() error {
 				return err
 			}
 		} else {
-			panic("Unknown scheduler event")
+			log.L.Panic("Unknown scheduler event")
 		}
 	}
 
