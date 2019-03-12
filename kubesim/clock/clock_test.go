@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
 )
 
 func TestClockToMetaV1(t *testing.T) {
