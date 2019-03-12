@@ -1,4 +1,4 @@
-# Kubernetes cluster simulator [![Build Status](https://travis-ci.com/ordovicia/kubernetes-simulator.svg?branch=master)](https://travis-ci.com/ordovicia/kubernetes-simulator)
+# Kubernetes cluster simulator [![Build Status](https://travis-ci.com/ordovicia/k8s-cluster-simulator.svg?branch=master)](https://travis-ci.com/ordovicia/k8s-cluster-simulator)
 
 Kubernetes cluster simulator for evaluating schedulers.
 
@@ -37,44 +37,42 @@ if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled 
 }
 
 func buildScheduler() scheduler.Scheduler {
-	// 1. Create a generic scheduler that mimics a kube-scheduler.
-	sched := scheduler.NewGenericScheduler( /* preemption enabled */ true)
+    // 1. Create a generic scheduler that mimics a kube-scheduler.
+    sched := scheduler.NewGenericScheduler( /* preemption enabled */ true)
 
-	// 2. Register extender(s)
-	sched.AddExtender(
-		scheduler.Extender{
-			Name:             "MyExtender",
-			Filter:           filterExtender,
-			Prioritize:       prioritizeExtender,
-			Weight:           1,
-			NodeCacheCapable: true,
-		},
-	)
+    // 2. Register extender(s)
+    sched.AddExtender(
+        scheduler.Extender{
+            Name:             "MyExtender",
+            Filter:           filterExtender,
+            Prioritize:       prioritizeExtender,
+            Weight:           1,
+            NodeCacheCapable: true,
+        },
+    )
 
-	// 2. Register plugin(s)
-	// Predicate
-	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
-	// Prioritizer
-	sched.AddPrioritizer(priorities.PriorityConfig{
-		Name:   "BalancedResourceAllocation",
-		Map:    priorities.BalancedResourceAllocationMap,
-		Reduce: nil,
-		Weight: 1,
-	})
-	sched.AddPrioritizer(priorities.PriorityConfig{
-		Name:   "LeastRequested",
-		Map:    priorities.LeastRequestedPriorityMap,
-		Reduce: nil,
-		Weight: 1,
-	})
+    // 2. Register plugin(s)
+    // Predicate
+    sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+    // Prioritizer
+    sched.AddPrioritizer(priorities.PriorityConfig{
+        Name:   "BalancedResourceAllocation",
+        Map:    priorities.BalancedResourceAllocationMap,
+        Reduce: nil,
+        Weight: 1,
+    })
+    sched.AddPrioritizer(priorities.PriorityConfig{
+        Name:   "LeastRequested",
+        Map:    priorities.LeastRequestedPriorityMap,
+        Reduce: nil,
+        Weight: 1,
+    })
 
-	return &sched
+    return &sched
 }
 ```
 
 ### Pod submitter interface
-
-**Note**: These interfaces are drafts, subject to change.
 
 See [kubesim/submitter/submitter.go](kubesim/submitter/submitter.go) and [kubesim/scheduler/scheduler.go](kubesim/scheduler/scheduler.go).
 
@@ -107,14 +105,14 @@ type UpdateEvent struct {
 }
 ```
 
-### kube-scheduler-compatible scheduler interface
+### `kube-scheduler`-compatible scheduler interface
 
-`kubernetes-simulator` provides `GenericScheduler`, which follows the behavior of kube-scheduler's
+k8s-cluster-simulator provides `GenericScheduler`, which follows the behavior of kube-scheduler's
 `genericScheduler`.
 `GenericScheduler` makes scheduling decision for each given pod in the one-by-one manner, with
 predicates and prioritizers.
 
-The interfaces of predicates and prioritizers are similar to that of kube-scheduler.
+The interfaces of predicates and prioritizers are similar to those of kube-scheduler.
 
 ```go
 type Extender struct {
@@ -150,7 +148,7 @@ func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityCon
 
 ### Lowest-level scheduler interface
 
-`kubernetes-simulator` also supports the lowest-level scheduler interface, which makes scheduling
+k8s-cluster-simulator also supports the lowest-level scheduler interface, which makes scheduling
 decisions for (subset of) pending pods and running pods, given the cluster state at a clock.
 
 ```go
@@ -182,7 +180,7 @@ type DeleteEvent struct {
 
 ### How to specify the resource usage of each pod
 
-Embed a YAML in the annotation field of the pod. e.g.
+Embed a YAML in the `annotations` field of the pod manifest. e.g.,
 
 ```yaml
 metadata:
@@ -201,31 +199,37 @@ metadata:
     nvidia.com/gpu: 1
 ```
 
-## `v1.Pod` fields modified by the simulator
+## Supported `v1.Pod` fields
 
-TODO
+These fields are populated or used by the simulator.
 
 ```go
 v1.Pod{
     ObjectMeta: metav1.ObjectMeta{
-        CreationTimestamp, // when submitted
+        UID,                // populated when this pod is submitted to the simulator
+        CreationTimestamp,  // populated when this pod is submitted to the simulator
+        DeletionTimestamp,  // populated when a deletion event for this pod has been accepted by the simulator
     },
     Spec: v1.PodSpec {
-        NodeName, // when scheduled to a node
+        NodeName,                       // populated when the cluster binds this pod to a node
+        TerminationGracePeriodSeconds,  // read when this pod is deleted
+        Priority,                       // read by PriorityQueue to sort pods,
+                                        // and read when the scheduler trys to schedule this pod
     },
     Status: v1.PodStatus{
-        Phase, // Pending -> Running -> Succeeded xor Failed
-        Conditions,
-        Reason,
-        Message,
-        StartTime, // when started in a node
+        Phase,              // populated by the simulator. Pending -> Running -> Succeeded xor Failed
+        Conditions,         // populated by the simulator
+        Reason,             // populated by the simulator
+        Message,            // populated by the simulator
+        StartTime,          // populated by the simulator when this pod has started its execution
+        ContainerStatuses,  // populated by the simulator
     },
 }
 ```
 
-## `v1.Node` fields supported by the simulator
+## Supported `v1.Node` fields
 
-TODO
+These fields are populated and used by the simulator.
 
 ```go
 v1.Node{
@@ -234,19 +238,18 @@ v1.Node{
         APIVersion: "v1",
     },
     ObjectMeta: metav1.ObjectMeta{
-        Name:        // all determined by the config
-        Namespace:   //
-        Labels:      //
-        Annotations: //
+        Name:        // Determined by the config
+        Labels:      // Determined by the config
+        Annotations: // Determined by the config
     },
     Spec: v1.NodeSpec{
         Unschedulable: false,
-        Taints:        // determined by the config
+        Taints:         // Determined by the config
     },
     Status: v1.NodeStatus{
-        Capacity:    // determined by the config
-        Allocatable: // same as Capacity
-        Conditions:  []v1.NodeCondition{
+        Capacity:       // Determined by the config
+        Allocatable:    // Same as Capacity
+        Conditions:  []v1.NodeCondition{    // Populated
             {
                 Type:               v1.NodeReady,
                 Status:             v1.ConditionTrue,
