@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/ordovicia/kubernetes-simulator/kubesim/metrics"
 )
 
 func TestBuildMetricsFile(t *testing.T) {

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"sort"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
 	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	v1 "k8s.io/api/core/v1"
 )
 
 // HumanReadableFormatter formats metrics in a human-readable style.
