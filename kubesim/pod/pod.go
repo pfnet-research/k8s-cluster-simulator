@@ -8,6 +8,7 @@ import (
 
 	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
 	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 // Pod represents a simulated pod.
@@ -59,8 +60,8 @@ func (status Status) String() string {
 	case OverCapacity:
 		return "OverCapacity"
 	default:
-		// unreachable
-		panic("Unknown pod.Status")
+		log.L.Panic("Unknown pod.Status")
+		return ""
 	}
 }
 
@@ -136,7 +137,8 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 		}
 	}
 
-	panic("Unreachable code in pod.ResourceUsage()")
+	log.L.Panic("Unreachable code in pod.ResourceUsage()")
+	return v1.ResourceList{}
 }
 
 // IsRunning returns whether the pod is running at the clock.
