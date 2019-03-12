@@ -4,7 +4,6 @@ import (
 	"errors"
 	"math"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/api"
@@ -189,7 +188,7 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 			removePod(p)
 			victims = append(victims, p)
 
-			if logrus.GetLevel() >= logrus.DebugLevel {
+			if log.IsDebugEnabled() {
 				key, err := util.PodKey(p)
 				if err != nil {
 					log.L.Warnf("Encountered error while building key of pod %v: %v", p, err)

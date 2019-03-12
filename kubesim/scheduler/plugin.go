@@ -3,7 +3,6 @@ package scheduler
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
@@ -34,7 +33,7 @@ func callPredicatePlugin(
 
 	log.L.Tracef("Plugin %s: Predicating nodes %v", name, nodes)
 
-	if logrus.GetLevel() >= logrus.DebugLevel {
+	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -76,7 +75,7 @@ func callPrioritizePlugin(
 
 	log.L.Tracef("Plugin %s: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
 
-	if logrus.GetLevel() >= logrus.DebugLevel {
+	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filteredNodes))
 		for _, node := range filteredNodes {
 			nodeNames = append(nodeNames, node.Name)
