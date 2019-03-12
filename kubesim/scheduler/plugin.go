@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
@@ -33,12 +34,13 @@ func callPredicatePlugin(
 
 	log.L.Tracef("Plugin %s: Predicating nodes %v", name, nodes)
 
-	// FIXME: Make nodeNames only when debug logging is enabled.
-	nodeNames := make([]string, 0, len(nodes))
-	for _, node := range nodes {
-		nodeNames = append(nodeNames, node.Name)
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		nodeNames := make([]string, 0, len(nodes))
+		for _, node := range nodes {
+			nodeNames = append(nodeNames, node.Name)
+		}
+		log.L.Debugf("Plugin %s: Predicating nodes %v", name, nodeNames)
 	}
-	log.L.Debugf("Plugin %s: Predicating nodes %v", name, nodeNames)
 
 	filteredNodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
@@ -74,12 +76,13 @@ func callPrioritizePlugin(
 
 	log.L.Tracef("Plugin %s: Prioritizing nodes %v", prioritizer.Name, filteredNodes)
 
-	// FIXME: Make nodeNames only when debug logging is enabled.
-	nodeNames := make([]string, 0, len(filteredNodes))
-	for _, node := range filteredNodes {
-		nodeNames = append(nodeNames, node.Name)
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		nodeNames := make([]string, 0, len(filteredNodes))
+		for _, node := range filteredNodes {
+			nodeNames = append(nodeNames, node.Name)
+		}
+		log.L.Debugf("Plugin %s: Prioritizing nodes %v", prioritizer.Name, nodeNames)
 	}
-	log.L.Debugf("Plugin %s: Prioritizing nodes %v", prioritizer.Name, nodeNames)
 
 	prios := make(api.HostPriorityList, 0, len(filteredNodes))
 	for _, node := range filteredNodes {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
@@ -181,12 +182,13 @@ func (sched *GenericScheduler) filter(
 	nodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]*v1.Node, core.FailedPredicateMap, error) {
 
-	// FIXME: Make nodeNames only when debug logging is enabled.
+	if logrus.GetLevel() >= logrus.DebugLevel {
 	nodeNames := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
 	log.L.Debugf("Filtering nodes %v", nodeNames)
+	}
 
 	failedPredicateMap := core.FailedPredicateMap{}
 	filteredNodes := nodes
@@ -224,11 +226,13 @@ func (sched *GenericScheduler) filter(
 		}
 	}
 
-	nodeNames = make([]string, 0, len(filteredNodes))
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		nodeNames := make([]string, 0, len(filteredNodes))
 	for _, node := range filteredNodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
 	log.L.Debugf("Filtered nodes %v", nodeNames)
+	}
 
 	return filteredNodes, failedPredicateMap, nil
 }
@@ -238,12 +242,13 @@ func (sched *GenericScheduler) prioritize(
 	filteredNodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo) (api.HostPriorityList, error) {
 
-	// FIXME: Make nodeNames only when debug logging is enabled.
+	if logrus.GetLevel() >= logrus.DebugLevel {
 	nodeNames := make([]string, 0, len(filteredNodes))
 	for _, node := range filteredNodes {
 		nodeNames = append(nodeNames, node.Name)
 	}
 	log.L.Debugf("Prioritizing nodes %v", nodeNames)
+	}
 
 	prioList := make(api.HostPriorityList, len(filteredNodes), len(filteredNodes))
 
@@ -348,11 +353,13 @@ func (sched *GenericScheduler) preempt(
 		for _, victim := range victims {
 			log.L.Tracef("Pod %v selected for victim", victim)
 
+			if logrus.GetLevel() >= logrus.DebugLevel {
 			key, err := util.PodKey(victim)
 			if err != nil {
 				return []Event{}, err
 			}
 			log.L.Debugf("Pod %s selected for victim", key)
+			}
 
 			event := DeleteEvent{PodNamespace: victim.Namespace, PodName: victim.Name, NodeName: node.Name}
 			delEvents = append(delEvents, &event)
@@ -362,11 +369,13 @@ func (sched *GenericScheduler) preempt(
 	for _, pod := range nominatedPodsToClear {
 		log.L.Tracef("Nomination of pod %v cleared", pod)
 
+		if logrus.GetLevel() >= logrus.DebugLevel {
 		key, err := util.PodKey(pod)
 		if err != nil {
 			return []Event{}, err
 		}
 		log.L.Debugf("Nomination of pod %s cleared", key)
+		}
 
 		if err := podQueue.RemoveNominatedNode(pod); err != nil {
 			return []Event{}, err
