@@ -25,7 +25,7 @@ func (t *TableFormatter) Format(metrics *Metrics) (string, error) {
 
 	// Nodes
 	nodesMet := (*metrics)[NodesMetricsKey].(map[string]node.Metrics)
-	s, err := t.formatNodesMetrics(nodesMet)
+	s, resourceTypes, err := t.formatNodesMetrics(nodesMet)
 	if err != nil {
 		return "", err
 	}
@@ -33,7 +33,7 @@ func (t *TableFormatter) Format(metrics *Metrics) (string, error) {
 
 	// Pods
 	podsMet := (*metrics)[PodsMetricsKey].(map[string]pod.Metrics)
-	s, err = t.formatPodsMetrics(podsMet)
+	s, err = t.formatPodsMetrics(podsMet, resourceTypes)
 	if err != nil {
 		return "", err
 	}
@@ -52,15 +52,13 @@ func (t *TableFormatter) Format(metrics *Metrics) (string, error) {
 
 var _ = Formatter(&TableFormatter{})
 
-func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
+func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (string, []string, error) {
 	nodes, resourceTypes := t.sortedNodeNamesAndResourceTypes(metrics)
 
 	// Header
 	str := "Node             Pods   Termi- Failed Capa-  "
 	for _, r := range resourceTypes {
-		if r == "pods" {
-			continue
-		} else if r == "memory" {
+		if r == "memory" {
 			str += "memory (MB)                "
 		} else {
 			str += fmt.Sprintf("%-26s ", r)
@@ -69,13 +67,9 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 	str += "\n"
 	str += "                        nating        city   "
 	line := ""
-	for _, r := range resourceTypes {
-		if r == "pods" {
-			continue
-		} else {
-			str += "Usage    Request  Capacity "
-			line += "---------------------------"
-		}
+	for range resourceTypes {
+		str += "Usage    Request  Capacity "
+		line += "---------------------------"
 	}
 	str += "\n"
 	str += "---------------------------------------------" + line + "\n"
@@ -89,10 +83,6 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 			node, met.RunningPodsNum, met.TerminatingPodsNum, met.FailedPodsNum, met.Capacity.Pods().Value())
 
 		for _, rsrc := range resourceTypes {
-			if rsrc == "pods" {
-				continue
-			}
-
 			r := v1.ResourceName(rsrc)
 			cap := met.Capacity[r]
 			req := met.TotalResourceRequest[r]
@@ -115,50 +105,40 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 		str += "\n"
 	}
 
-	return str, nil
+	return str, resourceTypes, nil
 }
 
-func (t *TableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
-	pods, resourceTypes := t.sortedPodNamesAndResourceTypes(metrics)
+func (t *TableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics, resourceTypes []string) (string, error) {
+	pods := t.sortedPodNames(metrics)
 
 	// Header
-	str := "Pod                  Status       Priority Node     BoundAt                   ExecutedTime "
+	str := "Pod                  Status       Priority Node     BoundAt                   Executed "
 	for _, r := range resourceTypes {
-		if r == "pods" {
-			continue
-		} else if r == "memory" {
+		if r == "memory" {
 			str += "memory (MB)                "
 		} else {
 			str += fmt.Sprintf("%-26s ", r)
 		}
 	}
 	str += "\n"
-	str += "                                                                                           "
+	str += "                                                                              Seconds  "
 	line := ""
-	for _, r := range resourceTypes {
-		if r == "pods" {
-			continue
-		} else {
-			str += "Usage    Request  Capacity "
-			line += "---------------------------"
-		}
+	for range resourceTypes {
+		str += "Usage    Request  Limit    "
+		line += "---------------------------"
 	}
 	str += "\n"
-	str += "-------------------------------------------------------------------------------------------" + line + "\n"
+	str += "---------------------------------------------------------------------------------------" + line + "\n"
 
 	// Body
 	for _, pod := range pods {
 		met := metrics[pod]
 
 		str += fmt.Sprintf(
-			"%-20s %-12s %-8d %-8s %-25s %-12d ",
+			"%-20s %-12s %-8d %-8s %-25s %-8d ",
 			pod, met.Status, met.Priority, met.Node, met.BoundAt.ToRFC3339(), met.ExecutedSeconds)
 
 		for _, rsrc := range resourceTypes {
-			if rsrc == "pod" {
-				continue
-			}
-
 			r := v1.ResourceName(rsrc)
 			lim := met.ResourceLimit[r]
 			req := met.ResourceRequest[r]
@@ -206,7 +186,9 @@ func (t *TableFormatter) sortedNodeNamesAndResourceTypes(metrics map[string]node
 
 	resourceTypes := make([]string, 0, len(rsrcTypes))
 	for rsrc := range rsrcTypes {
-		resourceTypes = append(resourceTypes, rsrc)
+		if rsrc != "pods" {
+			resourceTypes = append(resourceTypes, rsrc)
+		}
 	}
 
 	sort.Strings(nodes)
@@ -215,26 +197,11 @@ func (t *TableFormatter) sortedNodeNamesAndResourceTypes(metrics map[string]node
 	return nodes, resourceTypes
 }
 
-func (t *TableFormatter) sortedPodNamesAndResourceTypes(metrics map[string]pod.Metrics) ([]string, []string) {
+func (t *TableFormatter) sortedPodNames(metrics map[string]pod.Metrics) []string {
 	pods := make([]string, 0, len(metrics))
-
-	type void struct{}
-	rsrcTypes := map[string]void{}
-
-	for name, met := range metrics {
+	for name := range metrics {
 		pods = append(pods, name)
-		for rsrc := range met.ResourceLimit {
-			rsrcTypes[rsrc.String()] = void{}
-		}
 	}
-
-	resourceTypes := make([]string, 0, len(rsrcTypes))
-	for rsrc := range rsrcTypes {
-		resourceTypes = append(resourceTypes, rsrc)
-	}
-
 	sort.Strings(pods)
-	sort.Strings(resourceTypes)
-
-	return pods, resourceTypes
+	return pods
 }
