@@ -6,8 +6,8 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
 )
 
 // Scheduler defines the lowest-level scheduler interface.

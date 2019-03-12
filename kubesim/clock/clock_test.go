@@ -6,7 +6,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
 )
 
 func TestClockToMetaV1(t *testing.T) {

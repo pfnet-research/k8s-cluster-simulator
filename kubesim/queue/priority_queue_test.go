@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
 )
 
 func newPodWithPriority(name string, prio *int32, ts metav1.Time) *v1.Pod {

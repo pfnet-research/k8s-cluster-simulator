@@ -3,9 +3,9 @@ package metrics
 import (
 	"fmt"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/node"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/pod"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
 )
 
 // HumanReadableFormatter formats metrics in a human-readable style.

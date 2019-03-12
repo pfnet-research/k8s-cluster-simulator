@@ -13,10 +13,10 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
-	"github.com/ordovicia/kubernetes-simulator/log"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 // GenericScheduler makes scheduling decision for each given pod in the one-by-one manner.

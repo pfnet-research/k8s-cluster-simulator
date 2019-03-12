@@ -6,8 +6,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
 )
 
 // Pod represents a simulated pod.

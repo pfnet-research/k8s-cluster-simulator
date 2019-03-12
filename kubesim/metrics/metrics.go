@@ -1,11 +1,11 @@
 package metrics
 
 import (
-	"github.com/ordovicia/kubernetes-simulator/kubesim/clock"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/node"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/pod"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/queue"
-	"github.com/ordovicia/kubernetes-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/node"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/pod"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
 )
 
 // Metrics represents a metrics at one time point, in the following structure.
