@@ -53,6 +53,10 @@ func (s *mySubmitter) Submit(
 		s.podIdx++
 	}
 
+	if s.podIdx > 1024 {
+		events = append(events, &submitter.TerminateSubmitterEvent{})
+	}
+
 	return events, nil
 }
 
