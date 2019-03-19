@@ -332,7 +332,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 }
 
 func (k *KubeSim) schedule() error {
-	nodeInfoMap := map[string]*nodeinfo.NodeInfo{}
+	nodeInfoMap := make(map[string]*nodeinfo.NodeInfo, len(k.nodes))
 	for name, node := range k.nodes {
 		nodeInfoMap[name] = node.ToNodeInfo(k.clock)
 	}
