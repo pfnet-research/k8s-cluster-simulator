@@ -29,7 +29,7 @@ limitations under the License.
 // limitations under the License.
 
 // podTimestamp function was copied from
-// k8s.io/kubernetes/pkg/scheduler/internal/queue/scheduling_queue.go by the author of
+// k8s.io/kubernetes/pkg/scheduler/internal/queue/scheduling_queue.go by the authors of
 // k8s-cluster-simulator, and modified so that it would be compatible with k8s-cluster-simulator.
 
 package queue
