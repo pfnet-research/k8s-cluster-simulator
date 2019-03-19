@@ -28,8 +28,8 @@ limitations under the License.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// UpdatePodCondition function was copied from k8s.io/kubernetes/pkg/api/pod/util.go
-// and modified so that it would be compatible with k8s-cluster-simulator.
+// UpdatePodCondition function was copied from k8s.io/kubernetes/pkg/api/pod/util.go by the authors
+// of k8s-cluster-simulator, and modified so that it would be compatible with k8s-cluster-simulator.
 
 package util
 

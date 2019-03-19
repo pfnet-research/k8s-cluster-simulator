@@ -28,15 +28,14 @@ type Extender struct {
 	Prioritize func(api.ExtenderArgs) api.HostPriorityList
 	Weight     int
 
-	// NodeCacheCapable specifies that the extender is capable of caching node information, so the
-	// scheduler should only send minimal information about the eligible nodes assuming that the
-	// extender already cached full details of all nodes in the cluster.
+	// NodeCacheCapable specifies whether this extender is capable of caching node information, so
+	// that the scheduler should only send minimal information about nodes.
 	// Specifically, ExtenderArgs.NodeNames is populated only if NodeCacheCapable == true, and
 	// ExtenderArgs.Nodes.Items is populated only if NodeCacheCapable == false.
 	NodeCacheCapable bool
 
-	// Ignorable specifies if the extender is ignorable, i.e., scheduling should not fail when the
-	// extender returns an error.
+	// Ignorable specifies whether the extender is ignorable (i.e. the scheduler should not fail
+	// when this extender returns an error).
 	Ignorable bool
 }
 

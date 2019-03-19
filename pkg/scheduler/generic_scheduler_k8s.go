@@ -29,8 +29,8 @@ limitations under the License.
 // limitations under the License.
 
 // All functions in this file were copied from
-// k8s.io/kubernetes/pkg/scheduler/core/generic_scheduler.go
-// and modified so that they would be compatible with k8s-cluster-simulator.
+// k8s.io/kubernetes/pkg/scheduler/core/generic_scheduler.go by the authors of
+// k8s-cluster-simulator, and modified so that they would be compatible with k8s-cluster-simulator.
 
 package scheduler
 
