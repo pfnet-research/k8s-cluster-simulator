@@ -162,7 +162,7 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 	}
 	potentialVictims.Sort()
 
-	if fits, _, err := sched.podFitsOnNode(preemptor, nodeInfoCopy, podQueue); !fits {
+	if fits, _, err := podFitsOnNode(preemptor, sched.predicates, nodeInfoCopy, podQueue); !fits {
 		if err != nil {
 			log.L.Warnf("Encountered error while selecting victims on node %s: %v", nodeInfoCopy.Node().Name, err)
 		}
@@ -183,7 +183,7 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 
 	reprievePod := func(p *v1.Pod) bool {
 		addPod(p)
-		fits, _, _ := sched.podFitsOnNode(preemptor, nodeInfoCopy, podQueue)
+		fits, _, _ := podFitsOnNode(preemptor, sched.predicates, nodeInfoCopy, podQueue)
 		if !fits {
 			removePod(p)
 			victims = append(victims, p)
@@ -216,8 +216,9 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 }
 
 // podFitsOnNode is copied from "k8s.io/kubernetes/pkg/scheduler/core".podFitsOnNode
-func (sched *GenericScheduler) podFitsOnNode(
+func podFitsOnNode(
 	pod *v1.Pod,
+	preds map[string]predicates.FitPredicate,
 	nodeInfo *nodeinfo.NodeInfo,
 	podQueue queue.PodQueue,
 ) (bool, []predicates.PredicateFailureReason, error) {
@@ -232,8 +233,8 @@ func (sched *GenericScheduler) podFitsOnNode(
 			break
 		}
 
-		for _, predicate := range sched.predicates {
-			fit, reasons, err := predicate(pod, &dummyPredicateMetadata{}, nodeInfoToUse)
+		for _, pred := range preds {
+			fit, reasons, err := pred(pod, &dummyPredicateMetadata{}, nodeInfoToUse)
 
 			if err != nil {
 				return false, []predicates.PredicateFailureReason{}, err
