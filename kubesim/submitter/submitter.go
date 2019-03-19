@@ -42,6 +42,11 @@ type UpdateEvent struct {
 	NewPod       *v1.Pod
 }
 
-func (s *SubmitEvent) IsSubmitterEvent() bool { return true }
-func (d *DeleteEvent) IsSubmitterEvent() bool { return true }
-func (u *UpdateEvent) IsSubmitterEvent() bool { return true }
+// TerminateSubmitterEvent represents an event of terminating the submission process.
+type TerminateSubmitterEvent struct {
+}
+
+func (s *SubmitEvent) IsSubmitterEvent() bool             { return true }
+func (d *DeleteEvent) IsSubmitterEvent() bool             { return true }
+func (u *UpdateEvent) IsSubmitterEvent() bool             { return true }
+func (t *TerminateSubmitterEvent) IsSubmitterEvent() bool { return true }
