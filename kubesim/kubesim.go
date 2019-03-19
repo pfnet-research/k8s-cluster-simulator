@@ -2,6 +2,7 @@ package kubesim
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/cpuguy83/strongerrors"
@@ -347,7 +348,7 @@ func (k *KubeSim) schedule() error {
 			nodeName := bind.ScheduleResult.SuggestedHost
 			node, ok := k.nodes[nodeName]
 			if !ok {
-				return errors.Errorf("No node named %q", nodeName)
+				return fmt.Errorf("No node named %q", nodeName)
 			}
 			bind.Pod.Spec.NodeName = nodeName
 
