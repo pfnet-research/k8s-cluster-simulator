@@ -33,7 +33,7 @@ type KubeSim struct {
 	pendingPods queue.PodQueue
 	boundPods   map[string]*pod.Pod
 
-	submitters []submitter.Submitter
+	submitters map[string]submitter.Submitter
 	scheduler  scheduler.Scheduler
 
 	metricsWriters []metrics.Writer
@@ -76,7 +76,7 @@ func NewKubeSim(conf *config.Config, queue queue.PodQueue, sched scheduler.Sched
 		pendingPods: queue,
 		boundPods:   map[string]*pod.Pod{},
 
-		submitters: []submitter.Submitter{},
+		submitters: map[string]submitter.Submitter{},
 		scheduler:  sched,
 
 		metricsTick:    time.Duration(metricsTick) * time.Second,
@@ -96,8 +96,8 @@ func NewKubeSimFromConfigPath(confPath string, queue queue.PodQueue, sched sched
 }
 
 // AddSubmitter adds a new submitter plugin to this KubeSim.
-func (k *KubeSim) AddSubmitter(submitter submitter.Submitter) {
-	k.submitters = append(k.submitters, submitter)
+func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
+	k.submitters[name] = submitter
 }
 
 // Run executes the main loop, which invokes scheduler plugins and binds pods to the selected nodes.
@@ -250,7 +250,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 		return nil
 	}
 
-	for _, subm := range k.submitters {
+	for name, subm := range k.submitters {
 		events, err := subm.Submit(k.clock, k, metrics)
 		if err != nil {
 			return err
@@ -263,18 +263,20 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				pod.CreationTimestamp = k.clock.ToMetaV1()
 				pod.Status.Phase = v1.PodPending
 
-				log.L.Tracef("Submit %v", pod)
+				log.L.Tracef("Submitter %s: Submit %v", name, pod)
 
 				if log.IsDebugEnabled() {
 					key, err := util.PodKey(pod)
 					if err != nil {
 						return err
 					}
-					log.L.Debugf("Submit %s", key)
+					log.L.Debugf("Submitter %s: Submit %s", name, key)
 				}
 
 				k.pendingPods.Push(pod)
 			} else if del, ok := e.(*submitter.DeleteEvent); ok {
+				log.L.Debugf("Submitter %s: Delete %s", name, util.PodKeyFromNames(del.PodNamespace, del.PodName))
+
 				deletedFromQueue, err := k.pendingPods.Delete(del.PodNamespace, del.PodName)
 				if err != nil {
 					return err
@@ -285,8 +287,11 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 						return err
 					}
 				}
-			} else if update, ok := e.(*submitter.UpdateEvent); ok {
-				updatedInQueue, err := k.pendingPods.Update(update.PodNamespace, update.PodName, update.NewPod)
+			} else if up, ok := e.(*submitter.UpdateEvent); ok {
+				log.L.Tracef("Submitter %s: Update %s to %v", name, util.PodKeyFromNames(up.PodNamespace, up.PodName), up.NewPod)
+				log.L.Debugf("Submitter %s: Update %s", name, util.PodKeyFromNames(up.PodNamespace, up.PodName))
+
+				updatedInQueue, err := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod)
 				if err != nil {
 					return err
 				}
@@ -294,6 +299,9 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				if !updatedInQueue {
 					//
 				}
+			} else if _, ok := e.(*submitter.TerminateSubmitterEvent); ok {
+				log.L.Debugf("Submitter %s: Terminate", name)
+				delete(k.submitters, name)
 			} else {
 				log.L.Panic("Unknown submitter event")
 			}

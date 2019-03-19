@@ -48,7 +48,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// 2. Register one or more pod submitters to KubeSim.
-		kubesim.AddSubmitter(newMySubmitter(8))
+		kubesim.AddSubmitter("MySubmitter", newMySubmitter(8))
 
 		// SIGINT (Ctrl-C) and SIGTERM cancel the sumbitter and kubesim.Run().
 		sig := make(chan os.Signal, 1)
