@@ -122,6 +122,11 @@ func (node *Node) PodList() []*pod.Pod {
 	return podList
 }
 
+// PodsNum returns the number of all running or terminating pods at the time clock.
+func (node *Node) PodsNum(clock clock.Clock) int64 {
+	return node.runningPodsNum(clock) + node.terminatingPodsNum(clock)
+}
+
 // GCTerminatedPods deletes terminated pods at the time clock from this node.
 func (node *Node) GCTerminatedPods(clock clock.Clock) {
 	for name, pod := range node.pods {
