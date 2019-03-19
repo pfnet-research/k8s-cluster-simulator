@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	kerr "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
@@ -81,7 +80,7 @@ func (sched *GenericScheduler) Schedule(
 		}
 		log.L.Debugf("Trying to schedule pod %s", podKey)
 
-		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap)
+		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, pendingPods)
 		if err != nil {
 			updatePodStatusSchedulingFailure(clock, pod, err)
 
@@ -132,7 +131,8 @@ var _ = Scheduler(&GenericScheduler{})
 func (sched *GenericScheduler) scheduleOne(
 	pod *v1.Pod,
 	nodeLister algorithm.NodeLister,
-	nodeInfoMap map[string]*nodeinfo.NodeInfo) (core.ScheduleResult, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
+	podQueue queue.PodQueue) (core.ScheduleResult, error) {
 
 	result := core.ScheduleResult{}
 	nodes, err := nodeLister.List()
@@ -143,7 +143,7 @@ func (sched *GenericScheduler) scheduleOne(
 		return result, core.ErrNoNodesAvailable
 	}
 
-	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap)
+	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
 	}
@@ -163,7 +163,7 @@ func (sched *GenericScheduler) scheduleOne(
 		}, nil
 	}
 
-	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap)
+	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
 	}
@@ -179,7 +179,9 @@ func (sched *GenericScheduler) scheduleOne(
 func (sched *GenericScheduler) filter(
 	pod *v1.Pod,
 	nodes []*v1.Node,
-	nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]*v1.Node, core.FailedPredicateMap, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
+	podQueue queue.PodQueue,
+) ([]*v1.Node, core.FailedPredicateMap, error) {
 
 	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
@@ -189,57 +191,53 @@ func (sched *GenericScheduler) filter(
 		log.L.Debugf("Filtering nodes %v", nodeNames)
 	}
 
-	failedPredicateMap := core.FailedPredicateMap{}
-	filteredNodes := nodes
-
 	// In-process plugins
-	errs := kerr.MessageCountMap{}
-	for name, p := range sched.predicates {
-		var err error
-		filteredNodes, err = callPredicatePlugin(name, p, pod, filteredNodes, nodeInfoMap, failedPredicateMap, errs)
+	filtered, failedPredicateMap, err := filterWithPlugins(pod, sched.predicates, nodes, nodeInfoMap, podQueue)
 		if err != nil {
 			return []*v1.Node{}, core.FailedPredicateMap{}, err
 		}
 
-		if len(filteredNodes) == 0 {
-			break
-		}
+	if log.IsDebugEnabled() {
+		nodeNames := make([]string, 0, len(filtered))
+		for _, node := range filtered {
+			nodeNames = append(nodeNames, node.Name)
 	}
-
-	if len(errs) > 0 {
-		return []*v1.Node{}, core.FailedPredicateMap{}, kerr.CreateAggregateFromMessageCountMap(errs)
+		log.L.Debugf("Plugins filtered nodes %v", nodeNames)
 	}
 
 	// Extenders
-	if len(filteredNodes) > 0 && len(sched.extenders) > 0 {
+	if len(filtered) > 0 && len(sched.extenders) > 0 {
 		for _, extender := range sched.extenders {
 			var err error
-			filteredNodes, err = extender.filter(pod, filteredNodes, nodeInfoMap, failedPredicateMap)
+			filtered, err = extender.filter(pod, filtered, nodeInfoMap, failedPredicateMap)
 			if err != nil {
 				return []*v1.Node{}, core.FailedPredicateMap{}, err
 			}
 
-			if len(filteredNodes) == 0 {
+			if len(filtered) == 0 {
 				break
 			}
 		}
 	}
 
 	if log.IsDebugEnabled() {
-		nodeNames := make([]string, 0, len(filteredNodes))
-		for _, node := range filteredNodes {
+		nodeNames := make([]string, 0, len(filtered))
+		for _, node := range filtered {
 			nodeNames = append(nodeNames, node.Name)
 		}
 		log.L.Debugf("Filtered nodes %v", nodeNames)
 	}
 
-	return filteredNodes, failedPredicateMap, nil
+
+	return filtered, failedPredicateMap, nil
 }
 
 func (sched *GenericScheduler) prioritize(
 	pod *v1.Pod,
 	filteredNodes []*v1.Node,
-	nodeInfoMap map[string]*nodeinfo.NodeInfo) (api.HostPriorityList, error) {
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
+	podQueue queue.PodQueue) (api.HostPriorityList, error) {
+
 
 	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filteredNodes))
@@ -249,12 +247,12 @@ func (sched *GenericScheduler) prioritize(
 		log.L.Debugf("Prioritizing nodes %v", nodeNames)
 	}
 
-	prioList := make(api.HostPriorityList, len(filteredNodes), len(filteredNodes))
-
 	// If no priority configs are provided, then the EqualPriority function is applied
 	// This is required to generate the priority list in the required format
 	if len(sched.prioritizers) == 0 && len(sched.extenders) == 0 {
-		for i, node := range filteredNodes {
+		prioList := make(api.HostPriorityList, 0, len(filteredNodes))
+
+		for _, node := range filteredNodes {
 			nodeInfo, ok := nodeInfoMap[node.Name]
 			if !ok {
 				return api.HostPriorityList{}, fmt.Errorf("No node named %s", node.Name)
@@ -264,31 +262,23 @@ func (sched *GenericScheduler) prioritize(
 			if err != nil {
 				return api.HostPriorityList{}, err
 			}
-			prioList[i] = prio
+			prioList = append(prioList, prio)
 		}
 		return prioList, nil
 	}
 
-	for i, node := range filteredNodes {
-		prioList[i] = api.HostPriority{Host: node.Name, Score: 0}
-	}
-
-	errs := []error{}
-
 	// In-process plugins
-	for _, prioritizer := range sched.prioritizers {
-		prios, err := callPrioritizePlugin(&prioritizer, pod, filteredNodes, nodeInfoMap, errs)
+	prioList, err := prioritizeWithPlugins(pod, sched.prioritizers, filteredNodes, nodeInfoMap, podQueue)
 		if err != nil {
 			return api.HostPriorityList{}, err
 		}
 
-		for i, prio := range prios {
-			prioList[i].Score += prio.Score
-		}
+	if log.IsDebugEnabled() {
+		nodeNames := make([]string, 0, len(filteredNodes))
+		for _, node := range filteredNodes {
+			nodeNames = append(nodeNames, node.Name)
 	}
-
-	if len(errs) > 0 {
-		return api.HostPriorityList{}, kerr.NewAggregate(errs)
+		log.L.Debugf("Plugins prioritized nodes %v", nodeNames)
 	}
 
 	// Extenders
