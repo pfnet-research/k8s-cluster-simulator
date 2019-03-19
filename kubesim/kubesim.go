@@ -109,7 +109,15 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		return err
 	}
 
+	submitterAddedEver := len(k.submitters) > 0
+
 	for {
+		if k.toTerminate(submitterAddedEver) {
+			log.L.Debug("Terminate KubeSim")
+			return nil
+		}
+		submitterAddedEver = submitterAddedEver || len(k.submitters) > 0
+
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -245,11 +253,23 @@ func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	return writers, nil
 }
 
-func (k *KubeSim) submit(metrics metrics.Metrics) error {
-	if len(k.submitters) == 0 {
-		return nil
+func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
+	if _, err := k.pendingPods.Front(); err == queue.ErrEmptyQueue {
+		for _, node := range k.nodes {
+			if node.PodsNum(k.clock) > 0 {
+				return false
+			}
+		}
+
+		if submitterAddedEver && len(k.submitters) == 0 {
+			return true
+		}
 	}
 
+	return false
+}
+
+func (k *KubeSim) submit(metrics metrics.Metrics) error {
 	for name, subm := range k.submitters {
 		events, err := subm.Submit(k.clock, k, metrics)
 		if err != nil {
