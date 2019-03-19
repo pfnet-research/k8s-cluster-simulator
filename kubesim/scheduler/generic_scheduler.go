@@ -193,15 +193,15 @@ func (sched *GenericScheduler) filter(
 
 	// In-process plugins
 	filtered, failedPredicateMap, err := filterWithPlugins(pod, sched.predicates, nodes, nodeInfoMap, podQueue)
-		if err != nil {
-			return []*v1.Node{}, core.FailedPredicateMap{}, err
-		}
+	if err != nil {
+		return []*v1.Node{}, core.FailedPredicateMap{}, err
+	}
 
 	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filtered))
 		for _, node := range filtered {
 			nodeNames = append(nodeNames, node.Name)
-	}
+		}
 		log.L.Debugf("Plugins filtered nodes %v", nodeNames)
 	}
 
@@ -269,15 +269,15 @@ func (sched *GenericScheduler) prioritize(
 
 	// In-process plugins
 	prioList, err := prioritizeWithPlugins(pod, sched.prioritizers, filteredNodes, nodeInfoMap, podQueue)
-		if err != nil {
-			return api.HostPriorityList{}, err
-		}
+	if err != nil {
+		return api.HostPriorityList{}, err
+	}
 
 	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filteredNodes))
 		for _, node := range filteredNodes {
 			nodeNames = append(nodeNames, node.Name)
-	}
+		}
 		log.L.Debugf("Plugins prioritized nodes %v", nodeNames)
 	}
 
