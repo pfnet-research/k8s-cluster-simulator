@@ -74,7 +74,8 @@ func buildScheduler() scheduler.Scheduler {
 
 ### Pod submitter interface
 
-See [pkg/submitter/submitter.go](pkg/submitter/submitter.go) and [pkg/scheduler/scheduler.go](pkg/scheduler/scheduler.go).
+See [pkg/submitter/submitter.go](pkg/submitter/submitter.go)
+and [pkg/scheduler/scheduler.go](pkg/scheduler/scheduler.go).
 
 ```go
 type Submitter interface {
@@ -294,3 +295,15 @@ v1.Node{
     },
 }
 ```
+
+## Related project
+
+The design and implementation of this project are inherently inspired by
+[kubernetes](https://github.com/kubernetes/kubernetes), which is licensed under Apache-2.0.
+Moreover, functions in the following files are copied from Kubernetes project and modified so that
+they would be compatible with k8s-cluster-simulator.
+Please see each file for more detail.
+
+* [kubesim/scheduler/generic_scheduler_k8s.go]
+* [kubesim/queue/priority_queue_k8s.go]
+* [kubesim/util/util_k8s.go]
