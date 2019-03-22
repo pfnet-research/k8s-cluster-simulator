@@ -22,6 +22,11 @@ example:
 	@echo "Building examples/main..."
 	$Q CGO_ENABLED=0 go build -o bin/main $(shell ls examples/*.go)
 
+.PHONY: test-example
+test-example: example
+	@echo "Running example..."
+	$Q tests/run_example.sh
+
 .PHONY: tags
 tags:
 	@echo "Listing tags..."
