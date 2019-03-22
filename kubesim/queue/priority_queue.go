@@ -76,8 +76,12 @@ func (pq *PriorityQueue) Delete(podNamespace, podName string) (bool, error) {
 	key := util.PodKeyFromNames(podNamespace, podName)
 	item, ok := pq.inner.items[key]
 	if ok {
-		heap.Remove(&pq.inner, item.index) // Don't swap these two lines
-		delete(pq.inner.items, key)
+		nominatedNodeName := item.pod.Status.NominatedNodeName
+		item.pod.Status.NominatedNodeName = ""
+		delete(pq.nominatedPods[nominatedNodeName], key)
+
+		heap.Remove(&pq.inner, item.index) // Don't swap
+		delete(pq.inner.items, key)        // 	these two lines
 	}
 
 	return ok, nil
@@ -135,9 +139,7 @@ func (pq *PriorityQueue) RemoveNominatedNode(pod *v1.Pod) error {
 	}
 
 	pod.Status.NominatedNodeName = ""
-	if pods, ok := pq.nominatedPods[nodeName]; ok {
-		delete(pods, key)
-	}
+	delete(pq.nominatedPods[nodeName], key)
 
 	return nil
 }

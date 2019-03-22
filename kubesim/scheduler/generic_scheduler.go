@@ -97,7 +97,6 @@ func (sched *GenericScheduler) Schedule(
 					}
 
 					results = append(results, delEvents...)
-					break
 				}
 
 				break
@@ -110,6 +109,9 @@ func (sched *GenericScheduler) Schedule(
 
 		pod, _ = pendingPods.Pop()
 		updatePodStatusSchedulingSucceess(clock, pod)
+		if err := pendingPods.RemoveNominatedNode(pod); err != nil {
+			return []Event{}, err
+		}
 
 		nodeInfo, ok := nodeInfoMap[result.SuggestedHost]
 		if !ok {
@@ -228,7 +230,6 @@ func (sched *GenericScheduler) filter(
 		log.L.Debugf("Filtered nodes %v", nodeNames)
 	}
 
-
 	return filtered, failedPredicateMap, nil
 }
 
@@ -237,7 +238,6 @@ func (sched *GenericScheduler) prioritize(
 	filteredNodes []*v1.Node,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	podQueue queue.PodQueue) (api.HostPriorityList, error) {
-
 
 	if log.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filteredNodes))
