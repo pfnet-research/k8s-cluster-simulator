@@ -90,16 +90,17 @@ func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) (boo
 	return ok, nil
 }
 
+// UpdateNominatedNode does nothing. FIFOQueue does not support preemption.
 func (fifo *FIFOQueue) UpdateNominatedNode(pod *v1.Pod, nodeName string) error {
-	// FIFOQueue does nothing
 	return nil
 }
 
+// RemoveNominatedNode does nothing. FIFOQueue does not support preemption.
 func (fifo *FIFOQueue) RemoveNominatedNode(pod *v1.Pod) error {
-	// FIFOQueue does nothing
 	return nil
 }
 
+// NominatedPods does nothing. FIFOQueue does not support preemption.
 func (fifo *FIFOQueue) NominatedPods(nodeName string) []*v1.Pod {
 	return []*v1.Pod{}
 }
