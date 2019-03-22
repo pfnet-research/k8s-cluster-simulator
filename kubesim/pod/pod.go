@@ -171,9 +171,11 @@ func (pod *Pod) IsDeleted(clk clock.Clock) bool {
 
 // Delete starts deleting this pod.
 func (pod *Pod) Delete(clock clock.Clock) {
-	if !pod.IsRunning(clock) {
+	if pod.IsTerminated(clock) || pod.status == Deleted {
 		return
 	}
+
+	// Running or OverCapacity
 
 	pod.status = Deleted
 	deletedAt := clock.ToMetaV1()
