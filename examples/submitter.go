@@ -19,14 +19,14 @@ import (
 type mySubmitter struct {
 	podIdx        uint64
 	targetPodsNum int
+	myrand        *rand.Rand
 }
 
 func newMySubmitter(targetPodsNum int) *mySubmitter {
-	rand.Seed(time.Now().UnixNano())
-
 	return &mySubmitter{
 		podIdx:        0,
 		targetPodsNum: targetPodsNum,
+		myrand:        rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -49,7 +49,7 @@ func (s *mySubmitter) Submit(
 	}
 
 	for i := 0; i < submissionNum; i++ {
-		events = append(events, &submitter.SubmitEvent{Pod: newPod(s.podIdx)})
+		events = append(events, &submitter.SubmitEvent{Pod: s.newPod(s.podIdx)})
 		s.podIdx++
 	}
 
@@ -60,13 +60,13 @@ func (s *mySubmitter) Submit(
 	return events, nil
 }
 
-func newPod(idx uint64) *v1.Pod {
+func (s *mySubmitter) newPod(idx uint64) *v1.Pod {
 	simSpec := ""
-	for i := 0; i < rand.Intn(4)+1; i++ {
-		sec := 60 * rand.Intn(60)
-		cpu := 1 + rand.Intn(4)
-		mem := 1 + rand.Intn(4)
-		gpu := rand.Intn(2)
+	for i := 0; i < s.myrand.Intn(4)+1; i++ {
+		sec := 60 * s.myrand.Intn(60)
+		cpu := 1 + s.myrand.Intn(4)
+		mem := 1 + s.myrand.Intn(4)
+		gpu := s.myrand.Intn(2)
 
 		simSpec += fmt.Sprintf(`
 - seconds: %d
@@ -77,7 +77,7 @@ func newPod(idx uint64) *v1.Pod {
 `, sec, cpu, mem, gpu)
 	}
 
-	prio := rand.Int31n(3) / 2 // 0, 0, 1
+	prio := s.myrand.Int31n(3) / 2 // 0, 0, 1
 
 	pod := v1.Pod{
 		TypeMeta: metav1.TypeMeta{
