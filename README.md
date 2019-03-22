@@ -253,13 +253,13 @@ v1.Node{
             {
                 Type:               v1.NodeReady,
                 Status:             v1.ConditionTrue,
-                LastHeartbeatTime:  // clock
-                LastTransitionTime: // clock
+                LastHeartbeatTime:  // clock,
+                LastTransitionTime: // clock,
                 Reason:             "KubeletReady",
-                Message:            "kubelet is ready.",
+                Message:            "kubelet is posting ready status",
             },
             {
-                Type:               "OutOfDisk",
+                Type:               v1.NodeOutOfDisk,
                 Status:             v1.ConditionFalse,
                 LastHeartbeatTime:  // clock,
                 LastTransitionTime: // clock,
@@ -267,7 +267,7 @@ v1.Node{
                 Message:            "kubelet has sufficient disk space available",
             },
             {
-                Type:               "MemoryPressure",
+                Type:               v1.NodeMemoryPressure,
                 Status:             v1.ConditionFalse,
                 LastHeartbeatTime:  // clock,
                 LastTransitionTime: // clock,
@@ -275,7 +275,7 @@ v1.Node{
                 Message:            "kubelet has sufficient memory available",
             },
             {
-                Type:               "DiskPressure",
+                Type:               v1.NodeDiskPressure,
                 Status:             v1.ConditionFalse,
                 LastHeartbeatTime:  // clock,
                 LastTransitionTime: // clock,
@@ -283,12 +283,12 @@ v1.Node{
                 Message:            "kubelet has no disk pressure",
             },
             {
-                Type:               "NetworkUnavailable",
+                Type:               v1.NodePIDPressure,
                 Status:             v1.ConditionFalse,
                 LastHeartbeatTime:  // clock,
                 LastTransitionTime: // clock,
-                Reason:             "RouteCreated",
-                Message:            "RouteController created a route",
+                Reason:             "KubeletHasSufficientPID",
+                Message:            "kubelet has sufficient PID available",
             },
         },
     },
