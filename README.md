@@ -296,14 +296,19 @@ v1.Node{
 }
 ```
 
-## Related project
+## Related projects
 
 The design and implementation of this project are inherently inspired by
 [kubernetes](https://github.com/kubernetes/kubernetes), which is licensed under Apache-2.0.
-Moreover, functions in the following files are copied from Kubernetes project and modified so that
-they would be compatible with k8s-cluster-simulator.
+Moreover, functions in the following files were obtained from Kubernetes project and modified so
+that they would be compatible with k8s-cluster-simulator.
 Please see each file for more detail.
 
 * [kubesim/scheduler/generic_scheduler_k8s.go]
 * [kubesim/queue/priority_queue_k8s.go]
 * [kubesim/util/util_k8s.go]
+
+Also, the following file was obtained from [containerd](https://github.com/containerd) project.
+Please see the file for more detail.
+
+* [log/log_containerd.go]
