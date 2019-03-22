@@ -6,7 +6,7 @@ logLevel: debug
 # Optional (default: 10)
 tick: 10
 
-# Start time at which the simulation starts, in RFC3339 format.
+# Start clock at which the simulation starts, in RFC3339 format.
 # Optional (default: now)
 startClock: 2019-01-01T00:00:00+09:00
 
@@ -14,12 +14,12 @@ startClock: 2019-01-01T00:00:00+09:00
 # Optional (default: same as tick)
 metricsTick: 60
 
-# Metrics of simulated kubernetes cluster is written to a file at this path.
-# The metrics is formatted with the given formatter.
-# Optional (default: not writing metrics to a file)
+# Metrics of simulated kubernetes cluster is written to files at the specified paths.
+# Each metrics is formatted with the given formatter.
+# Optional (default: not writing metrics to any file)
 metricsFile:
-  path: kubesim.log
-  formatter: JSON 
+  - path: kubesim.log
+    formatter: JSON
 
 # Metrics is (also) written to stdout.
 # Optional (default: not writing metrics to stdout)
