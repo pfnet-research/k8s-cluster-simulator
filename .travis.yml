@@ -1,8 +1,11 @@
 language: go
 go:
-  - "1.11.1"
-  - "1.11.x"
+- "1.11.x"
 
-script: |
-  make all
-  make test-example
+before_install:
+- go get github.com/mattn/goveralls
+
+script:
+- make test coverage
+- $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+- make test-example
