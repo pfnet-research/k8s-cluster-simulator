@@ -24,17 +24,17 @@ func main() {
 	}
 }
 
-// configPath is the path of the config file, defaulting to "examples/config_sample".
+// configPath is the path of the config file, defaulting to "config_sample".
 var configPath string
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(
-		&configPath, "config", "examples/config_sample", "config file (exclusing file extension)")
+		&configPath, "config", "config_sample", "config file (exclusing file extension)")
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "kubernetes-simulator",
-	Short: "kubernetes-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
+	Use:   "k8s-cluster-simulator",
+	Short: "k8s-cluster-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
 
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
