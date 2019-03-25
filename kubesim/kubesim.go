@@ -212,18 +212,16 @@ func buildClock(startClock string) (clock.Clock, error) {
 
 func buildCluster(conf *config.Config) (map[string]*node.Node, error) {
 	nodes := map[string]*node.Node{}
-	for _, nodeConf := range conf.Cluster.Nodes {
-		log.L.Debugf("Node config %+v", nodeConf)
-
+	for _, nodeConf := range conf.Cluster {
 		nodeV1, err := config.BuildNode(nodeConf, conf.StartClock)
 		if err != nil {
-			return map[string]*node.Node{}, errors.Errorf("Error building node config: %s", err.Error())
+			return nil, err
 		}
 
-		n := node.NewNode(nodeV1)
-		nodes[nodeV1.Name] = &n
+		nodeSim := node.NewNode(nodeV1)
+		nodes[nodeV1.Name] = &nodeSim
 
-		log.L.Debugf("Node %s created", nodeV1.Name)
+		log.L.Debugf("Node %s created: %v", nodeV1.Name, nodeV1)
 	}
 
 	return nodes, nil
