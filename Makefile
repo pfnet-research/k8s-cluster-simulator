@@ -19,7 +19,7 @@ run-example:
 
 .PHONY: test-example
 test-example:
-	./tests/run_example.sh
+	./test/run_example.sh
 
 .PHONY: coverage
 coverage:
