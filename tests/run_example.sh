@@ -7,11 +7,13 @@ function err() {
     exit $2
 }
 
-exe="bin/main"
+cmd="make run-example"
 sec=30
-timeout $sec $exe >& /dev/null
+timeout $sec $cmd >& /dev/null
 
 status=$?
-if [ $status -ne 0 ]; then
-    err "$exe timeouted: took over $sec s" $status
+if [ $status -eq 124 ]; then
+    err "$cmd timeouted: took over $sec s" $status
+elif [ $status -ne 0 ]; then
+    err "$cmd failed" $status
 fi

@@ -1,0 +1,51 @@
+# Log level defined by sirupsen/logrus.
+# Optional (default: info)
+logLevel: debug
+
+# Interval duration for scheduling and updating the cluster, in seconds.
+# Optional (default: 10)
+tick: 10
+
+# Start time at which the simulation starts, in RFC3339 format.
+# Optional (default: now)
+startClock: 2019-01-01T00:00:00+09:00
+
+# Interval duration for logging metrics of the cluster, in seconds.
+# Optional (default: same as tick)
+metricsTick: 60
+
+# Metrics of simulated kubernetes cluster is written to a file at this path.
+# The metrics is formatted with the given formatter.
+# Optional (default: not writing metrics to a file)
+metricsFile:
+  - path: kubesim.log
+    formatter: JSON 
+
+# Metrics is (also) written to stdout.
+# Optional (default: not writing metrics to stdout)
+metricsStdout:
+  formatter: humanReadable
+
+# metricsPort: 10255
+
+# apiPort: 10250
+
+# Cluster configration
+cluster:
+  nodes:
+  - name: node-0
+    capacity:
+      cpu: 4
+      memory: 8Gi
+      nvidia.com/gpu: 1
+      pods: 2
+    labels:
+      beta.kubernetes.io/os: simulated
+  - name: node-1
+    capacity:
+      cpu: 8
+      memory: 16Gi
+      nvidia.com/gpu: 2
+      pods: 4
+    labels:
+      beta.kubernetes.io/os: simulated
