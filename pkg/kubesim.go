@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/containerd/containerd/log"
 	"github.com/cpuguy83/strongerrors"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ import (
 
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/config"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
+	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/metrics"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/node"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/pod"
@@ -285,7 +286,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 
 				log.L.Tracef("Submitter %s: Submit %v", name, pod)
 
-				if log.IsDebugEnabled() {
+				if l.IsDebugEnabled() {
 					key, err := util.PodKey(pod)
 					if err != nil {
 						return err

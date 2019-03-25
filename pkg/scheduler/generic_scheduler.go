@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
@@ -13,7 +14,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
+	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )
@@ -185,7 +186,7 @@ func (sched *GenericScheduler) filter(
 	podQueue queue.PodQueue,
 ) ([]*v1.Node, core.FailedPredicateMap, error) {
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -199,7 +200,7 @@ func (sched *GenericScheduler) filter(
 		return []*v1.Node{}, core.FailedPredicateMap{}, err
 	}
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filtered))
 		for _, node := range filtered {
 			nodeNames = append(nodeNames, node.Name)
@@ -222,7 +223,7 @@ func (sched *GenericScheduler) filter(
 		}
 	}
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filtered))
 		for _, node := range filtered {
 			nodeNames = append(nodeNames, node.Name)
@@ -239,7 +240,7 @@ func (sched *GenericScheduler) prioritize(
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	podQueue queue.PodQueue) (api.HostPriorityList, error) {
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filteredNodes))
 		for _, node := range filteredNodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -273,7 +274,7 @@ func (sched *GenericScheduler) prioritize(
 		return api.HostPriorityList{}, err
 	}
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(filteredNodes))
 		for _, node := range filteredNodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -342,7 +343,7 @@ func (sched *GenericScheduler) preempt(
 		for _, victim := range victims {
 			log.L.Tracef("Pod %v selected for victim", victim)
 
-			if log.IsDebugEnabled() {
+			if l.IsDebugEnabled() {
 				key, err := util.PodKey(victim)
 				if err != nil {
 					return []Event{}, err
@@ -358,7 +359,7 @@ func (sched *GenericScheduler) preempt(
 	for _, pod := range nominatedPodsToClear {
 		log.L.Tracef("Nomination of pod %v cleared", pod)
 
-		if log.IsDebugEnabled() {
+		if l.IsDebugEnabled() {
 			key, err := util.PodKey(pod)
 			if err != nil {
 				return []Event{}, err

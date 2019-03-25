@@ -1,11 +1,11 @@
 package node
 
 import (
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/pod"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )

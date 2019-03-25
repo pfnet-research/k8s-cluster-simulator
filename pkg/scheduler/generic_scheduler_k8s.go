@@ -38,6 +38,7 @@ import (
 	"errors"
 	"math"
 
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/api"
@@ -45,7 +46,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
+	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )
@@ -216,7 +217,7 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 			removePod(p)
 			victims = append(victims, p)
 
-			if log.IsDebugEnabled() {
+			if l.IsDebugEnabled() {
 				key, err := util.PodKey(p)
 				if err != nil {
 					log.L.Warnf("Encountered error while building key of pod %v: %v", p, err)

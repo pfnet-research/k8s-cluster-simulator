@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )
 

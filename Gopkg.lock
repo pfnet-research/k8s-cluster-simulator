@@ -10,6 +10,14 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:921805bf524c72636e8b88d2ef8883ba97abdd1d9beb39697201b41bb193612f"
+  name = "github.com/containerd/containerd"
+  packages = ["log"]
+  pruneopts = "UT"
+  revision = "bb71b10fd8f58240ca47fbb579b9d1028eea7c84"
+  version = "v1.2.5"
+
+[[projects]]
   digest = "1:51f45cea57584be633763d70c08f84e2684d6950154bb741122eea4412675eab"
   name = "github.com/cpuguy83/strongerrors"
   packages = ["."]
@@ -858,6 +866,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/containerd/containerd/log",
     "github.com/cpuguy83/strongerrors",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",

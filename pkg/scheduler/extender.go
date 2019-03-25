@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
@@ -11,7 +12,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
+	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 )
 
 // Extender reperesents a scheduler extender.
@@ -53,7 +54,7 @@ func (ext *Extender) filter(
 
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -94,7 +95,7 @@ func (ext *Extender) filter(
 	}
 
 	log.L.Tracef("Extender %s: Filtered nodes %v", ext.Name, nodes)
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -114,7 +115,7 @@ func (ext *Extender) prioritize(pod *v1.Pod, nodes []*v1.Node, prioMap map[strin
 
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)

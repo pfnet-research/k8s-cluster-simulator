@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/containerd/containerd/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
@@ -13,7 +14,6 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
 	kubesim "github.com/ordovicia/k8s-cluster-simulator/pkg"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/scheduler"
 )
