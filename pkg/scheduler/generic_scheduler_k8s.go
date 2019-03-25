@@ -11,8 +11,8 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 

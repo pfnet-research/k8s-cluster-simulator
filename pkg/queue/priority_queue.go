@@ -6,8 +6,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	v1pod "k8s.io/kubernetes/pkg/api/v1/pod"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )
 
 // PriorityQueue stores pods in a priority queue.

@@ -4,8 +4,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/metrics"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/metrics"
 )
 
 // Submitter defines the submitter interface.

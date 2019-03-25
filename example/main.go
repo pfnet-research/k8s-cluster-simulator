@@ -12,9 +12,9 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/scheduler"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/scheduler"
 	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 

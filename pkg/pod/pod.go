@@ -6,8 +6,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/util"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 

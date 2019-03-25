@@ -15,7 +15,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 )
 
 // dummyPredicateMetadata implements predicates.PredicateMetadata.

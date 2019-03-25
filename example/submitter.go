@@ -10,10 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/metrics"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/queue"
-	"github.com/ordovicia/k8s-cluster-simulator/kubesim/submitter"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/metrics"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/submitter"
 )
 
 type mySubmitter struct {
