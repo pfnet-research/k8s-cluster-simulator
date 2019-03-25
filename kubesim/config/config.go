@@ -20,9 +20,7 @@ type Config struct {
 	MetricsTick   int
 	MetricsFile   []MetricsFileConfig
 	MetricsStdout MetricsStdoutConfig
-	// MetricsPort int
-	// APIPort     int
-	Cluster ClusterConfig
+	Cluster       []NodeConfig
 }
 
 type MetricsFileConfig struct {
@@ -34,30 +32,22 @@ type MetricsStdoutConfig struct {
 	Formatter string
 }
 
-type ClusterConfig struct {
-	Nodes []NodeConfig
-}
-
 type NodeConfig struct {
-	Name        string
-	Capacity    map[v1.ResourceName]string
-	Labels      map[string]string
-	Annotations map[string]string
-	Taints      []TaintConfig
+	Metadata metav1.ObjectMeta
+	Spec     v1.NodeSpec
+	Status   NodeStatus
 }
 
-type TaintConfig struct { // made public for the deserialization by viper
-	Key    string
-	Value  string
-	Effect string
+type NodeStatus struct {
+	Allocatable map[v1.ResourceName]string
 }
 
 // BuildMetricsFile builds metrics.FileWriter with the given MetricsFileConfig.
 // Returns error if the config is invalid, failed to parse, or failed to create a FileWriter.
-func BuildMetricsFile(config []MetricsFileConfig) ([]*metrics.FileWriter, error) {
-	writers := make([]*metrics.FileWriter, 0, len(config))
+func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
+	writers := make([]*metrics.FileWriter, 0, len(conf))
 
-	for _, conf := range config {
+	for _, conf := range conf {
 		if conf.Path == "" && conf.Formatter == "" {
 			return nil, nil
 		}
@@ -83,12 +73,12 @@ func BuildMetricsFile(config []MetricsFileConfig) ([]*metrics.FileWriter, error)
 
 // BuildMetricsStdout builds a metrics.StdoutWriter with the given MetricsStdoutConfig.
 // Returns error if parsing failed.
-func BuildMetricsStdout(config MetricsStdoutConfig) (*metrics.StdoutWriter, error) {
-	if config.Formatter == "" {
+func BuildMetricsStdout(conf MetricsStdoutConfig) (*metrics.StdoutWriter, error) {
+	if conf.Formatter == "" {
 		return nil, nil
 	}
 
-	formatter, err := buildFormatter(config.Formatter)
+	formatter, err := buildFormatter(conf.Formatter)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +87,8 @@ func BuildMetricsStdout(config MetricsStdoutConfig) (*metrics.StdoutWriter, erro
 	return &w, nil
 }
 
-func buildFormatter(config string) (metrics.Formatter, error) {
-	switch config {
+func buildFormatter(conf string) (metrics.Formatter, error) {
+	switch conf {
 	case "JSON":
 		return &metrics.JSONFormatter{}, nil
 	case "humanReadable":
@@ -106,25 +96,16 @@ func buildFormatter(config string) (metrics.Formatter, error) {
 	case "table":
 		return &metrics.TableFormatter{}, nil
 	default:
-		return nil, strongerrors.InvalidArgument(errors.Errorf("formatter %q is not supported", config))
+		return nil, strongerrors.InvalidArgument(errors.Errorf("formatter %q is not supported", conf))
 	}
 }
 
-// BuildNode builds a *v1.Node with the provided node config.
+// BuildNode builds a *v1.Node with the given node config.
 // Returns error if the parsing fails.
-func BuildNode(config NodeConfig, startClock string) (*v1.Node, error) {
-	capacity, err := util.BuildResourceList(config.Capacity)
+func BuildNode(conf NodeConfig, startClock string) (*v1.Node, error) {
+	allocatable, err := util.BuildResourceList(conf.Status.Allocatable)
 	if err != nil {
 		return nil, err
-	}
-
-	taints := []v1.Taint{}
-	for _, taintConfig := range config.Taints {
-		taint, err := buildTaint(taintConfig)
-		if err != nil {
-			return nil, err
-		}
-		taints = append(taints, *taint)
 	}
 
 	clock := time.Now()
@@ -140,43 +121,16 @@ func BuildNode(config NodeConfig, startClock string) (*v1.Node, error) {
 			Kind:       "Node",
 			APIVersion: "v1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        config.Name,
-			Labels:      config.Labels,
-			Annotations: config.Annotations,
-		},
-		Spec: v1.NodeSpec{
-			Unschedulable: false,
-			Taints:        taints,
-		},
+		ObjectMeta: conf.Metadata,
+		Spec:       conf.Spec,
 		Status: v1.NodeStatus{
-			Capacity:    capacity,
-			Allocatable: capacity,
+			Capacity:    allocatable,
+			Allocatable: allocatable,
 			Conditions:  buildNodeCondition(metav1.NewTime(clock)),
 		},
 	}
 
 	return &node, nil
-}
-
-func buildTaint(config TaintConfig) (*v1.Taint, error) {
-	var effect v1.TaintEffect
-	switch config.Effect {
-	case "NoSchedule":
-		effect = v1.TaintEffectNoSchedule
-	case "NoExecute":
-		effect = v1.TaintEffectNoExecute
-	case "PreferNoSchedule":
-		effect = v1.TaintEffectPreferNoSchedule
-	default:
-		return nil, strongerrors.InvalidArgument(errors.Errorf("taint effect %q is not supported", config.Effect))
-	}
-
-	return &v1.Taint{
-		Key:    config.Key,
-		Value:  config.Value,
-		Effect: effect,
-	}, nil
 }
 
 func buildNodeCondition(clock metav1.Time) []v1.NodeCondition {
