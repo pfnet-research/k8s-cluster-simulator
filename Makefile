@@ -3,7 +3,7 @@ CURRENT_DIR=$(shell pwd)
 DIST_DIR=${CURRENT_DIR}/dist
 
 .PHONY: all
-all: test example
+all: test run-example
 
 .PHONY: clean
 clean::
