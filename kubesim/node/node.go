@@ -18,7 +18,7 @@ type Node struct {
 
 // Metrics is a metrics of a node at a time instance.
 type Metrics struct {
-	Capacity             v1.ResourceList
+	Allocatable          v1.ResourceList
 	RunningPodsNum       int64
 	TerminatingPodsNum   int64
 	FailedPodsNum        int64
@@ -50,7 +50,7 @@ func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
 // Metrics returns the Metrics at the time clock.
 func (node *Node) Metrics(clock clock.Clock) Metrics {
 	return Metrics{
-		Capacity:             node.ToV1().Status.Capacity,
+		Allocatable:          node.ToV1().Status.Allocatable,
 		RunningPodsNum:       node.runningPodsNum(clock),
 		TerminatingPodsNum:   node.terminatingPodsNum(clock),
 		FailedPodsNum:        node.bindingFailedPodsNum(),
@@ -70,9 +70,10 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, key)
 
 	newTotalReq := util.ResourceListSum(node.totalResourceRequest(clock), util.PodTotalResourceRequests(v1Pod))
-	capacity := node.ToV1().Status.Capacity
+	allocatable := node.ToV1().Status.Allocatable
 	var podStatus pod.Status
-	if !util.ResourceListGE(capacity, newTotalReq) || node.runningPodsNum(clock) >= capacity.Pods().Value() {
+
+	if !util.ResourceListGE(allocatable, newTotalReq) || node.runningPodsNum(clock) >= allocatable.Pods().Value() {
 		podStatus = pod.OverCapacity
 	} else {
 		podStatus = pod.Ok
