@@ -92,19 +92,34 @@ func TestBuildNode(t *testing.T) {
 	nowStr := time.Now().Format(time.RFC3339)
 	nowParsed, _ := time.Parse(time.RFC3339, nowStr)
 
-	actual, _ := BuildNode(NodeConfig{
-		Name: "node0",
-		Capacity: map[v1.ResourceName]string{
-			"cpu":            "2",
-			"memory":         "4Gi",
-			"nvidia.com/gpu": "1",
+	metadata := metav1.ObjectMeta{
+		Name: "node-0",
+		Labels: map[string]string{
+			"foo": "bar",
 		},
-		Labels:      map[string]string{},
 		Annotations: map[string]string{},
-		Taints:      []TaintConfig{},
+	}
+
+	spec := v1.NodeSpec{
+		Unschedulable: false,
+		Taints: []v1.Taint{
+			v1.Taint{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
+		},
+	}
+
+	actual, _ := BuildNode(NodeConfig{
+		Metadata: metadata,
+		Spec:     spec,
+		Status: NodeStatus{
+			Allocatable: map[v1.ResourceName]string{
+				"cpu":            "2",
+				"memory":         "4Gi",
+				"nvidia.com/gpu": "1",
+			},
+		},
 	}, nowStr)
 
-	cap := v1.ResourceList{
+	allocatable := v1.ResourceList{
 		"cpu":            resource.MustParse("2"),
 		"memory":         resource.MustParse("4Gi"),
 		"nvidia.com/gpu": resource.MustParse("1"),
@@ -115,52 +130,17 @@ func TestBuildNode(t *testing.T) {
 			Kind:       "Node",
 			APIVersion: "v1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "node0",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
-		},
-		Spec: v1.NodeSpec{
-			Unschedulable: false,
-			Taints:        []v1.Taint{},
-		},
+		ObjectMeta: metadata,
+		Spec:       spec,
 		Status: v1.NodeStatus{
-			Capacity:    cap,
-			Allocatable: cap,
+			Capacity:    allocatable,
+			Allocatable: allocatable,
 			Conditions:  buildNodeCondition(metav1.NewTime(nowParsed)),
 		},
 	}
 
 	if !reflect.DeepEqual(*actual, expected) {
 		t.Errorf("got: %+v\nwant: %+v", *actual, expected)
-	}
-}
-
-func TestBuildTaint(t *testing.T) {
-	actual, _ := buildTaint(TaintConfig{
-		Key:    "kubernetes",
-		Value:  "simulator",
-		Effect: "NoSchedule",
-	})
-
-	expected := v1.Taint{
-		Key:    "kubernetes",
-		Value:  "simulator",
-		Effect: v1.TaintEffectNoSchedule,
-	}
-
-	if *actual != expected {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
-	}
-
-	actual, err := buildTaint(TaintConfig{
-		Key:    "kubernetes",
-		Value:  "simulator",
-		Effect: "Invalid",
-	})
-
-	if err == nil {
-		t.Errorf("got: %v\nwant: error", actual)
 	}
 }
 
