@@ -25,9 +25,11 @@ import (
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 )
 
-// HumanReadableFormatter formats metrics in a human-readable style.
+// TableFormatter is a Formatter that formats metrics in a table.
 type TableFormatter struct{}
 
+// Format implements Formatter interface.
+// Returns error if the given metrics does not have valid structure.
 func (t *TableFormatter) Format(metrics *Metrics) (string, error) {
 	if err := validateMetrics(metrics); err != nil {
 		return "", err
@@ -39,34 +41,23 @@ func (t *TableFormatter) Format(metrics *Metrics) (string, error) {
 
 	// Nodes
 	nodesMet := (*metrics)[NodesMetricsKey].(map[string]node.Metrics)
-	s, resourceTypes, err := t.formatNodesMetrics(nodesMet)
-	if err != nil {
-		return "", err
-	}
+	s, resourceTypes := t.formatNodesMetrics(nodesMet)
 	str += s + "\n"
 
 	// Pods
 	podsMet := (*metrics)[PodsMetricsKey].(map[string]pod.Metrics)
-	s, err = t.formatPodsMetrics(podsMet, resourceTypes)
-	if err != nil {
-		return "", err
-	}
-	str += s + "\n"
+	str += t.formatPodsMetrics(podsMet, resourceTypes) + "\n"
 
 	// Queue
 	queueMet := (*metrics)[QueueMetricsKey].(queue.Metrics)
-	s, err = t.formatQueueMetrics(queueMet)
-	if err != nil {
-		return "", err
-	}
-	str += s
+	str += t.formatQueueMetrics(queueMet) + "\n"
 
 	return str, nil
 }
 
 var _ = Formatter(&TableFormatter{})
 
-func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (string, []string, error) {
+func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (string, []string) {
 	nodes, resourceTypes := t.sortedNodeNamesAndResourceTypes(metrics)
 
 	// Header
@@ -119,10 +110,10 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 		str += "\n"
 	}
 
-	return str, resourceTypes, nil
+	return str, resourceTypes
 }
 
-func (t *TableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics, resourceTypes []string) (string, error) {
+func (t *TableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics, resourceTypes []string) string {
 	pods := t.sortedPodNames(metrics)
 
 	// Header
@@ -175,14 +166,14 @@ func (t *TableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics, resou
 		str += "\n"
 	}
 
-	return str, nil
+	return str
 }
 
-func (t *TableFormatter) formatQueueMetrics(metrics queue.Metrics) (string, error) {
+func (t *TableFormatter) formatQueueMetrics(metrics queue.Metrics) string {
 	str := "      PendingPods \n"
 	str += "------------------\n"
 	str += fmt.Sprintf("Queue %-8d \n", metrics.PendingPodsNum)
-	return str, nil
+	return str
 }
 
 func (t *TableFormatter) sortedNodeNamesAndResourceTypes(metrics map[string]node.Metrics) ([]string, []string) {
