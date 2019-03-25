@@ -307,8 +307,3 @@ Please see each file for more detail.
 * [kubesim/scheduler/generic_scheduler_k8s.go]
 * [kubesim/queue/priority_queue_k8s.go]
 * [kubesim/util/util_k8s.go]
-
-Also, the following file was obtained from [containerd](https://github.com/containerd) project.
-Please see the file for more detail.
-
-* [log/log_containerd.go]
