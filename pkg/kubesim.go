@@ -316,9 +316,7 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				deletedFromQueue := k.pendingPods.Delete(del.PodNamespace, del.PodName)
 
 				if !deletedFromQueue {
-					if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
-						return err
-					}
+					k.deletePodFromNode(del.PodNamespace, del.PodName)
 				}
 			} else if up, ok := e.(*submitter.UpdateEvent); ok {
 				log.L.Tracef("Submitter %s: Update %s to %v",
@@ -376,9 +374,7 @@ func (k *KubeSim) schedule() error {
 			}
 			k.boundPods[key] = pod
 		} else if del, ok := e.(*scheduler.DeleteEvent); ok {
-			if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
-				return err
-			}
+			k.deletePodFromNode(del.PodNamespace, del.PodName)
 		} else {
 			log.L.Panic("Unknown scheduler event")
 		}
@@ -403,19 +399,14 @@ func (k *KubeSim) gcTerminatedPodsInNodes() {
 	}
 }
 
-func (k *KubeSim) deletePodFromNode(podNamespace, podName string) error {
+func (k *KubeSim) deletePodFromNode(podNamespace, podName string) {
 	key := util.PodKeyFromNames(podNamespace, podName)
 	k.boundPods[key].Delete(k.clock)
 
 	nodeName := k.boundPods[key].ToV1().Spec.NodeName
-	deletedFromNode, err := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)
-	if err != nil {
-		return err
-	}
+	deletedFromNode := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)
 
 	if !deletedFromNode {
 		//
 	}
-
-	return nil
 }
