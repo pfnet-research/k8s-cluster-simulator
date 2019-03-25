@@ -78,8 +78,8 @@ func (h *HumanReadableFormatter) formatNodesMetrics(metrics map[string]node.Metr
 	str := ""
 
 	for name, met := range metrics {
-		str += fmt.Sprintf("    %s: Pods %d(%d)/%d", name, met.RunningPodsNum, met.TerminatingPodsNum, met.Capacity.Pods().Value())
-		for rsrc, cap := range met.Capacity {
+		str += fmt.Sprintf("    %s: Pods %d(%d)/%d", name, met.RunningPodsNum, met.TerminatingPodsNum, met.Allocatable.Pods().Value())
+		for rsrc, alloc := range met.Allocatable {
 			if rsrc == "pods" {
 				continue
 			}
@@ -89,9 +89,9 @@ func (h *HumanReadableFormatter) formatNodesMetrics(metrics map[string]node.Metr
 
 			if rsrc == "memory" {
 				d := int64(1 << 20)
-				str += fmt.Sprintf(", memMB %d/%d/%d", usage.Value()/d, req.Value()/d, cap.Value()/d)
+				str += fmt.Sprintf(", memMB %d/%d/%d", usage.Value()/d, req.Value()/d, alloc.Value()/d)
 			} else {
-				str += fmt.Sprintf(", %s %d/%d/%d", rsrc, usage.Value(), req.Value(), cap.Value())
+				str += fmt.Sprintf(", %s %d/%d/%d", rsrc, usage.Value(), req.Value(), alloc.Value())
 			}
 		}
 

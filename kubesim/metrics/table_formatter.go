@@ -59,17 +59,17 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 	str := "Node             Pods   Termi- Failed Capa-  "
 	for _, r := range resourceTypes {
 		if r == "memory" {
-			str += "memory (MB)                "
+			str += "memory (MB)                   "
 		} else {
-			str += fmt.Sprintf("%-26s ", r)
+			str += fmt.Sprintf("%-29s ", r)
 		}
 	}
 	str += "\n"
 	str += "                        nating        city   "
 	line := ""
 	for range resourceTypes {
-		str += "Usage    Request  Capacity "
-		line += "---------------------------"
+		str += "Usage    Request  Allocatable "
+		line += "------------------------------"
 	}
 	str += "\n"
 	str += "---------------------------------------------" + line + "\n"
@@ -80,26 +80,26 @@ func (t *TableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (st
 
 		str += fmt.Sprintf(
 			"%-16s %-6d %-6d %-6d %-6d ",
-			node, met.RunningPodsNum, met.TerminatingPodsNum, met.FailedPodsNum, met.Capacity.Pods().Value())
+			node, met.RunningPodsNum, met.TerminatingPodsNum, met.FailedPodsNum, met.Allocatable.Pods().Value())
 
 		for _, rsrc := range resourceTypes {
 			r := v1.ResourceName(rsrc)
-			cap := met.Capacity[r]
+			alloc := met.Allocatable[r]
 			req := met.TotalResourceRequest[r]
 			usg := met.TotalResourceUsage[r]
 
-			capacity := cap.Value()
+			allocatable := alloc.Value()
 			requested := req.Value()
 			usage := usg.Value()
 
 			if rsrc == "memory" {
 				d := int64(1 << 20)
-				capacity /= d
+				allocatable /= d
 				requested /= d
 				usage /= d
 			}
 
-			str += fmt.Sprintf("%-8d %-8d %-8d ", usage, requested, capacity)
+			str += fmt.Sprintf("%-8d %-8d %-11d ", usage, requested, allocatable)
 		}
 
 		str += "\n"
@@ -179,7 +179,7 @@ func (t *TableFormatter) sortedNodeNamesAndResourceTypes(metrics map[string]node
 
 	for name, met := range metrics {
 		nodes = append(nodes, name)
-		for rsrc := range met.Capacity {
+		for rsrc := range met.Allocatable {
 			rsrcTypes[rsrc.String()] = void{}
 		}
 	}
