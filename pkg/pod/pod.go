@@ -34,7 +34,7 @@ type Pod struct {
 	node    string
 }
 
-// Metrics is a metrics of a pod at a time instance.
+// Metrics is a metrics of a pod at one time point.
 type Metrics struct {
 	ResourceRequest v1.ResourceList
 	ResourceLimit   v1.ResourceList
@@ -52,19 +52,21 @@ type Metrics struct {
 type Status int
 
 const (
-	// Ok indicates that the pod has been successfully bound to a node.
+	// Ok indicates that the pod has been successfully started on a node.
 	// Whether the pod is running or has spontaneously terminated is determined by its total
 	// execution time and the clock.
 	Ok Status = iota
+
 	// Deleted indicates that the pod has been deleted from the cluster.
-	// Whether the pod is terminating (during grace period) or has been deleted is determined by its
-	// grace period and the clock.
+	// Whether the pod is terminating (i.e., in its grace period) or has been deleted is determined
+	// by the length of its grace period and the clock.
 	Deleted
-	// OverCapacity indicates that the pod is failed to start due to capacity over.
+
+	// OverCapacity indicates that the pod failed to start due to over capacity.
 	OverCapacity
 )
 
-// String returns a string representation of this status.
+// String implements Stringer interface.
 func (status Status) String() string {
 	switch status {
 	case Ok:
@@ -79,13 +81,14 @@ func (status Status) String() string {
 	}
 }
 
-// MarshalJSON implements json.Marshaler.
+// MarshalJSON implements json.Marshaler interface.
 func (status Status) MarshalJSON() ([]byte, error) {
 	return json.Marshal(status.String())
 }
 
-// NewPod creates a pod with the v1.Pod definition, the starting time, and the status.
-// Returns error if it fails to parse the simulation spec of the pod.
+// NewPod creates a pod with the given v1.Pod, the clock at which the pod was bound to a node, and
+// the pod's status.
+// Returns error if fails to parse the simulation spec of the pod.
 func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
 	spec, err := parseSpec(pod)
 	if err != nil {
@@ -101,12 +104,12 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod,
 	}, nil
 }
 
-// ToV1 returns v1.Pod representation of this pod.
+// ToV1 returns v1.Pod representation of this Pod.
 func (pod *Pod) ToV1() *v1.Pod {
 	return pod.v1
 }
 
-// Metrics returns the Metrics at the time clock.
+// Metrics returns the Metrics of this Pod at the given clock.
 func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 	return Metrics{
 		ResourceRequest: pod.TotalResourceRequests(),
@@ -122,12 +125,12 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 	}
 }
 
-// TotalResourceRequests extracts the total amount of resource requested by this pod.
+// TotalResourceRequests extracts the total amount of resource requested by this Pod.
 func (pod *Pod) TotalResourceRequests() v1.ResourceList {
 	return util.PodTotalResourceRequests(pod.ToV1())
 }
 
-// TotalResourceLimits extracts the total of resource limits of this pod.
+// TotalResourceLimits extracts the total amount of resource limits of this Pod.
 func (pod *Pod) TotalResourceLimits() v1.ResourceList {
 	result := v1.ResourceList{}
 	for _, container := range pod.ToV1().Spec.Containers {
@@ -136,9 +139,10 @@ func (pod *Pod) TotalResourceLimits() v1.ResourceList {
 	return result
 }
 
-// ResourceUsage returns resource usage of the pod at the clock.
+// ResourceUsage returns resource usage of this Pod at the given clock.
 func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 	if !(pod.IsRunning(clock) || pod.IsTerminating(clock)) {
+		// pod is not using resource
 		return v1.ResourceList{}
 	}
 
@@ -155,24 +159,24 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 	return v1.ResourceList{}
 }
 
-// IsRunning returns whether the pod is running at the clock.
-// If the pod failed to be bound, false is returned.
+// IsRunning returns whether this Pod is running at the given clock.
+// Returns false if this Pod has failed to start.
 func (pod *Pod) IsRunning(clock clock.Clock) bool {
 	return pod.status == Ok && pod.executedDuration(clock) < pod.totalExecutionDuration()
 }
 
-// IsTerminated returns whether the pod is terminated at the clock.
-// If the pod failed to be bound, false is returned.
+// IsTerminated returns whether this Pod is terminated at the clock.
+// If this Pod failed to start, false is returned.
 func (pod *Pod) IsTerminated(clock clock.Clock) bool {
 	return pod.status == Ok && pod.executedDuration(clock) >= pod.totalExecutionDuration()
 }
 
-// IsTerminating returns whether the pod is terminating, during its grace period.
+// IsTerminating returns whether this Pod is terminating (i.e. in its grace period).
 func (pod *Pod) IsTerminating(clock clock.Clock) bool {
 	return pod.status == Deleted && !pod.IsDeleted(clock)
 }
 
-// IsDeleted returns whether the pod has been deleted.
+// IsDeleted returns whether this Pod has been deleted.
 func (pod *Pod) IsDeleted(clk clock.Clock) bool {
 	gp := int64(v1.DefaultTerminationGracePeriodSeconds)
 	if pod.v1.Spec.TerminationGracePeriodSeconds != nil {
@@ -183,7 +187,7 @@ func (pod *Pod) IsDeleted(clk clock.Clock) bool {
 		clk.Sub(clock.NewClockWithMetaV1(*pod.ToV1().DeletionTimestamp)) >= time.Duration(gp)*time.Second
 }
 
-// Delete starts deleting this pod.
+// Delete starts to delete this Pod.
 func (pod *Pod) Delete(clock clock.Clock) {
 	if pod.IsTerminated(clock) || pod.status == Deleted {
 		return
@@ -196,31 +200,28 @@ func (pod *Pod) Delete(clock clock.Clock) {
 	pod.ToV1().DeletionTimestamp = &deletedAt
 }
 
-// IsBindingFailed returns whether the pod failed to be bound to a node.
-func (pod *Pod) IsBindingFailed() bool {
+// HasFailedToStart returns whether this Pod has failed to start to a node.
+func (pod *Pod) HasFailedToStart() bool {
 	return pod.status == OverCapacity
 }
 
-// BuildStatus builds a status of this pod at the clock.
-// Assuming that this pod has not been deleted (but it can be terminating during its grace period).
+// BuildStatus builds a status of this Pod at the given clock, assuming that this Pod has not been
+// deleted (but it can be terminating).
 func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 	status := pod.ToV1().Status
 
 	switch pod.status {
 	case OverCapacity:
 		status.Phase = v1.PodFailed
-		// status.Conditions
+		// status.Conditions =
 		status.Reason = "CapacityExceeded"
 		status.Message = "Pod cannot be started due to the requested resource exceeds the capacity"
-	case Ok:
-		fallthrough
-	case Deleted:
+	case Ok, Deleted:
 		startTime := pod.boundAt.ToMetaV1()
-
 		status.StartTime = &startTime
 
 		var containerState v1.ContainerState
-		if pod.IsRunning(clock) || pod.IsTerminating(clock) { // TODO?
+		if pod.IsRunning(clock) || pod.IsTerminating(clock) {
 			status.Phase = v1.PodRunning
 			containerState = v1.ContainerState{
 				Running: &v1.ContainerStateRunning{
@@ -235,7 +236,7 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 					Reason:     "Succeeded",
 					Message:    "All containers in the pod have voluntarily terminated",
 					StartedAt:  startTime,
-					FinishedAt: pod.finishClock().ToMetaV1(),
+					FinishedAt: pod.finishAt().ToMetaV1(),
 					// ContainerID:
 				}}
 		}
@@ -271,8 +272,8 @@ func (pod *Pod) BuildStatus(clock clock.Clock) v1.PodStatus {
 	return status
 }
 
-// executedDuration returns elapsed duration after the pod started, assuming it has not been
-// deleted. Returns 0 if the pod was failed to be bound.
+// executedDuration returns the elapsed duration after this Pod started.
+// Returns 0 if the pod failed to start.
 func (pod *Pod) executedDuration(clock clock.Clock) time.Duration {
 	switch pod.status {
 	case Ok:
@@ -289,7 +290,7 @@ func (pod *Pod) executedDuration(clock clock.Clock) time.Duration {
 	}
 }
 
-// totalExecutionDuration returns total duration of the pod.
+// totalExecutionDuration returns the total execution duration of this Pod.
 func (pod *Pod) totalExecutionDuration() time.Duration {
 	phaseSecondsTotal := int32(0)
 	for _, phase := range pod.spec {
@@ -298,7 +299,7 @@ func (pod *Pod) totalExecutionDuration() time.Duration {
 	return time.Duration(phaseSecondsTotal) * time.Second
 }
 
-// finishClock returns the clock at which this pod will finish.
-func (pod *Pod) finishClock() clock.Clock {
+// finishAt returns the clock at which this Pod will finish spontaneously.
+func (pod *Pod) finishAt() clock.Clock {
 	return pod.boundAt.Add(pod.totalExecutionDuration())
 }

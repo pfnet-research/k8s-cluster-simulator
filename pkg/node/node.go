@@ -74,7 +74,7 @@ func (node *Node) Metrics(clock clock.Clock) Metrics {
 }
 
 // BindPod accepts the given pod and try to start it.
-// The pod will fail to be bound if there is not sufficient resources.
+// The pod will fail to be started if there is not sufficient resources.
 // Returns the bound pod in pod.Pod representation, or error if the pod has invalid name or failed
 // to create a simulated pod.
 func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
@@ -118,7 +118,7 @@ func (node *Node) DeletePod(clock clock.Clock, podNamespace, podName string) boo
 }
 
 // Pod returns the *pod.Pod by name that was accepted on this node.
-// The returned pod may have failed to be bound.
+// The returned pod may have failed to be started.
 // Returns nil if the pod is not found.
 func (node *Node) Pod(namespace, name string) *pod.Pod {
 	key := util.PodKeyFromNames(namespace, name)
@@ -132,7 +132,7 @@ func (node *Node) Pod(namespace, name string) *pod.Pod {
 
 // PodList returns a list of all pods that were accepted on this Node and not terminated nor
 // deleted.
-// Each of the returned pods may have failed to be bound.
+// Each of the returned pods may have failed to be started.
 func (node *Node) PodList() []*pod.Pod {
 	podList := make([]*pod.Pod, 0, len(node.pods))
 	for _, pod := range node.pods {
@@ -208,11 +208,11 @@ func (node *Node) terminatingPodsNum(clock clock.Clock) int64 {
 	return num
 }
 
-// bindingFailedPodsNum returns the number of pods that failed to be bound to this Node.
+// bindingFailedPodsNum returns the number of pods that failed to be started on this Node.
 func (node *Node) bindingFailedPodsNum() int64 {
 	num := int64(0)
 	for _, pod := range node.pods {
-		if pod.IsBindingFailed() {
+		if pod.HasFailedToStart() {
 			num++
 		}
 	}
