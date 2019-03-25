@@ -15,7 +15,7 @@ test:
 
 .PHONY: run-example
 run-example:
-	go run $(shell go list ./example/...) --config example/config_sample
+	go run $(shell go list ./example/...) --config example/config
 
 .PHONY: test-example
 test-example:

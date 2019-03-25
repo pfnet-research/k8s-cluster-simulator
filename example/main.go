@@ -12,10 +12,10 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
+	"github.com/ordovicia/k8s-cluster-simulator/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/scheduler"
-	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 func main() {
@@ -24,12 +24,12 @@ func main() {
 	}
 }
 
-// configPath is the path of the config file, defaulting to "config_sample".
+// configPath is the path of the config file, defaulting to "config".
 var configPath string
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(
-		&configPath, "config", "config_sample", "config file (exclusing file extension)")
+		&configPath, "config", "config", "config file (exclusing file extension)")
 }
 
 var rootCmd = &cobra.Command{

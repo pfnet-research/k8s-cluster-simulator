@@ -20,11 +20,13 @@ metricsTick: 60
 metricsFile:
 - path: kubesim.log
   formatter: JSON
+- path: kubesim-hr.log
+  formatter: humanReadable
 
 # Metrics is (also) written to stdout.
 # Optional (default: not writing metrics to stdout)
 metricsStdout:
-  formatter: humanReadable
+  formatter: table
 
 # Write configuration of each node.
 cluster:
