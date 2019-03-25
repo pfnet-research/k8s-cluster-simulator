@@ -37,6 +37,8 @@ type Config struct {
 	Cluster       []NodeConfig
 }
 
+// Made public to be parsed from YAML.
+
 type MetricsFileConfig struct {
 	Path      string
 	Formatter string
@@ -57,7 +59,7 @@ type NodeStatus struct {
 }
 
 // BuildMetricsFile builds metrics.FileWriter with the given MetricsFileConfig.
-// Returns error if the config is invalid, failed to parse, or failed to create a FileWriter.
+// Returns error if the config is invalid or failed to create a FileWriter.
 func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
 	writers := make([]*metrics.FileWriter, 0, len(conf))
 
@@ -86,7 +88,7 @@ func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
 }
 
 // BuildMetricsStdout builds a metrics.StdoutWriter with the given MetricsStdoutConfig.
-// Returns error if parsing failed.
+// Returns error if failed to parse.
 func BuildMetricsStdout(conf MetricsStdoutConfig) (*metrics.StdoutWriter, error) {
 	if conf.Formatter == "" {
 		return nil, nil
@@ -114,8 +116,8 @@ func buildFormatter(conf string) (metrics.Formatter, error) {
 	}
 }
 
-// BuildNode builds a *v1.Node with the given node config.
-// Returns error if the parsing fails.
+// BuildNode builds a *v1.Node with the given NodeConfig.
+// Returns error if failed to parse.
 func BuildNode(conf NodeConfig, startClock string) (*v1.Node, error) {
 	allocatable, err := util.BuildResourceList(conf.Status.Allocatable)
 	if err != nil {
