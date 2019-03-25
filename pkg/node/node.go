@@ -30,7 +30,7 @@ type Node struct {
 	pods map[string]*pod.Pod
 }
 
-// Metrics is a metrics of a node at a time instance.
+// Metrics is a metrics of a Node at one point of time.
 type Metrics struct {
 	Allocatable          v1.ResourceList
 	RunningPodsNum       int64
@@ -40,7 +40,7 @@ type Metrics struct {
 	TotalResourceUsage   v1.ResourceList
 }
 
-// NewNode creates a new node with the v1.Node definition.
+// NewNode creates a new Node with the given v1.Node.
 func NewNode(node *v1.Node) Node {
 	return Node{
 		v1:   node,
@@ -48,12 +48,12 @@ func NewNode(node *v1.Node) Node {
 	}
 }
 
-// ToV1 returns v1.Node representation of this node.
+// ToV1 returns *v1.Node representation of this Node.
 func (node *Node) ToV1() *v1.Node {
 	return node.v1
 }
 
-// ToNodeInfo creates nodeinfo.NodeInfo object from this node.
+// ToNodeInfo creates *nodeinfo.NodeInfo object from this Node.
 func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
 	pods := node.runningAndTerminatingPodsV1WithStatus(clock)
 	nodeInfo := nodeinfo.NewNodeInfo(pods...)
@@ -61,7 +61,7 @@ func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
 	return nodeInfo
 }
 
-// Metrics returns the Metrics at the time clock.
+// Metrics returns the Metrics of this Node at the given clock.
 func (node *Node) Metrics(clock clock.Clock) Metrics {
 	return Metrics{
 		Allocatable:          node.ToV1().Status.Allocatable,
@@ -73,8 +73,10 @@ func (node *Node) Metrics(clock clock.Clock) Metrics {
 	}
 }
 
-// BindPod accepts the definition of a pod and try to start it. The pod will fail to be bound if
-// there is not sufficient resources. Returns the bound pod in pod.Pod representation.
+// BindPod accepts the given pod and try to start it.
+// The pod will fail to be bound if there is not sufficient resources.
+// Returns the bound pod in pod.Pod representation, or error if the pod has invalid name or failed
+// to create a simulated pod.
 func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 	key, err := util.PodKey(v1Pod)
 	if err != nil {
@@ -83,6 +85,7 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 
 	log.L.Tracef("Node %s: Pod %s bound", node.ToV1().Name, key)
 
+	// Check node capacity
 	newTotalReq := util.ResourceListSum(node.totalResourceRequest(clock), util.PodTotalResourceRequests(v1Pod))
 	allocatable := node.ToV1().Status.Allocatable
 	var podStatus pod.Status
@@ -93,29 +96,30 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 		podStatus = pod.Ok
 	}
 
+	// Create simulated pod
 	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name)
 	if err != nil {
 		return nil, err
 	}
-
 	v1Pod.Status = simPod.BuildStatus(clock)
-
 	node.pods[key] = simPod
+
 	return simPod, nil
 }
 
-// DeletePod start deleting the pod from this node. Returns true if the pod is found in this node, or
-// false otherwise.
-func (node *Node) DeletePod(clock clock.Clock, podNamespace, podName string) (bool, error) {
+// DeletePod start deleting the given pod from this Node.
+// Returns true if the pod is found in this Node, or false otherwise.
+func (node *Node) DeletePod(clock clock.Clock, podNamespace, podName string) bool {
 	key := util.PodKeyFromNames(podNamespace, podName)
 	pod, ok := node.pods[key]
 	pod.Delete(clock)
 
-	return ok, nil
+	return ok
 }
 
-// Pod returns the *pod.Pod by name that was accepted on this node. The returned pod may have
-// failed to be bound. Returns nil if the pod is not found.
+// Pod returns the *pod.Pod by name that was accepted on this node.
+// The returned pod may have failed to be bound.
+// Returns nil if the pod is not found.
 func (node *Node) Pod(namespace, name string) *pod.Pod {
 	key := util.PodKeyFromNames(namespace, name)
 	pod, ok := node.pods[key]
@@ -126,8 +130,9 @@ func (node *Node) Pod(namespace, name string) *pod.Pod {
 	return pod
 }
 
-// PodList returns the list of all pods that were accepted on this node. Each of the returned pods
-// may have failed to be bound.
+// PodList returns a list of all pods that were accepted on this Node and not terminated nor
+// deleted.
+// Each of the returned pods may have failed to be bound.
 func (node *Node) PodList() []*pod.Pod {
 	podList := make([]*pod.Pod, 0, len(node.pods))
 	for _, pod := range node.pods {
@@ -137,12 +142,12 @@ func (node *Node) PodList() []*pod.Pod {
 	return podList
 }
 
-// PodsNum returns the number of all running or terminating pods at the time clock.
+// PodsNum returns the number of all running or terminating pods on this Node at the given clock.
 func (node *Node) PodsNum(clock clock.Clock) int64 {
 	return node.runningPodsNum(clock) + node.terminatingPodsNum(clock)
 }
 
-// GCTerminatedPods deletes terminated pods at the time clock from this node.
+// GCTerminatedPods deletes terminated or deleted pods at the given clock from this Node.
 func (node *Node) GCTerminatedPods(clock clock.Clock) {
 	for name, pod := range node.pods {
 		if pod.IsTerminated(clock) || pod.IsDeleted(clock) {
@@ -151,8 +156,8 @@ func (node *Node) GCTerminatedPods(clock clock.Clock) {
 	}
 }
 
-// runningAndTerminatingPodsV1WithStatus returns all running and terminating pods in *v1.Pod
-// representation at the time clock, with their status updated.
+// runningAndTerminatingPodsV1WithStatus returns all running or terminating pods on this Node in
+// *v1.Pod representation at the given clock, with their status updated.
 func (node *Node) runningAndTerminatingPodsV1WithStatus(clock clock.Clock) []*v1.Pod {
 	podList := []*v1.Pod{}
 	for _, pod := range node.pods {
@@ -166,8 +171,8 @@ func (node *Node) runningAndTerminatingPodsV1WithStatus(clock clock.Clock) []*v1
 	return podList
 }
 
-// totalResourceRequest calculates the total resource request (not usage) of all running and
-// terminating pods at the time clock.
+// totalResourceRequest calculates the total resource request (not usage) of all running or
+// terminating pods on this Node at the given clock.
 func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	for _, pod := range node.pods {
@@ -179,7 +184,7 @@ func (node *Node) totalResourceRequest(clock clock.Clock) v1.ResourceList {
 	return total
 }
 
-// runningPodsNum returns the number of all running pods at the time clock.
+// runningPodsNum returns the number of all running pods no this Node at the given clock.
 func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	num := int64(0)
 	for _, pod := range node.pods {
@@ -191,7 +196,7 @@ func (node *Node) runningPodsNum(clock clock.Clock) int64 {
 	return num
 }
 
-// terminatingPodsNum returns the number of all terminating pods at the time clock.
+// terminatingPodsNum returns the number of all terminating pods no this Node at the given clock.
 func (node *Node) terminatingPodsNum(clock clock.Clock) int64 {
 	num := int64(0)
 	for _, pod := range node.pods {
@@ -203,7 +208,7 @@ func (node *Node) terminatingPodsNum(clock clock.Clock) int64 {
 	return num
 }
 
-// bindingFailedPodsNum returns the number of pods that failed to be bound to this node.
+// bindingFailedPodsNum returns the number of pods that failed to be bound to this Node.
 func (node *Node) bindingFailedPodsNum() int64 {
 	num := int64(0)
 	for _, pod := range node.pods {
@@ -215,8 +220,8 @@ func (node *Node) bindingFailedPodsNum() int64 {
 	return num
 }
 
-// totalResourceUsage calculates the total resource usage of all running and terminating pods at
-// the time clock.
+// totalResourceUsage calculates the total resource usage (not request) of all running or
+// terminating pods at the given clock.
 func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 	total := v1.ResourceList{}
 	for _, pod := range node.pods {
