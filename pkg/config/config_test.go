@@ -27,15 +27,15 @@ import (
 )
 
 func TestBuildMetricsFile(t *testing.T) {
-	actual, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "",
 		Formatter: "",
 	}})
-	if actual != nil || err != nil {
-		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
+	if err == nil {
+		t.Errorf("got: nil\nwant: error")
 	}
 
-	actual, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "",
 		Formatter: "foo",
 	}})
@@ -43,25 +43,11 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Errorf("got: nil\nwant: error")
 	}
 
-	actual, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "foo",
 		Formatter: "",
 	}})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
-	}
-
-	actual, err = BuildMetricsFile([]MetricsFileConfig{
-		MetricsFileConfig{
-			Path:      "",
-			Formatter: "",
-		},
-		MetricsFileConfig{
-			Path:      "",
-			Formatter: "",
-		},
-	})
-	if err != nil {
 		t.Errorf("got: nil\nwant: error")
 	}
 }
@@ -90,10 +76,22 @@ func TestBuildMetricsStdout(t *testing.T) {
 }
 
 func TestBuildFormatter(t *testing.T) {
-	actual, _ := buildFormatter("JSON")
-	expected := &metrics.JSONFormatter{}
-	if actual != expected {
-		t.Errorf("got: %+v\nwant: %+v", actual, expected)
+	actual0, _ := buildFormatter("JSON")
+	expected0 := &metrics.JSONFormatter{}
+	if actual0 != expected0 {
+		t.Errorf("got: %+v\nwant: %+v", actual0, expected0)
+	}
+
+	actual1, _ := buildFormatter("humanReadable")
+	expected1 := &metrics.HumanReadableFormatter{}
+	if actual1 != expected1 {
+		t.Errorf("got: %+v\nwant: %+v", actual1, expected1)
+	}
+
+	actual2, _ := buildFormatter("table")
+	expected2 := &metrics.TableFormatter{}
+	if actual2 != expected2 {
+		t.Errorf("got: %+v\nwant: %+v", actual2, expected2)
 	}
 
 	_, err := buildFormatter("Invalid")
