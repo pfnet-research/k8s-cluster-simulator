@@ -64,11 +64,8 @@ func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
 	writers := make([]*metrics.FileWriter, 0, len(conf))
 
 	for _, conf := range conf {
-		if conf.Path == "" && conf.Formatter == "" {
-			return nil, nil
-		}
-		if conf.Path == "" || conf.Formatter == "" {
-			return nil, strongerrors.InvalidArgument(errors.New("either metricsFile.Path or metricsFile.Formatter not given"))
+		if conf.Path == "" {
+			return nil, strongerrors.InvalidArgument(errors.New("empty metricsFile.Path"))
 		}
 
 		formatter, err := buildFormatter(conf.Formatter)
