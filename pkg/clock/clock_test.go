@@ -23,14 +23,21 @@ import (
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
 )
 
-func TestClockToMetaV1(t *testing.T) {
-	now := time.Now()
+func TestClockNewClockAndToMetaV1(t *testing.T) {
+	stdTime := time.Now()
+	metaV1Time := metav1.NewTime(stdTime)
 
-	actual := metav1.NewTime(now)
-	expected := clock.NewClock(now).ToMetaV1()
+	simTimeFromStd := clock.NewClock(stdTime)
+	simTimeFromMetaV1 := clock.NewClockWithMetaV1(metaV1Time)
 
-	if actual != expected {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+	expected := simTimeFromStd.ToMetaV1()
+	if metaV1Time != expected {
+		t.Errorf("got: %v\nwant: %v", metaV1Time, expected)
+	}
+
+	expected = simTimeFromMetaV1.ToMetaV1()
+	if metaV1Time != expected {
+		t.Errorf("got: %v\nwant: %v", metaV1Time, expected)
 	}
 }
 
@@ -48,16 +55,31 @@ func TestClockAdd(t *testing.T) {
 }
 
 func TestClockSub(t *testing.T) {
-	tm, _ := time.Parse(time.RFC3339, "2018-01-01T12:30:15+09:00")
-	clk := clock.NewClock(tm)
+	time0, _ := time.Parse(time.RFC3339, "2018-01-01T12:30:15+09:00")
+	clock0 := clock.NewClock(time0)
 
-	tm2, _ := time.Parse(time.RFC3339, "2018-01-01T00:00:00+09:00")
-	clk2 := clock.NewClock(tm2)
+	time1, _ := time.Parse(time.RFC3339, "2018-01-01T00:00:00+09:00")
+	clock1 := clock.NewClock(time1)
 
-	actual := clk.Sub(clk2)
+	actual := clock0.Sub(clock1)
 	expected, _ := time.ParseDuration("12h30m15s")
 
 	if actual != expected {
 		t.Errorf("got: %v\nwant: %v", actual, expected)
+	}
+}
+
+func TestClockBefore(t *testing.T) {
+	time0, _ := time.Parse(time.RFC3339, "2018-01-01T00:00:00+09:00")
+	clock0 := clock.NewClock(time0)
+
+	time1, _ := time.Parse(time.RFC3339, "2018-01-01T12:30:15+09:00")
+	clock1 := clock.NewClock(time1)
+
+	if !clock0.Before(clock1) {
+		t.Errorf("got: true\nwant: false")
+	}
+	if clock1.Before(clock0) {
+		t.Errorf("got: false\nwant: true")
 	}
 }
