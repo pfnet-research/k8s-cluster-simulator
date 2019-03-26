@@ -25,13 +25,23 @@ type FileWriter struct {
 }
 
 // NewFileWriter creates a new FileWriter with a file at the given path, and the formatter that
-// formats metrics to a string.
-// If the file exists, it will be truncaed.
+// formats metrics to a string
+// If /dev/stdout or empty string is given, the standard out is set.
+// If /dev/stderr is given, the standard error is set.
+// Otherwise, the file of a given path is set and it will be truncated if it exists.
 // Returns error if failed to create a file.
 func NewFileWriter(path string, formatter Formatter) (*FileWriter, error) {
-	file, err := os.Create(path)
-	if err != nil {
-		return nil, err
+	var file *os.File
+	if path == "/dev/stdout" || path == "" {
+		file = os.Stdout
+	} else if path == "/dev/stderr" {
+		file = os.Stderr
+	} else {
+		f, err := os.Create(path)
+		if err != nil {
+			return nil, err
+		}
+		file = f
 	}
 
 	return &FileWriter{

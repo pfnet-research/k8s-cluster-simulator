@@ -26,8 +26,8 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 )
 
-func TestBuildMetricsFile(t *testing.T) {
-	_, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+func TestBuildMetricsLogger(t *testing.T) {
+	_, err := BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
 		Path:      "",
 		Formatter: "",
 	}})
@@ -35,7 +35,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
 		Path:      "",
 		Formatter: "foo",
 	}})
@@ -43,35 +43,12 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
 		Path:      "foo",
 		Formatter: "",
 	}})
 	if err == nil {
 		t.Error("nil error")
-	}
-}
-
-func TestBuildMetricsStdout(t *testing.T) {
-	actual, err := BuildMetricsStdout(MetricsStdoutConfig{
-		Formatter: "",
-	})
-	if actual != nil || err != nil {
-		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
-	}
-
-	_, err = BuildMetricsStdout(MetricsStdoutConfig{
-		Formatter: "foo",
-	})
-	if err == nil {
-		t.Error("nil error")
-	}
-
-	_, err = BuildMetricsStdout(MetricsStdoutConfig{
-		Formatter: "JSON",
-	})
-	if err != nil {
-		t.Errorf("error %s", err.Error())
 	}
 }
 
