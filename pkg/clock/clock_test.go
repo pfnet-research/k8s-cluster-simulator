@@ -32,12 +32,12 @@ func TestClockNewClockAndToMetaV1(t *testing.T) {
 
 	expected := simTimeFromStd.ToMetaV1()
 	if metaV1Time != expected {
-		t.Errorf("got: %v\nwant: %v", metaV1Time, expected)
+		t.Errorf("got: %+v\nwant: %+v", metaV1Time, expected)
 	}
 
 	expected = simTimeFromMetaV1.ToMetaV1()
 	if metaV1Time != expected {
-		t.Errorf("got: %v\nwant: %v", metaV1Time, expected)
+		t.Errorf("got: %+v\nwant: %+v", metaV1Time, expected)
 	}
 }
 
@@ -50,7 +50,7 @@ func TestClockAdd(t *testing.T) {
 	expected := clock.NewClock(now.Add(dur))
 
 	if actual != expected {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
 
@@ -65,7 +65,7 @@ func TestClockSub(t *testing.T) {
 	expected, _ := time.ParseDuration("12h30m15s")
 
 	if actual != expected {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
 

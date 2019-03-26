@@ -32,7 +32,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		Formatter: "",
 	}})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
 	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
@@ -40,7 +40,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		Formatter: "foo",
 	}})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
 	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
@@ -48,7 +48,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		Formatter: "",
 	}})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 }
 
@@ -64,14 +64,14 @@ func TestBuildMetricsStdout(t *testing.T) {
 		Formatter: "foo",
 	})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
 	_, err = BuildMetricsStdout(MetricsStdoutConfig{
 		Formatter: "JSON",
 	})
 	if err != nil {
-		t.Errorf("got: %+v\nwant: metrics.StdoutWriter", err)
+		t.Errorf("error %s", err.Error())
 	}
 }
 
@@ -96,7 +96,7 @@ func TestBuildFormatter(t *testing.T) {
 
 	_, err := buildFormatter("Invalid")
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 }
 
@@ -204,6 +204,6 @@ func TestBuildNodeConfig(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }

@@ -39,7 +39,7 @@ func TestParseSpec(t *testing.T) {
 
 	_, err := parseSpec(pod)
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
 	pod = &v1.Pod{
@@ -60,7 +60,7 @@ func TestParseSpec(t *testing.T) {
 
 	actual, err := parseSpec(pod)
 	if err != nil {
-		t.Errorf("got: error %s", err.Error())
+		t.Errorf("error %s", err.Error())
 	}
 
 	expected := specPhase{
@@ -73,7 +73,7 @@ func TestParseSpec(t *testing.T) {
 	}
 
 	if specPhaseNE(expected, actual[0]) {
-		t.Errorf("got: %v\nwant: %v", actual[0], expected)
+		t.Errorf("got: %+v\nwant: %+v", actual[0], expected)
 	}
 }
 
@@ -93,7 +93,7 @@ func TestParseSpecYAML(t *testing.T) {
 
 	actual, err := parseSpecYAML(yamlStr)
 	if err != nil {
-		t.Errorf("got: error %s", err.Error())
+		t.Errorf("error %s", err.Error())
 	}
 
 	expected := specPhase{
@@ -106,7 +106,7 @@ func TestParseSpecYAML(t *testing.T) {
 	}
 
 	if specPhaseNE(expected, actual[0]) {
-		t.Errorf("got: %v\nwant: %v", actual[0], expected)
+		t.Errorf("got: %+v\nwant: %+v", actual[0], expected)
 	}
 
 	expected = specPhase{
@@ -119,7 +119,7 @@ func TestParseSpecYAML(t *testing.T) {
 	}
 
 	if specPhaseNE(expected, actual[1]) {
-		t.Errorf("got: %v\nwant: %v", actual[1], expected)
+		t.Errorf("got: %+v\nwant: %+v", actual[1], expected)
 	}
 
 	yamlStrInvalid := `
@@ -136,6 +136,6 @@ func TestParseSpecYAML(t *testing.T) {
 `
 	_, err = parseSpecYAML(yamlStrInvalid)
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 }
