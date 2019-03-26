@@ -37,11 +37,7 @@ func (fifo *FIFOQueue) Push(pod *v1.Pod) error {
 }
 
 func (fifo *FIFOQueue) Pop() (*v1.Pod, error) {
-	for {
-		if len(fifo.queue) == 0 {
-			return nil, ErrEmptyQueue
-		}
-
+	for len(fifo.queue) > 0 {
 		var key string
 		key, fifo.queue = fifo.queue[0], fifo.queue[1:]
 		if pod, ok := fifo.pods[key]; ok {
@@ -49,20 +45,20 @@ func (fifo *FIFOQueue) Pop() (*v1.Pod, error) {
 			return pod, nil
 		}
 	}
-}
 
-func (fifo *FIFOQueue) Front() (*v1.Pod, error) {
-	for {
-		if len(fifo.queue) == 0 {
 			return nil, ErrEmptyQueue
 		}
 
+func (fifo *FIFOQueue) Front() (*v1.Pod, error) {
+	for len(fifo.queue) > 0 {
 		key := fifo.queue[0]
 		if pod, ok := fifo.pods[key]; ok {
 			return pod, nil
 		}
 		fifo.queue = fifo.queue[1:]
 	}
+
+	return nil, ErrEmptyQueue
 }
 
 func (fifo *FIFOQueue) Delete(podNamespace, podName string) (bool, error) {
