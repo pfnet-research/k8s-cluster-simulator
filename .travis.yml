@@ -9,4 +9,4 @@ script:
 - make test coverage
 # - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
 - make test-example
-- make check-license
+# - make check-license
