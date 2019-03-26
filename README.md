@@ -4,7 +4,7 @@ Kubernetes cluster simulator for evaluating schedulers.
 
 ## Usage
 
-See [examples](examples) directory.
+See [example](example) directory.
 
 ```go
 // 1. Create a KubeSim with a pod queue and a scheduler.
@@ -74,7 +74,7 @@ func buildScheduler() scheduler.Scheduler {
 
 ### Pod submitter interface
 
-See [kubesim/submitter/submitter.go](kubesim/submitter/submitter.go) and [kubesim/scheduler/scheduler.go](kubesim/scheduler/scheduler.go).
+See [pkg/submitter/submitter.go](pkg/submitter/submitter.go) and [pkg/scheduler/scheduler.go](pkg/scheduler/scheduler.go).
 
 ```go
 type Submitter interface {
