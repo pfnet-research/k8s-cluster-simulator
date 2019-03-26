@@ -25,3 +25,7 @@ test-example:
 coverage:
 	go test -covermode=count -coverprofile=profile.cov $(shell go list ./... | grep -v /vendor/)
 	go tool cover -func=profile.cov
+
+.PHONY: check-license
+check-license:
+	./scripts/check_license.sh
