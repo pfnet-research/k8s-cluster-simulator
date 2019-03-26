@@ -11,9 +11,9 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
-	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 // selectHost was copied from "k8s.io/kubernetes/pkg/scheduler/core".selectHost().
