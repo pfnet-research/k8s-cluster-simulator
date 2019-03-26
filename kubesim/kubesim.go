@@ -186,7 +186,8 @@ func readConfig(path string) (*config.Config, error) {
 func configLog(logLevel string) error {
 	level, err := log.ParseLevel(logLevel) // if logLevel == "", level <- info
 	if err != nil {
-		return strongerrors.InvalidArgument(errors.Errorf("Log level %q not supported: %s", level, err.Error()))
+		return strongerrors.InvalidArgument(
+			errors.Errorf("Log level %q not supported: %s", level, err.Error()))
 	}
 	logrus.SetLevel(level)
 
@@ -294,12 +295,10 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 
 				k.pendingPods.Push(pod)
 			} else if del, ok := e.(*submitter.DeleteEvent); ok {
-				log.L.Debugf("Submitter %s: Delete %s", name, util.PodKeyFromNames(del.PodNamespace, del.PodName))
+				log.L.Debugf("Submitter %s: Delete %s",
+					name, util.PodKeyFromNames(del.PodNamespace, del.PodName))
 
-				deletedFromQueue, err := k.pendingPods.Delete(del.PodNamespace, del.PodName)
-				if err != nil {
-					return err
-				}
+				deletedFromQueue := k.pendingPods.Delete(del.PodNamespace, del.PodName)
 
 				if !deletedFromQueue {
 					if err := k.deletePodFromNode(del.PodNamespace, del.PodName); err != nil {
@@ -307,16 +306,17 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 					}
 				}
 			} else if up, ok := e.(*submitter.UpdateEvent); ok {
-				log.L.Tracef("Submitter %s: Update %s to %v", name, util.PodKeyFromNames(up.PodNamespace, up.PodName), up.NewPod)
-				log.L.Debugf("Submitter %s: Update %s", name, util.PodKeyFromNames(up.PodNamespace, up.PodName))
+				log.L.Tracef("Submitter %s: Update %s to %v",
+					name, util.PodKeyFromNames(up.PodNamespace, up.PodName), up.NewPod)
+				log.L.Debugf("Submitter %s: Update %s",
+					name, util.PodKeyFromNames(up.PodNamespace, up.PodName))
 
-				updatedInQueue, err := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod)
-				if err != nil {
-					return err
-				}
-
-				if !updatedInQueue {
-					//
+				if err := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod); err != nil {
+					if e, ok := err.(*queue.ErrNoMatchingPod); ok {
+						log.L.Warnf("Error updating pod: %s", e.Error())
+					} else {
+						return err
+					}
 				}
 			} else if _, ok := e.(*submitter.TerminateSubmitterEvent); ok {
 				log.L.Debugf("Submitter %s: Terminate", name)
