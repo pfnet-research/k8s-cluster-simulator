@@ -31,9 +31,9 @@ type PodQueue interface {
 	// ErrEmptyQueue if the queue is empty.
 	Front() (*v1.Pod, error)
 
-	// Delete deletes the pod from this queue. Returns true if the pod is found, or false
-	// otherwise.
-	Delete(podNamespace, podName string) (bool, error)
+	// Delete deletes the pod from this PodQueue.
+	// Returns true if the pod is found, or false otherwise.
+	Delete(podNamespace, podName string) bool
 
 	// Update updates the pod to the newPod.
 	// The original and new pods must have the same namespace/name. Otherwise this methods returns

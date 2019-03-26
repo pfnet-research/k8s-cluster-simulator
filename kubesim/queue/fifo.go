@@ -61,13 +61,12 @@ func (fifo *FIFOQueue) Front() (*v1.Pod, error) {
 	return nil, ErrEmptyQueue
 }
 
-func (fifo *FIFOQueue) Delete(podNamespace, podName string) (bool, error) {
+func (fifo *FIFOQueue) Delete(podNamespace, podName string) bool {
 	key := util.PodKeyFromNames(podNamespace, podName)
-
 	_, ok := fifo.pods[key]
 	delete(fifo.pods, key)
 
-	return ok, nil
+	return ok
 }
 
 func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {

@@ -72,7 +72,7 @@ func (pq *PriorityQueue) Front() (*v1.Pod, error) {
 	return pq.inner.items[pq.inner.keys[0]].pod, nil
 }
 
-func (pq *PriorityQueue) Delete(podNamespace, podName string) (bool, error) {
+func (pq *PriorityQueue) Delete(podNamespace, podName string) bool {
 	key := util.PodKeyFromNames(podNamespace, podName)
 	item, ok := pq.inner.items[key]
 	if ok {
@@ -84,7 +84,7 @@ func (pq *PriorityQueue) Delete(podNamespace, podName string) (bool, error) {
 		delete(pq.inner.items, key)        // 	these two lines
 	}
 
-	return ok, nil
+	return ok
 }
 
 func (pq *PriorityQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {
