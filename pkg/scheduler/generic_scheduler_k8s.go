@@ -1,9 +1,44 @@
+/*
+Copyright 2014 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Modifications copyright (C) 2019 Preferred Networks, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// All functions in this file were copied from
+// k8s.io/kubernetes/pkg/scheduler/core/generic_scheduler.go by the authors of
+// k8s-cluster-simulator, and modified so that they would be compatible with k8s-cluster-simulator.
+
 package scheduler
 
 import (
 	"errors"
 	"math"
 
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/api"
@@ -11,12 +46,11 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
+	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
 )
 
-// selectHost was copied from "k8s.io/kubernetes/pkg/scheduler/core".selectHost().
 func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (string, error) {
 	if len(priorities) == 0 {
 		return "", errors.New("Empty priorities")
@@ -29,7 +63,6 @@ func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (stri
 	return priorities[maxScores[idx]].Host, nil
 }
 
-// findMaxScores was copied from "k8s.io/kubernetes/pkg/scheduler/core".findMaxScores().
 func findMaxScores(priorities api.HostPriorityList) []int {
 	maxScoreIndexes := make([]int, 0, len(priorities)/2)
 	maxScore := priorities[0].Score
@@ -47,7 +80,6 @@ func findMaxScores(priorities api.HostPriorityList) []int {
 	return maxScoreIndexes
 }
 
-// podEligibleToPreemptOthers is copied from "k8s.io/kubernetes/pkg/scheduler/core".podEligibleToPreemptOthers
 func podEligibleToPreemptOthers(preemptor *v1.Pod, nodeInfoMap map[string]*nodeinfo.NodeInfo) bool {
 	nomNodeName := preemptor.Status.NominatedNodeName
 	if len(nomNodeName) > 0 {
@@ -64,7 +96,6 @@ func podEligibleToPreemptOthers(preemptor *v1.Pod, nodeInfoMap map[string]*nodei
 	return true
 }
 
-// nodesWherePreemptionMightHelp is copied from "k8s.io/kubernetes/pkg/scheduler/core".nodesWherePreemptionMightHelp
 func nodesWherePreemptionMightHelp(nodes []*v1.Node, failedPredicatesMap core.FailedPredicateMap) []*v1.Node {
 	potentialNodes := []*v1.Node{}
 
@@ -108,7 +139,6 @@ func nodesWherePreemptionMightHelp(nodes []*v1.Node, failedPredicatesMap core.Fa
 	return potentialNodes
 }
 
-// selectNodesForPreemption is copied from "k8s.io/kubernetes/pkg/scheduler/core".selectNodesForPreemption
 func (sched *GenericScheduler) selectNodesForPreemption(
 	preemptor *v1.Pod,
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
@@ -131,7 +161,6 @@ func (sched *GenericScheduler) selectNodesForPreemption(
 	return nodeToVictims, nil
 }
 
-// selectVictimsOnNode is copied from "k8s.io/kubernetes/pkg/scheduler/core".selectVictimsOnNode
 func (sched *GenericScheduler) selectVictimsOnNode(
 	preemptor *v1.Pod,
 	nodeInfo *nodeinfo.NodeInfo,
@@ -188,7 +217,7 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 			removePod(p)
 			victims = append(victims, p)
 
-			if log.IsDebugEnabled() {
+			if l.IsDebugEnabled() {
 				key, err := util.PodKey(p)
 				if err != nil {
 					log.L.Warnf("Encountered error while building key of pod %v: %v", p, err)
@@ -215,7 +244,6 @@ func (sched *GenericScheduler) selectVictimsOnNode(
 	return victims /* numViolatingVictim */, 0, true
 }
 
-// podFitsOnNode is copied from "k8s.io/kubernetes/pkg/scheduler/core".podFitsOnNode
 func podFitsOnNode(
 	pod *v1.Pod,
 	preds map[string]predicates.FitPredicate,
@@ -250,7 +278,6 @@ func podFitsOnNode(
 	return len(failedPredicates) == 0, failedPredicates, nil
 }
 
-// addNominatedPods is copied from "k8s.io/kubernetes/pkg/scheduler/core".addNominatedPods
 func addNominatedPods(
 	pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo, podQueue queue.PodQueue,
 ) (bool, *nodeinfo.NodeInfo) {
@@ -269,7 +296,6 @@ func addNominatedPods(
 	return true, nodeInfoOut
 }
 
-// pickOneNodeForPreemption is copied from "k8s.io/kubernetes/pkg/scheduler/core".pickOneNodeForPreemption
 func pickOneNodeForPreemption(nodesToVictims map[*v1.Node]*api.Victims) *v1.Node {
 	if len(nodesToVictims) == 0 {
 		return nil
@@ -381,7 +407,6 @@ func pickOneNodeForPreemption(nodesToVictims map[*v1.Node]*api.Victims) *v1.Node
 	return nil
 }
 
-// getLowerPriorityNominatedPods is copied from "k8s.io/kubernetes/pkg/scheduler/core".getLowerPriorityNominatedPods
 func getLowerPriorityNominatedPods(pod *v1.Pod, nodeName string, podQueue queue.PodQueue) []*v1.Pod {
 	pods := podQueue.NominatedPods(nodeName)
 	if len(pods) == 0 {

@@ -1,9 +1,24 @@
+// Copyright 2019 Preferred Networks, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package scheduler
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
@@ -11,7 +26,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
+	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 )
 
 // Extender reperesents a scheduler extender.
@@ -28,15 +43,14 @@ type Extender struct {
 	Prioritize func(api.ExtenderArgs) api.HostPriorityList
 	Weight     int
 
-	// NodeCacheCapable specifies that the extender is capable of caching node information, so the
-	// scheduler should only send minimal information about the eligible nodes assuming that the
-	// extender already cached full details of all nodes in the cluster.
+	// NodeCacheCapable specifies whether this extender is capable of caching node information, so
+	// that the scheduler should only send minimal information about nodes.
 	// Specifically, ExtenderArgs.NodeNames is populated only if NodeCacheCapable == true, and
 	// ExtenderArgs.Nodes.Items is populated only if NodeCacheCapable == false.
 	NodeCacheCapable bool
 
-	// Ignorable specifies if the extender is ignorable, i.e., scheduling should not fail when the
-	// extender returns an error.
+	// Ignorable specifies whether the extender is ignorable (i.e. the scheduler should not fail
+	// when this extender returns an error).
 	Ignorable bool
 }
 
@@ -54,7 +68,7 @@ func (ext *Extender) filter(
 
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -95,7 +109,7 @@ func (ext *Extender) filter(
 	}
 
 	log.L.Tracef("Extender %s: Filtered nodes %v", ext.Name, nodes)
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)
@@ -115,7 +129,7 @@ func (ext *Extender) prioritize(pod *v1.Pod, nodes []*v1.Node, prioMap map[strin
 
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 
-	if log.IsDebugEnabled() {
+	if l.IsDebugEnabled() {
 		nodeNames := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			nodeNames = append(nodeNames, node.Name)

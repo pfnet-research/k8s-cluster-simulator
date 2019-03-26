@@ -14,22 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Tests that the example app finishes successfully without being stucked.
+# Checks whether files have an appropriate license header.
+
+LICENSE_LINE='Licensed under the Apache License, Version 2.0 (the "License");'
 
 cd $(git rev-parse --show-toplevel)
 
-function err() {
-    echo -e "\033[031m$1\033[0m"
-    exit $2
-}
+files=$(git ls-files | grep -v vendor | grep -e ".go" -e ".sh" -e ".py")
 
-cmd="make run-example"
-sec=30
-timeout $sec $cmd >& /dev/null
+status=0
+for f in ${files[@]}; do
+    if ! grep "$LICENSE_LINE" $f --quiet; then
+        if [ $status -eq 0 ]; then
+            echo "The following files are missing license headers."
+        fi
+        echo "- $f"
+        status=1
+    fi
+done
 
-status=$?
-if [ $status -eq 124 ]; then
-    err "'$cmd' timeouted: took over $sec s" $status
-elif [ $status -ne 0 ]; then
-    err "'$cmd' failed" $status
-fi
+exit $status

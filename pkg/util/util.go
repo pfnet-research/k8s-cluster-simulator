@@ -1,3 +1,17 @@
+// Copyright 2019 Preferred Networks, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package util
 
 import (
@@ -7,10 +21,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
-
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
 )
 
 // BuildResourceList parses a map from resource names to quantities to v1.ResourceList.
@@ -26,34 +37,6 @@ func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, e
 	}
 
 	return resourceList, nil
-}
-
-// UpdatePodCondition was copied from "k8s.io/kubernetes/pkg/api/pod".UpdatePodCondition().
-// (KubeSim cannot call it because it uses metav1.Now().)
-//
-// > UpdatePodCondition updates existing pod condition or creates a new one. Sets
-// > LastTransitionTime to now if the status has changed. Returns true if pod condition has changed
-// > or has been added.
-func UpdatePodCondition(clock clock.Clock, status *v1.PodStatus, condition *v1.PodCondition) bool {
-	condition.LastTransitionTime = clock.ToMetaV1()
-	conditionIndex, oldCondition := podutil.GetPodCondition(status, condition.Type)
-
-	if oldCondition == nil {
-		status.Conditions = append(status.Conditions, *condition)
-		return true
-	}
-	if condition.Status == oldCondition.Status {
-		condition.LastTransitionTime = oldCondition.LastTransitionTime
-	}
-
-	isEqual := condition.Status == oldCondition.Status &&
-		condition.Reason == oldCondition.Reason &&
-		condition.Message == oldCondition.Message &&
-		condition.LastProbeTime.Equal(&oldCondition.LastProbeTime) &&
-		condition.LastTransitionTime.Equal(&oldCondition.LastTransitionTime)
-
-	status.Conditions[conditionIndex] = *condition
-	return !isEqual
 }
 
 // PodTotalResourceRequests extracts the total amount of resource requested by this pod.
