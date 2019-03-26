@@ -37,7 +37,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 )
 
 func UpdatePodCondition(clock clock.Clock, status *v1.PodStatus, condition *v1.PodCondition) bool {

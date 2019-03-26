@@ -20,9 +20,9 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/node"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/pod"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 )
 
 // TableFormatter is a Formatter that formats metrics in a table.

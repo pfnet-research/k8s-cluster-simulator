@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/metrics"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 )
 
 func TestBuildMetricsFile(t *testing.T) {
