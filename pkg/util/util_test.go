@@ -55,7 +55,7 @@ func TestBuildResourceList(t *testing.T) {
 
 	actual, _ := util.BuildResourceList(rsrc)
 	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("got: %#v\nwant: %#v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 
 	rsrcInvalid := map[v1.ResourceName]string{
@@ -66,7 +66,7 @@ func TestBuildResourceList(t *testing.T) {
 
 	actual, err := util.BuildResourceList(rsrcInvalid)
 	if err == nil {
-		t.Errorf("got: %v\nwant: error", actual)
+		t.Error("nil error")
 	}
 }
 
@@ -90,12 +90,12 @@ func TestResourceListSum(t *testing.T) {
 
 	actual := util.ResourceListSum(r1, r2)
 	if !resourceListEq(expected, actual) {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 
 	actual = util.ResourceListSum(r2, r1)
 	if !resourceListEq(expected, actual) {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
 
@@ -143,7 +143,7 @@ func TestPodTotalResourceRequests(t *testing.T) {
 	actual := util.PodTotalResourceRequests(&pod)
 
 	if !resourceListEq(expected, actual) {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
 
@@ -157,7 +157,7 @@ func TestResourceListGE(t *testing.T) {
 	expected := true
 	actual := util.ResourceListGE(r1, r1)
 	if expected != actual {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 
 	r2 := v1.ResourceList{
@@ -168,13 +168,13 @@ func TestResourceListGE(t *testing.T) {
 	expected = true
 	actual = util.ResourceListGE(r1, r2)
 	if expected != actual {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 
 	expected = false
 	actual = util.ResourceListGE(r2, r1)
 	if expected != actual {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 
 	r3 := v1.ResourceList{
@@ -186,13 +186,13 @@ func TestResourceListGE(t *testing.T) {
 	expected = false
 	actual = util.ResourceListGE(r1, r3)
 	if expected != actual {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 
 	expected = false
 	actual = util.ResourceListGE(r3, r1)
 	if expected != actual {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
 
@@ -237,7 +237,7 @@ func TestPodKey(t *testing.T) {
 	})
 
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
 	_, err = util.PodKey(&v1.Pod{
@@ -248,6 +248,6 @@ func TestPodKey(t *testing.T) {
 	})
 
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 }
