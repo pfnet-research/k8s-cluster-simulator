@@ -14,16 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks whether all files have an appropriate license header.
+# Checks whether files have an appropriate license header.
 
-LICENSE_STR='Licensed under the Apache License, Version 2.0 (the "License");'
+LICENSE_LINE='Licensed under the Apache License, Version 2.0 (the "License");'
 
 cd $(git rev-parse --show-toplevel)
 
 files=$(git ls-files | grep -v vendor | grep -e ".go" -e ".sh" -e ".py")
+
 status=0
 for f in ${files[@]}; do
-    if ! grep "$LICENSE_STR" $f --quiet; then
+    if ! grep "$LICENSE_LINE" $f --quiet; then
         if [ $status -eq 0 ]; then
             echo "The following files are missing license headers."
         fi
