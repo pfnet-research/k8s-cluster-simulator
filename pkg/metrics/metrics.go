@@ -15,11 +15,11 @@
 package metrics
 
 import (
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/node"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/pod"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
 // Metrics represents a metrics at one time point, in the following structure.
