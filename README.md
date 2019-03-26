@@ -304,6 +304,6 @@ Moreover, functions in the following files were obtained from Kubernetes project
 that they would be compatible with k8s-cluster-simulator.
 Please see each file for more detail.
 
-* [kubesim/scheduler/generic_scheduler_k8s.go]
-* [kubesim/queue/priority_queue_k8s.go]
-* [kubesim/util/util_k8s.go]
+* [pkg/scheduler/generic_scheduler_k8s.go]
+* [pkg/queue/priority_queue_k8s.go]
+* [pkg/util/util_k8s.go]
