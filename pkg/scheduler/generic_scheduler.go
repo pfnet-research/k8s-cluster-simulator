@@ -69,6 +69,7 @@ func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityCon
 }
 
 // Schedule implements Scheduler interface.
+// Schedules pods in one-by-one manner by using registered extenders and plugins.
 func (sched *GenericScheduler) Schedule(
 	clock clock.Clock,
 	pendingPods queue.PodQueue,
@@ -78,7 +79,8 @@ func (sched *GenericScheduler) Schedule(
 	results := []Event{}
 
 	for {
-		pod, err := pendingPods.Front()
+		// For each pod popped from the front of the queue, ...
+		pod, err := pendingPods.Front() // not pop a pod here; it may fail to any node
 		if err != nil {
 			if err == queue.ErrEmptyQueue {
 				break
@@ -95,31 +97,39 @@ func (sched *GenericScheduler) Schedule(
 		}
 		log.L.Debugf("Trying to schedule pod %s", podKey)
 
+		// ... try to bind the pod to a node.
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, pendingPods)
+
 		if err != nil {
 			updatePodStatusSchedulingFailure(clock, pod, err)
 
+			// If failed to select a node that can accomodate the pod, ...
 			if fitError, ok := err.(*core.FitError); ok {
 				log.L.Tracef("Pod %v does not fit in any node", pod)
 				log.L.Debugf("Pod %s does not fit in any node", podKey)
 
+				// ... and preemption is enabled, ...
 				if sched.preemptionEnabled {
 					log.L.Debug("Trying preemption")
 
+					// ... try to preempt other low-priority pods.
 					delEvents, err := sched.preempt(pod, pendingPods, nodeLister, nodeInfoMap, fitError)
 					if err != nil {
 						return []Event{}, err
 					}
 
+					// Delete the victim pods.
 					results = append(results, delEvents...)
 				}
 
+				// Else, stop the scheduling process at this clock.
 				break
 			} else {
 				return []Event{}, nil
 			}
 		}
 
+		// If found a node that can accomodate the pod, ...
 		log.L.Debugf("Selected node %s", result.SuggestedHost)
 
 		pod, _ = pendingPods.Pop()
@@ -134,6 +144,7 @@ func (sched *GenericScheduler) Schedule(
 		}
 		nodeInfo.AddPod(pod)
 
+		// ... then bind it to the node.
 		results = append(results, &BindEvent{Pod: pod, ScheduleResult: result})
 	}
 
@@ -160,19 +171,20 @@ func (sched *GenericScheduler) scheduleOne(
 		return result, core.ErrNoNodesAvailable
 	}
 
+	// Filter out nodes that cannot accomodate the pod.
 	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
 	}
 
 	switch len(nodesFiltered) {
-	case 0:
+	case 0: // The pod doesn't fit in any node.
 		return result, &core.FitError{
 			Pod:              pod,
 			NumAllNodes:      len(nodes),
 			FailedPredicates: failedPredicateMap,
 		}
-	case 1:
+	case 1: // Only one node can accomodate the pod; just return it.
 		return core.ScheduleResult{
 			SuggestedHost:  nodesFiltered[0].Name,
 			EvaluatedNodes: 1 + len(failedPredicateMap),
@@ -180,10 +192,13 @@ func (sched *GenericScheduler) scheduleOne(
 		}, nil
 	}
 
+	// Prioritize nodes that have passed the filtering phase.
 	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
 	}
+
+	// Select the node that has the highest score.
 	host, err := sched.selectHost(prios)
 
 	return core.ScheduleResult{
@@ -262,8 +277,8 @@ func (sched *GenericScheduler) prioritize(
 		log.L.Debugf("Prioritizing nodes %v", nodeNames)
 	}
 
-	// If no priority configs are provided, then the EqualPriority function is applied
-	// This is required to generate the priority list in the required format
+	// If no priority configs are provided, then the EqualPriority function is applied.
+	// This is required to generate the priority list in the required format.
 	if len(sched.prioritizers) == 0 && len(sched.extenders) == 0 {
 		prioList := make(api.HostPriorityList, 0, len(filteredNodes))
 
@@ -279,6 +294,7 @@ func (sched *GenericScheduler) prioritize(
 			}
 			prioList = append(prioList, prio)
 		}
+
 		return prioList, nil
 	}
 
@@ -340,7 +356,8 @@ func (sched *GenericScheduler) preempt(
 	nodeInfoMap map[string]*nodeinfo.NodeInfo,
 	fitError *core.FitError) ([]Event, error) {
 
-	node, victims, nominatedPodsToClear, err := sched.findPreemption(preemptor, podQueue, nodeLister, nodeInfoMap, fitError)
+	node, victims, nominatedPodsToClear, err := sched.findPreemption(
+		preemptor, podQueue, nodeLister, nodeInfoMap, fitError)
 	if err != nil {
 		return []Event{}, err
 	}
@@ -350,10 +367,12 @@ func (sched *GenericScheduler) preempt(
 		log.L.Tracef("Node %v selected for victim", node)
 		log.L.Debugf("Node %s selected for victim", node.Name)
 
+		// Nominate the victim node for the preemptor pod.
 		if err := podQueue.UpdateNominatedNode(preemptor, node.Name); err != nil {
 			return []Event{}, err
 		}
 
+		// Delete the victim pods.
 		for _, victim := range victims {
 			log.L.Tracef("Pod %v selected for victim", victim)
 
@@ -370,6 +389,7 @@ func (sched *GenericScheduler) preempt(
 		}
 	}
 
+	// Clear nomination of pods that previously have nomination.
 	for _, pod := range nominatedPodsToClear {
 		log.L.Tracef("Nomination of pod %v cleared", pod)
 
@@ -446,10 +466,10 @@ func (sched *GenericScheduler) findPreemption(
 		return nil, nil, nil, nil
 	}
 
-	// Lower priority pods nominated to run on this node, may no longer fit on
-	// this node. So, we should remove their nomination. Removing their
-	// nomination updates these pods and moves them to the active queue. It
-	// lets scheduler find another place for them.
+	// Lower priority pods nominated to run on this node, may no longer fit on this node.
+	// So, we should remove their nomination.
+	// Removing their nomination updates these pods and moves them to the active queue.
+	// It lets scheduler find another place for them.
 	nominatedPods := getLowerPriorityNominatedPods(preemptor, candidateNode.Name, podQueue)
 	if nodeInfo, ok := nodeInfoMap[candidateNode.Name]; ok {
 		return nodeInfo.Node(), nodeToVictims[candidateNode].Pods, nominatedPods, nil

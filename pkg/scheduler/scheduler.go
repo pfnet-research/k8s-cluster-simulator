@@ -28,6 +28,7 @@ import (
 type Scheduler interface {
 	// Schedule makes scheduling decisions for (subset of) pending pods and running pods.
 	// The return value is a list of scheduling events.
+	// This method must never block.
 	Schedule(
 		clock clock.Clock,
 		podQueue queue.PodQueue,
@@ -36,6 +37,7 @@ type Scheduler interface {
 }
 
 // Event defines the interface of a scheduling event.
+// Submit can returns any type in a list that implements this interface.
 type Event interface {
 	IsSchedulerEvent() bool
 }

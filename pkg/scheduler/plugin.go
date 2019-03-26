@@ -32,7 +32,7 @@ import (
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 )
 
-// dummyPredicateMetadata implements predicates.PredicateMetadata.
+// dummyPredicateMetadata implements predicates.PredicateMetadata interface.
 type dummyPredicateMetadata struct{}
 type dummyPriorityMetadata struct{}
 
@@ -65,6 +65,7 @@ func filterWithPlugins(
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Run predicate plugins in parallel along nodes.
 	workqueue.ParallelizeUntil(ctx, workerNum, int(nodesNum), func(i int) {
 		nodeName := nodes[i].Name
 		nodeInfo, ok := nodeInfoMap[nodeName]
@@ -119,22 +120,21 @@ func prioritizeWithPlugins(
 	podQueue queue.PodQueue,
 ) (prioList api.HostPriorityList, err error) {
 	var (
-		errs     []error
-		errsLock = sync.Mutex{}
+		errs        []error
+		errsLock    = sync.Mutex{}
+		appendError = func(err error) {
+			errsLock.Lock()
+			defer errsLock.Unlock()
+			errs = append(errs, err)
+		}
 	)
-
-	appendError := func(err error) {
-		errsLock.Lock()
-		defer errsLock.Unlock()
-		errs = append(errs, err)
-	}
 
 	resultList := make([]api.HostPriorityList, len(prioritizers))
 	for i := range prioritizers {
 		resultList[i] = make(api.HostPriorityList, len(nodes))
 	}
 
-	// Map
+	// Run map phases of prioritizer plugins in parallel along nodes.
 	workqueue.ParallelizeUntil(context.TODO(), workerNum, len(nodes), func(nodeIdx int) {
 		nodeName := nodes[nodeIdx].Name
 		nodeInfo, ok := nodeInfoMap[nodeName]
@@ -157,7 +157,7 @@ func prioritizeWithPlugins(
 		}
 	})
 
-	// Reduce
+	// Run reduce phases of prioritizer plugins in parallel along plugins.
 	wg := sync.WaitGroup{}
 	for prioIdx := range prioritizers {
 		if prioritizers[prioIdx].Reduce == nil {
@@ -178,9 +178,8 @@ func prioritizeWithPlugins(
 		return api.HostPriorityList{}, errors.NewAggregate(errs)
 	}
 
-	// Summarize all scores.
+	// Sum up all scores along nodes.
 	prioList = make(api.HostPriorityList, 0, len(nodes))
-
 	for nodeIdx := range nodes {
 		prioList = append(prioList, api.HostPriority{Host: nodes[nodeIdx].Name, Score: 0})
 		for prioIdx := range prioritizers {
