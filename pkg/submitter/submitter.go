@@ -24,9 +24,11 @@ import (
 
 // Submitter defines the submitter interface.
 type Submitter interface {
-	// Submit submits pods to the simulated cluster.
-	// They are called in the same order that they are registered.
-	// These functions must *not* block.
+	// Submit submits pods to a simulated cluster.
+	// The return value is a list of submitter events.
+	// Submitters are called serially in the same order that they are registered to the simulated
+	// cluster.
+	// This method must never block.
 	Submit(
 		clock clock.Clock,
 		nodeLister algorithm.NodeLister,
@@ -34,16 +36,17 @@ type Submitter interface {
 }
 
 // Event defines the interface of a submitter event.
+// Submit can returns any type in a list that implements this interface.
 type Event interface {
 	IsSubmitterEvent() bool
 }
 
-// SubmitEvent represents an event of submitting a pod to the cluster.
+// SubmitEvent represents an event of submitting a pod to a cluster.
 type SubmitEvent struct {
 	Pod *v1.Pod
 }
 
-// DeleteEvent represents an event of deleting a pending or running pod from the cluster.
+// DeleteEvent represents an event of deleting a pod from a cluster.
 type DeleteEvent struct {
 	PodName      string
 	PodNamespace string
