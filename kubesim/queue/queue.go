@@ -2,6 +2,7 @@ package queue
 
 import (
 	"errors"
+	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 )
@@ -18,6 +19,15 @@ var (
 	ErrDifferentNames = errors.New("Original and new pods have different names")
 )
 
+// ErrNoMatchingPod is returnd from Update.
+type ErrNoMatchingPod struct {
+	key string
+}
+
+func (e *ErrNoMatchingPod) Error() string {
+	return fmt.Sprintf("No pod with key %q", e.key)
+}
+
 // PodQueue defines the interface of pod queues.
 type PodQueue interface {
 	// Push pushes the pod to the "end" of this queue.
@@ -31,14 +41,15 @@ type PodQueue interface {
 	// ErrEmptyQueue if the queue is empty.
 	Front() (*v1.Pod, error)
 
-	// Delete deletes the pod from this queue. Returns true if the pod is found, or false
-	// otherwise.
-	Delete(podNamespace, podName string) (bool, error)
+	// Delete deletes the pod from this PodQueue.
+	// Returns true if the pod is found, or false otherwise.
+	Delete(podNamespace, podName string) bool
 
 	// Update updates the pod to the newPod.
-	// The original and new pods must have the same namespace/name. Otherwise this methods returns
-	// ErrDifferentNames.
-	Update(podNamespace, podName string, newPod *v1.Pod) (bool, error)
+	// Returns ErrNoMatchingPod if an original pod is not found.
+	// The original and new pods must have the same namespace/name; Otherwise ErrDifferentNames is
+	// returned in the second field.
+	Update(podNamespace, podName string, newPod *v1.Pod) error
 
 	// NominatedPods returns a list of pods for which the node is nominated for scheduling.
 	NominatedPods(nodeName string) []*v1.Pod

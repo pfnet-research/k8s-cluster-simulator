@@ -181,18 +181,15 @@ func TestPriorityQueueDelete(t *testing.T) {
 	q.Push(newPodWithPriority("pod-0", nil, now))
 	q.Push(newPodWithPriority("pod-1", nil, now))
 
-	ok, _ := q.Delete("default", "pod-0")
-	if !ok {
+	if !q.Delete("default", "pod-0") {
 		t.Errorf("got: false\nwant: true")
 	}
 
-	ok, _ = q.Delete("default", "pod-0")
-	if ok {
+	if q.Delete("default", "pod-0") {
 		t.Errorf("got: true\nwant: false")
 	}
 
-	ok, _ = q.Delete("default", "pod-1")
-	if !ok {
+	if !q.Delete("default", "pod-1") {
 		t.Errorf("got: false\nwant: true")
 	}
 
@@ -212,10 +209,7 @@ func TestPriorityQueueUpdate(t *testing.T) {
 	q.Push(newPodWithPriority("pod-1", &prio1, now))
 
 	prio2 := int32(2)
-	ok, _ := q.Update("default", "pod-0", newPodWithPriority("pod-0", &prio2, now))
-	if !ok {
-		t.Errorf("got: false\nwant: true")
-	}
+	_ = q.Update("default", "pod-0", newPodWithPriority("pod-0", &prio2, now))
 
 	pod, _ := q.Pop()
 	if pod.Name != "pod-0" {

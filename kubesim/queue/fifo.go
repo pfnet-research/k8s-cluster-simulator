@@ -37,11 +37,7 @@ func (fifo *FIFOQueue) Push(pod *v1.Pod) error {
 }
 
 func (fifo *FIFOQueue) Pop() (*v1.Pod, error) {
-	for {
-		if len(fifo.queue) == 0 {
-			return nil, ErrEmptyQueue
-		}
-
+	for len(fifo.queue) > 0 {
 		var key string
 		key, fifo.queue = fifo.queue[0], fifo.queue[1:]
 		if pod, ok := fifo.pods[key]; ok {
@@ -49,45 +45,46 @@ func (fifo *FIFOQueue) Pop() (*v1.Pod, error) {
 			return pod, nil
 		}
 	}
-}
 
-func (fifo *FIFOQueue) Front() (*v1.Pod, error) {
-	for {
-		if len(fifo.queue) == 0 {
 			return nil, ErrEmptyQueue
 		}
 
+func (fifo *FIFOQueue) Front() (*v1.Pod, error) {
+	for len(fifo.queue) > 0 {
 		key := fifo.queue[0]
 		if pod, ok := fifo.pods[key]; ok {
 			return pod, nil
 		}
 		fifo.queue = fifo.queue[1:]
 	}
+
+	return nil, ErrEmptyQueue
 }
 
-func (fifo *FIFOQueue) Delete(podNamespace, podName string) (bool, error) {
+func (fifo *FIFOQueue) Delete(podNamespace, podName string) bool {
 	key := util.PodKeyFromNames(podNamespace, podName)
-
 	_, ok := fifo.pods[key]
 	delete(fifo.pods, key)
 
-	return ok, nil
+	return ok
 }
 
-func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {
+func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) error {
 	keyOrig := util.PodKeyFromNames(podNamespace, podName)
 	keyNew, err := util.PodKey(newPod)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if keyOrig != keyNew {
-		return false, ErrDifferentNames
+		return ErrDifferentNames
 	}
 
-	_, ok := fifo.pods[keyOrig]
-	fifo.pods[keyOrig] = newPod
+	if _, ok := fifo.pods[keyOrig]; !ok {
+		return &ErrNoMatchingPod{key: keyOrig}
+	}
 
-	return ok, nil
+	fifo.pods[keyOrig] = newPod
+	return nil
 }
 
 // UpdateNominatedNode does nothing. FIFOQueue does not support preemption.

@@ -11,10 +11,6 @@ import (
 
 func newPod(name string) *v1.Pod {
 	pod := v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Pod",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      name,
@@ -31,18 +27,21 @@ func TestFIFOQueuePushAndPop(t *testing.T) {
 	q.Push(newPod("pod-2"))
 
 	pod, _ := q.Pop()
-	if pod.Name != "pod-0" {
-		t.Errorf("got: %v\nwant: \"pod-0\"", pod.Name)
+	expected := "pod-0"
+	if pod.Name != expected {
+		t.Errorf("got: %v\nwant: %q\n", pod.Name, expected)
 	}
 
 	pod, _ = q.Pop()
-	if pod.Name != "pod-1" {
-		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
+	expected = "pod-1"
+	if pod.Name != expected {
+		t.Errorf("got: %v\nwant: %q\n", pod.Name, expected)
 	}
 
 	pod, _ = q.Pop()
-	if pod.Name != "pod-2" {
-		t.Errorf("got: %v\nwant: \"pod-2\"", pod.Name)
+	expected = "pod-2"
+	if pod.Name != expected {
+		t.Errorf("got: %v\nwant: %q\n", pod.Name, expected)
 	}
 
 	_, err := q.Pop()
@@ -59,26 +58,28 @@ func TestFIFOQueueFront(t *testing.T) {
 	q.Push(newPod("pod-2"))
 
 	pod, _ := q.Front()
-	if pod.Name != "pod-0" {
-		t.Errorf("got: %v\nwant: \"pod-0\"", pod.Name)
+	expected := "pod-0"
+	if pod.Name != expected {
+		t.Errorf("got: %q\nwant: %q", pod.Name, expected)
 	}
 
 	pod, _ = q.Front()
-	if pod.Name != "pod-0" {
-		t.Errorf("got: %v\nwant: \"pod-0\"", pod.Name)
+	if pod.Name != expected {
+		t.Errorf("got: %q\nwant: %q", pod.Name, expected)
 	}
 
 	_, _ = q.Pop()
 	pod, _ = q.Front()
-	if pod.Name != "pod-1" {
-		t.Errorf("got: %v\nwant: \"pod-1\"", pod.Name)
+	expected = "pod-1"
+	if pod.Name != expected {
+		t.Errorf("got: %q\nwant: %q", pod.Name, expected)
 	}
 
 	_, _ = q.Pop()
 	_, _ = q.Pop()
 	_, err := q.Front()
 	if err != queue.ErrEmptyQueue {
-		t.Errorf("got: %v\nwant: %v", err, queue.ErrEmptyQueue)
+		t.Errorf("got: %+v\nwant: %+v", err, queue.ErrEmptyQueue)
 	}
 }
 
@@ -88,23 +89,66 @@ func TestFIFOQueueDelete(t *testing.T) {
 	q.Push(newPod("pod-0"))
 	q.Push(newPod("pod-1"))
 
-	ok, _ := q.Delete("default", "pod-0")
-	if !ok {
+	if !q.Delete("default", "pod-0") {
 		t.Errorf("got: false\nwant: true")
 	}
 
-	ok, _ = q.Delete("default", "pod-0")
-	if ok {
+	if q.Delete("default", "pod-0") {
 		t.Errorf("got: true\nwant: false")
 	}
 
-	ok, _ = q.Delete("default", "pod-1")
-	if !ok {
+	if !q.Delete("default", "pod-1") {
 		t.Errorf("got: false\nwant: true")
 	}
 
 	_, err := q.Pop()
 	if err != queue.ErrEmptyQueue {
 		t.Errorf("got: %+v\nwant: %+v", err, queue.ErrEmptyQueue)
+	}
+}
+
+func TestFIFOQueueDeleteAndFront(t *testing.T) {
+	q := queue.NewFIFOQueue()
+
+	q.Push(newPod("pod-0"))
+	q.Delete("default", "pod-0")
+
+	_, err := q.Front()
+	if err != queue.ErrEmptyQueue {
+		t.Errorf("got: %+v\nwant: %+v", err, queue.ErrEmptyQueue)
+	}
+}
+
+func TestFIFOQueueUpdate(t *testing.T) {
+	q := queue.NewFIFOQueue()
+
+	pod0 := newPod("pod-0")
+
+	err := q.Update("default", "pod-0", pod0)
+	if err == nil {
+		t.Error("nil error")
+	}
+
+	q.Push(pod0)
+
+	pod1 := newPod("pod-1")
+	err = q.Update("default", "pod-0", pod1)
+	if err == nil {
+		t.Error("nil error")
+	}
+
+	pod02 := pod0.DeepCopy()
+	prio := int32(1)
+	pod02.Spec.Priority = &prio
+	err = q.Update("default", "pod-0", pod02)
+	if err != nil {
+		t.Errorf("error %+v", err)
+	}
+
+	pod, _ := q.Pop()
+	actual := pod.Spec.Priority
+	expected := prio
+	if *actual != expected {
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }
