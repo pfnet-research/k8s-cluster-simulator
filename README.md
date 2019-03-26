@@ -307,9 +307,9 @@ Moreover, functions in the following files were obtained from Kubernetes project
 that they would be compatible with k8s-cluster-simulator.
 Please see each file for more detail.
 
-* [pkg/scheduler/generic_scheduler_k8s.go]
-* [pkg/queue/priority_queue_k8s.go]
-* [pkg/util/util_k8s.go]
+* [pkg/scheduler/generic_scheduler_k8s.go](pkg/scheduler/generic_scheduler_k8s.go)
+* [pkg/queue/priority_queue_k8s.go](pkg/queue/priority_queue_k8s.go)
+* [pkg/util/util_k8s.go](pkg/util/util_k8s.go)
 
 
 [build-image]: https://secure.travis-ci.org/pfnet-research/k8s-cluster-simulator.svg
