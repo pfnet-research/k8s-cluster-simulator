@@ -181,10 +181,6 @@ func buildTaint(config TaintConfig) (*v1.Taint, error) {
 
 func buildNodeCondition(clock metav1.Time) []v1.NodeCondition {
 	return []v1.NodeCondition{
-		// The Reason and Message fields are obtained from
-		// k8s.io/kubernetes/pkg/kubelet/nodestatus/setters.go, which is licensed under Apache
-		// License, Version 2.0.
-
 		{
 			Type:               v1.NodeReady,
 			Status:             v1.ConditionTrue,
