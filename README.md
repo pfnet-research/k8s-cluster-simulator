@@ -1,4 +1,7 @@
-# Kubernetes cluster simulator [![Build Status](https://travis-ci.com/ordovicia/k8s-cluster-simulator.svg?branch=master)](https://travis-ci.com/ordovicia/k8s-cluster-simulator)
+# Kubernetes cluster simulator
+
+[![Build Status][build-image]][build-link]
+[![Coverage Status][cov-image]][cov-link]
 
 Kubernetes cluster simulator for evaluating schedulers.
 
@@ -307,3 +310,10 @@ Please see each file for more detail.
 * [pkg/scheduler/generic_scheduler_k8s.go]
 * [pkg/queue/priority_queue_k8s.go]
 * [pkg/util/util_k8s.go]
+
+
+[build-image]: https://secure.travis-ci.org/pfnet-research/k8s-cluster-simulator.svg
+[build-link]:  http://travis-ci.org/pfnet-research/k8s-cluster-simulator
+[cov-image]:   https://coveralls.io/repos/pfnet-research/k8s-cluster-simulator/badge.png
+[cov-link]:    https://coveralls.io/r/pfnet-research/k8s-cluster-simulator
+
