@@ -26,7 +26,6 @@ function err() {
 cmd="make run-example"
 sec=30
 timeout $sec $cmd >& /dev/null
-rm kubesim.log kubesim-hr.log
 
 status=$?
 if [ $status -eq 124 ]; then
