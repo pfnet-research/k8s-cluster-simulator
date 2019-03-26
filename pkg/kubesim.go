@@ -15,6 +15,7 @@ import (
 
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/config"
+	"github.com/ordovicia/k8s-cluster-simulator/pkg/log"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/metrics"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/node"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/pod"
@@ -22,7 +23,6 @@ import (
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/scheduler"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/submitter"
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
-	"github.com/ordovicia/k8s-cluster-simulator/log"
 )
 
 // KubeSim represents a kubernetes cluster simulator.
