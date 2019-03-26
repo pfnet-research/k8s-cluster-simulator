@@ -22,9 +22,11 @@ import (
 	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
 )
 
-// HumanReadableFormatter formats metrics in a human-readable style.
+// HumanReadableFormatter is a Foramtter that formats metrics in a human-readable style.
 type HumanReadableFormatter struct{}
 
+// Format implements Formatter interface.
+// Returns error if the given metrics does not have valid structure.
 func (h *HumanReadableFormatter) Format(metrics *Metrics) (string, error) {
 	if err := validateMetrics(metrics); err != nil {
 		return "", err
@@ -37,29 +39,17 @@ func (h *HumanReadableFormatter) Format(metrics *Metrics) (string, error) {
 	// Nodes
 	str += "  Nodes\n"
 	nodesMet := (*metrics)[NodesMetricsKey].(map[string]node.Metrics)
-	s, err := h.formatNodesMetrics(nodesMet)
-	if err != nil {
-		return "", err
-	}
-	str += s
+	str += h.formatNodesMetrics(nodesMet)
 
 	// Pods
 	str += "  Pods\n"
 	podsMet := (*metrics)[PodsMetricsKey].(map[string]pod.Metrics)
-	s, err = h.formatPodsMetrics(podsMet)
-	if err != nil {
-		return "", err
-	}
-	str += s
+	str += h.formatPodsMetrics(podsMet)
 
 	// Queue
 	str += "  Queue\n"
 	queueMet := (*metrics)[QueueMetricsKey].(queue.Metrics)
-	s, err = h.formatQueueMetrics(queueMet)
-	if err != nil {
-		return "", err
-	}
-	str += s
+	str += h.formatQueueMetrics(queueMet)
 
 	return str, nil
 }
@@ -88,7 +78,7 @@ func validateMetrics(metrics *Metrics) error {
 	return nil
 }
 
-func (h *HumanReadableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) (string, error) {
+func (h *HumanReadableFormatter) formatNodesMetrics(metrics map[string]node.Metrics) string {
 	str := ""
 
 	for name, met := range metrics {
@@ -112,10 +102,10 @@ func (h *HumanReadableFormatter) formatNodesMetrics(metrics map[string]node.Metr
 		str += fmt.Sprintf(", Failed %d\n", met.FailedPodsNum)
 	}
 
-	return str, nil
+	return str
 }
 
-func (h *HumanReadableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics) (string, error) {
+func (h *HumanReadableFormatter) formatPodsMetrics(metrics map[string]pod.Metrics) string {
 	str := ""
 
 	for name, met := range metrics {
@@ -137,11 +127,11 @@ func (h *HumanReadableFormatter) formatPodsMetrics(metrics map[string]pod.Metric
 		str += "\n"
 	}
 
-	return str, nil
+	return str
 }
 
-func (h *HumanReadableFormatter) formatQueueMetrics(metrics queue.Metrics) (string, error) {
-	return fmt.Sprintf("    PendingPods %d\n", metrics.PendingPodsNum), nil
+func (h *HumanReadableFormatter) formatQueueMetrics(metrics queue.Metrics) string {
+	return fmt.Sprintf("    PendingPods %d\n", metrics.PendingPodsNum)
 }
 
 var _ = Formatter(&HumanReadableFormatter{})

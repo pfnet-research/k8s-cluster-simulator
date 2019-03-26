@@ -30,17 +30,17 @@ import (
 type Metrics map[string]interface{}
 
 const (
-	// ClockKey is the key associated to clock.
+	// ClockKey is the key associated to a clock.Clock.
 	ClockKey = "Clock"
 	// NodesMetricsKey is the key associated to a map of node.Metrics.
 	NodesMetricsKey = "Nodes"
 	// PodsMetricsKey is the key associated to a map of pod.Metrics.
 	PodsMetricsKey = "Pods"
-	// QueueMetricsKey is the key associated to queue.Metrics.
+	// QueueMetricsKey is the key associated to a queue.Metrics.
 	QueueMetricsKey = "Queue"
 )
 
-// BuildMetrics builds a Metrics at the time clock.
+// BuildMetrics builds a Metrics at the given clock.
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue) (Metrics, error) {
 	metrics := make(map[string]interface{})
 	metrics[ClockKey] = clock.ToRFC3339()
@@ -76,6 +76,6 @@ type Formatter interface {
 
 // Writer defines the interface of metrics writer.
 type Writer interface {
-	// Write writes the given metrics to some location.
+	// Write writes the given metrics to some location(s).
 	Write(metrics *Metrics) error
 }

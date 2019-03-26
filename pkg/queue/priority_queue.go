@@ -23,16 +23,16 @@ import (
 )
 
 // PriorityQueue stores pods in a priority queue.
-// The pods are sorted by their priority.
-//
-// PriorityQueue wraps rawPriorityQueue for type-safetiness.
+// The pods are sorted by their priority, which can be configured by users.
 type PriorityQueue struct {
+	// PriorityQueue wraps rawPriorityQueue for type-safetiness.
+
 	inner         rawPriorityQueue
 	nominatedPods map[string]map[string]*v1.Pod
 }
 
-// Compare returns true if pod0 has higher priority than pod1.
-// Otherwise, this function returns false.
+// Compare is a comparator function that returns true if pod0 has higher priority than pod1, or
+// false otherwise.
 type Compare = func(pod0, pod1 *v1.Pod) bool
 
 // NewPriorityQueue creates a new PriorityQueue with DefaultComparator.
@@ -40,25 +40,22 @@ func NewPriorityQueue() *PriorityQueue {
 	return NewPriorityQueueWithComparator(DefaultComparator)
 }
 
-// NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator function.
+// NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator.
 func NewPriorityQueueWithComparator(comparator Compare) *PriorityQueue {
 	return newWithItems(map[string]*item{}, comparator)
 }
 
-// Reorder creates a new PriorityQueue. All pods stored in the original PriorityQueue are moved to
-// the new one, in the sorted order according to the given comparator.
-func (pq *PriorityQueue) Reorder(comparator Compare) (*PriorityQueue, error) {
+// Reorder creates a new PriorityQueue with all pods stored in the original queue in the sorted
+// order according to the given comparator.
+func (pq *PriorityQueue) Reorder(comparator Compare) *PriorityQueue {
 	pods := pq.inner.pendingPods()
 	items := make(map[string]*item, len(pods))
 	for idx, pod := range pods {
-		key, err := util.PodKey(pod)
-		if err != nil {
-			return nil, err
-		}
+		key, _ := util.PodKey(pod) // stored pod never have invalid key
 		items[key] = &item{pod, idx}
 	}
 
-	return newWithItems(items, comparator), nil
+	return newWithItems(items, comparator)
 }
 
 func (pq *PriorityQueue) Push(pod *v1.Pod) error {
@@ -178,7 +175,8 @@ type item struct {
 }
 
 type rawPriorityQueue struct {
-	// Each pod exists in keys iff it also exists in items
+	// A pod exists in keys iff it also exists in items.
+
 	items      map[string]*item
 	keys       []string
 	comparator Compare
@@ -190,6 +188,7 @@ func (pq rawPriorityQueue) Len() int { return len(pq.keys) }
 func (pq rawPriorityQueue) Less(i, j int) bool {
 	pod0 := pq.items[pq.keys[i]].pod
 	pod1 := pq.items[pq.keys[j]].pod
+
 	return (pq.comparator)(pod0, pod1)
 }
 

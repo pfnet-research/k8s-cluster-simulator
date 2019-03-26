@@ -27,42 +27,28 @@ import (
 )
 
 func TestBuildMetricsFile(t *testing.T) {
-	actual, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "",
 		Formatter: "",
 	}})
-	if actual != nil || err != nil {
-		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
+	if err == nil {
+		t.Error("nil error")
 	}
 
-	actual, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "",
 		Formatter: "foo",
 	}})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
-	actual, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
 		Path:      "foo",
 		Formatter: "",
 	}})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
-	}
-
-	actual, err = BuildMetricsFile([]MetricsFileConfig{
-		MetricsFileConfig{
-			Path:      "",
-			Formatter: "",
-		},
-		MetricsFileConfig{
-			Path:      "",
-			Formatter: "",
-		},
-	})
-	if err != nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 }
 
@@ -78,27 +64,39 @@ func TestBuildMetricsStdout(t *testing.T) {
 		Formatter: "foo",
 	})
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 
 	_, err = BuildMetricsStdout(MetricsStdoutConfig{
 		Formatter: "JSON",
 	})
 	if err != nil {
-		t.Errorf("got: %+v\nwant: metrics.StdoutWriter", err)
+		t.Errorf("error %s", err.Error())
 	}
 }
 
 func TestBuildFormatter(t *testing.T) {
-	actual, _ := buildFormatter("JSON")
-	expected := &metrics.JSONFormatter{}
-	if actual != expected {
-		t.Errorf("got: %+v\nwant: %+v", actual, expected)
+	actual0, _ := buildFormatter("JSON")
+	expected0 := &metrics.JSONFormatter{}
+	if actual0 != expected0 {
+		t.Errorf("got: %+v\nwant: %+v", actual0, expected0)
+	}
+
+	actual1, _ := buildFormatter("humanReadable")
+	expected1 := &metrics.HumanReadableFormatter{}
+	if actual1 != expected1 {
+		t.Errorf("got: %+v\nwant: %+v", actual1, expected1)
+	}
+
+	actual2, _ := buildFormatter("table")
+	expected2 := &metrics.TableFormatter{}
+	if actual2 != expected2 {
+		t.Errorf("got: %+v\nwant: %+v", actual2, expected2)
 	}
 
 	_, err := buildFormatter("Invalid")
 	if err == nil {
-		t.Errorf("got: nil\nwant: error")
+		t.Error("nil error")
 	}
 }
 
@@ -206,6 +204,6 @@ func TestBuildNodeConfig(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("got: %v\nwant: %v", actual, expected)
+		t.Errorf("got: %+v\nwant: %+v", actual, expected)
 	}
 }

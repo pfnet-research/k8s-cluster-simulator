@@ -22,9 +22,10 @@ import (
 
 // FIFOQueue stores pods in a FIFO queue.
 type FIFOQueue struct {
-	// Push adds a pod to both the map and the queue; Pop deletes a pod from both.
+	// Push adds a pod to both the map and the slice; Pop deletes a pod from both.
 	// OTOH, Delete deletes a pod only from the map, so a pod associated with a key popped from the
-	// queue may have been deleted.
+	// slice may have been deleted.
+	// Pop and Front check whether the pod actually exists in the slice.
 
 	pods  map[string]*v1.Pod
 	queue []string
@@ -101,17 +102,17 @@ func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) erro
 	return nil
 }
 
-// UpdateNominatedNode does nothing. FIFOQueue does not support preemption.
+// UpdateNominatedNode does nothing. FIFOQueue doesn't support preemption.
 func (fifo *FIFOQueue) UpdateNominatedNode(pod *v1.Pod, nodeName string) error {
 	return nil
 }
 
-// RemoveNominatedNode does nothing. FIFOQueue does not support preemption.
+// RemoveNominatedNode does nothing. FIFOQueue doesn't support preemption.
 func (fifo *FIFOQueue) RemoveNominatedNode(pod *v1.Pod) error {
 	return nil
 }
 
-// NominatedPods does nothing. FIFOQueue does not support preemption.
+// NominatedPods does nothing. FIFOQueue doesn't support preemption.
 func (fifo *FIFOQueue) NominatedPods(nodeName string) []*v1.Pod {
 	return []*v1.Pod{}
 }

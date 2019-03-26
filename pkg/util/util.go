@@ -24,7 +24,9 @@ import (
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 )
 
-// BuildResourceList parses a map from resource names to quantities to v1.ResourceList.
+// BuildResourceList parses a map from resource names to quantities (in strings) to a
+// v1.ResourceList.
+// Returns error if failed to parse.
 func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, error) {
 	resourceList := v1.ResourceList{}
 
@@ -39,7 +41,7 @@ func BuildResourceList(resources map[v1.ResourceName]string) (v1.ResourceList, e
 	return resourceList, nil
 }
 
-// PodTotalResourceRequests extracts the total amount of resource requested by this pod.
+// PodTotalResourceRequests extracts the total amount of resource requested by the given pod.
 func PodTotalResourceRequests(pod *v1.Pod) v1.ResourceList {
 	result := v1.ResourceList{}
 	for _, container := range pod.Spec.Containers {
@@ -62,9 +64,6 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 	return sum
 }
 
-// ErrResourceListDiffNotGE is returned from diffResourceList.
-var ErrResourceListDiffNotGE = errors.New("ResourceList is not greater equal")
-
 // ResourceListGE returns true when r1 >= r2, false otherwise.
 func ResourceListGE(r1, r2 v1.ResourceList) bool {
 	for r2Key, r2Val := range r2 {
@@ -77,7 +76,7 @@ func ResourceListGE(r1, r2 v1.ResourceList) bool {
 	return true
 }
 
-// PodPriority returns the priority of the pod.
+// PodPriority returns the priority of the given pod.
 func PodPriority(pod *v1.Pod) int32 {
 	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)
 	if pod.Spec.Priority != nil {
@@ -87,7 +86,7 @@ func PodPriority(pod *v1.Pod) int32 {
 }
 
 // PodKey builds a key for the given pod.
-// Returns error if the pod does not have valid (= non-empty) namespace and name.
+// Returns error if the pod doesn't have valid (i.e., non-empty) namespace and name.
 func PodKey(pod *v1.Pod) (string, error) {
 	if pod.ObjectMeta.Namespace == "" {
 		return "", strongerrors.InvalidArgument(errors.New("Empty pod namespace"))

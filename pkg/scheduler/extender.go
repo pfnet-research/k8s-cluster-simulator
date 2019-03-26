@@ -31,10 +31,10 @@ import (
 
 // Extender reperesents a scheduler extender.
 type Extender struct {
-	// Name identifies the Extender.
+	// Name identifies this Extender.
 	Name string
 
-	// Filter filters out the nodes that cannot run the given pod.
+	// Filter filters out the nodes that cannot run the given pod in api.ExtenderArgs.
 	// This function can be nil.
 	Filter func(api.ExtenderArgs) api.ExtenderFilterResult
 
@@ -43,14 +43,15 @@ type Extender struct {
 	Prioritize func(api.ExtenderArgs) api.HostPriorityList
 	Weight     int
 
-	// NodeCacheCapable specifies whether this extender is capable of caching node information, so
-	// that the scheduler should only send minimal information about nodes.
-	// Specifically, ExtenderArgs.NodeNames is populated only if NodeCacheCapable == true, and
-	// ExtenderArgs.Nodes.Items is populated only if NodeCacheCapable == false.
+	// NodeCacheCapable specifies that this Extender is capable of caching node information, so the
+	// scheduler should only send minimal information about the eligible nodes assuming that the
+	// extender already cached full details of all nodes in the cluster.
+	// Specifically, ExtenderArgs.NodeNames is populated iff NodeCacheCapable == true, and
+	// ExtenderArgs.Nodes.Items is populated iff NodeCacheCapable == false.
 	NodeCacheCapable bool
 
-	// Ignorable specifies whether the extender is ignorable (i.e. the scheduler should not fail
-	// when this extender returns an error).
+	// Ignorable specifies whether the extender is ignorable (i.e. the scheduler process should not
+	// fail when this extender returns an error).
 	Ignorable bool
 }
 
@@ -66,6 +67,7 @@ func (ext *Extender) filter(
 
 	log.L.Tracef("Extender %s: Filtering nodes %v", ext.Name, nodes)
 
+	// Build an argument and call this extender.
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 
 	if l.IsDebugEnabled() {
@@ -78,6 +80,7 @@ func (ext *Extender) filter(
 
 	result := ext.Filter(args)
 
+	// Arrange the returned values.
 	nodes = make([]*v1.Node, 0, len(nodes))
 	if ext.NodeCacheCapable {
 		for _, name := range *result.NodeNames {
@@ -102,7 +105,7 @@ func (ext *Extender) filter(
 
 	if result.Error != "" {
 		if ext.Ignorable {
-			log.L.Warnf("Skipping ext %q as it returned error %q and has ignorable flag set", ext.Name, result.Error)
+			log.L.Warnf("Skipping extender %q as it returned error %q and has ignorable flag set", ext.Name, result.Error)
 		} else {
 			return nodes, errors.New(result.Error)
 		}
@@ -127,6 +130,7 @@ func (ext *Extender) prioritize(pod *v1.Pod, nodes []*v1.Node, prioMap map[strin
 
 	log.L.Tracef("Extender %s: Prioritizing nodes %v", ext.Name, nodes)
 
+	// Build an argument and call this extender.
 	args := buildExtenderArgs(pod, nodes, ext.NodeCacheCapable)
 
 	if l.IsDebugEnabled() {
@@ -139,6 +143,7 @@ func (ext *Extender) prioritize(pod *v1.Pod, nodes []*v1.Node, prioMap map[strin
 
 	result := ext.Prioritize(args)
 
+	// Sum up the returned values.
 	log.L.Debugf("Extender %s: Prioritized %v", ext.Name, result)
 	for _, prio := range result {
 		prioMap[prio.Host] += prio.Score * ext.Weight

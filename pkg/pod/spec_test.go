@@ -20,11 +20,61 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func specPhaseNE(sp1, sp2 specPhase) bool {
 	return sp1.seconds != sp2.seconds ||
 		!reflect.DeepEqual(sp1.resourceUsage, sp2.resourceUsage)
+}
+
+func TestParseSpec(t *testing.T) {
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "pod",
+			Namespace:   "default",
+			Annotations: map[string]string{},
+		},
+	}
+
+	_, err := parseSpec(pod)
+	if err == nil {
+		t.Error("nil error")
+	}
+
+	pod = &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"simSpec": `
+- seconds: 5
+  resourceUsage:
+    cpu: 1
+    memory: 2Gi
+    nvidia.com/gpu: 1
+`,
+			},
+		},
+	}
+
+	actual, err := parseSpec(pod)
+	if err != nil {
+		t.Errorf("error %s", err.Error())
+	}
+
+	expected := specPhase{
+		seconds: 5,
+		resourceUsage: v1.ResourceList{
+			"cpu":            resource.MustParse("1"),
+			"memory":         resource.MustParse("2Gi"),
+			"nvidia.com/gpu": resource.MustParse("1"),
+		},
+	}
+
+	if specPhaseNE(expected, actual[0]) {
+		t.Errorf("got: %+v\nwant: %+v", actual[0], expected)
+	}
 }
 
 func TestParseSpecYAML(t *testing.T) {
@@ -56,7 +106,7 @@ func TestParseSpecYAML(t *testing.T) {
 	}
 
 	if specPhaseNE(expected, actual[0]) {
-		t.Errorf("got: %v\nwant: %v", actual[0], expected)
+		t.Errorf("got: %+v\nwant: %+v", actual[0], expected)
 	}
 
 	expected = specPhase{
@@ -69,7 +119,7 @@ func TestParseSpecYAML(t *testing.T) {
 	}
 
 	if specPhaseNE(expected, actual[1]) {
-		t.Errorf("got: %v\nwant: %v", actual[1], expected)
+		t.Errorf("got: %+v\nwant: %+v", actual[1], expected)
 	}
 
 	yamlStrInvalid := `
@@ -84,8 +134,8 @@ func TestParseSpecYAML(t *testing.T) {
     memory: 4Gi
     nvidia.com/gpu: 1
 `
-	actual, err = parseSpecYAML(yamlStrInvalid)
-	if err != errInvalidResourceUsageField {
-		t.Errorf("got: %v\nwant: errInvalidResourceUsageField", actual)
+	_, err = parseSpecYAML(yamlStrInvalid)
+	if err == nil {
+		t.Error("nil error")
 	}
 }

@@ -18,11 +18,13 @@ import (
 	"encoding/json"
 )
 
-// JSONFormatter formats metrics to a JSON string.
+// JSONFormatter is a Formatter that formats metrics to a JSON string.
 type JSONFormatter struct {
 }
 
-// Format formats the given metrics to a JSON string, without newline at the end.
+// Format implements Formatter interface.
+// It formats the given metrics to a single JSON string, without newline at the end.
+// Returns error if failed to marshal.
 func (j *JSONFormatter) Format(metrics *Metrics) (string, error) {
 	bytes, err := json.Marshal(metrics)
 	if err != nil {

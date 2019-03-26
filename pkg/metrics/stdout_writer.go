@@ -18,18 +18,20 @@ import (
 	"fmt"
 )
 
-// StdoutWriter writes metrics to stdout.
+// StdoutWriter is a Writer that writes metrics to stdout.
 type StdoutWriter struct {
 	formatter Formatter
 }
 
-// NewStdoutWriter creates a new StdoutWriter instance with the formatter.
+// NewStdoutWriter creates a new StdoutWriter with the formatter.
 func NewStdoutWriter(formatter Formatter) StdoutWriter {
 	return StdoutWriter{
 		formatter: formatter,
 	}
 }
 
+// Write implements Writer interface.
+// Returns error if failed to format with the underlying formatter.
 func (w *StdoutWriter) Write(metrics *Metrics) error {
 	str, err := w.formatter.Format(metrics)
 	if err != nil {

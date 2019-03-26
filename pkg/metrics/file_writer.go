@@ -18,14 +18,16 @@ import (
 	"os"
 )
 
-// FileWriter writes metrics to a file.
+// FileWriter is a Writer that writes metrics to a file.
 type FileWriter struct {
 	file      *os.File
 	formatter Formatter
 }
 
-// NewFileWriter creates a new FileWriter instance with a file at the given path, and a formatter
-// that formats metrics to a string. Returns err if failed to create a file.
+// NewFileWriter creates a new FileWriter with a file at the given path, and the formatter that
+// formats metrics to a string.
+// If the file exists, it will be truncaed.
+// Returns error if failed to create a file.
 func NewFileWriter(path string, formatter Formatter) (*FileWriter, error) {
 	file, err := os.Create(path)
 	if err != nil {
@@ -41,6 +43,8 @@ func NewFileWriter(path string, formatter Formatter) (*FileWriter, error) {
 // FileName returns the name of file underlying this FileWriter.
 func (w *FileWriter) FileName() string { return w.file.Name() }
 
+// Write implements Writer interface.
+// Returns error if failed to format with the underlying formatter.
 func (w *FileWriter) Write(metrics *Metrics) error {
 	str, err := w.formatter.Format(metrics)
 	if err != nil {
