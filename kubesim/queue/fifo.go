@@ -69,20 +69,22 @@ func (fifo *FIFOQueue) Delete(podNamespace, podName string) bool {
 	return ok
 }
 
-func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {
+func (fifo *FIFOQueue) Update(podNamespace, podName string, newPod *v1.Pod) error {
 	keyOrig := util.PodKeyFromNames(podNamespace, podName)
 	keyNew, err := util.PodKey(newPod)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if keyOrig != keyNew {
-		return false, ErrDifferentNames
+		return ErrDifferentNames
 	}
 
-	_, ok := fifo.pods[keyOrig]
-	fifo.pods[keyOrig] = newPod
+	if _, ok := fifo.pods[keyOrig]; !ok {
+		return &ErrNoMatchingPod{key: keyOrig}
+	}
 
-	return ok, nil
+	fifo.pods[keyOrig] = newPod
+	return nil
 }
 
 // UpdateNominatedNode does nothing. FIFOQueue does not support preemption.

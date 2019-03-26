@@ -87,25 +87,24 @@ func (pq *PriorityQueue) Delete(podNamespace, podName string) bool {
 	return ok
 }
 
-func (pq *PriorityQueue) Update(podNamespace, podName string, newPod *v1.Pod) (bool, error) {
+func (pq *PriorityQueue) Update(podNamespace, podName string, newPod *v1.Pod) error {
 	keyOrig := util.PodKeyFromNames(podNamespace, podName)
 	keyNew, err := util.PodKey(newPod)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if keyOrig != keyNew {
-		return false, ErrDifferentNames
+		return ErrDifferentNames
 	}
 
-	_, ok := pq.inner.items[keyOrig]
-	if ok {
+	if _, ok := pq.inner.items[keyOrig]; !ok {
+		return &ErrNoMatchingPod{key: keyOrig}
+	}
+
 		pq.inner.items[keyOrig].pod = newPod
 		heap.Fix(&pq.inner, pq.inner.items[keyOrig].index)
-	} else {
-		heap.Push(&pq.inner, &item{pod: newPod})
-	}
 
-	return ok, nil
+	return nil
 }
 
 func (pq *PriorityQueue) UpdateNominatedNode(pod *v1.Pod, nodeName string) error {
