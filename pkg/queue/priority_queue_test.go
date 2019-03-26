@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
 func newPodWithPriority(name string, prio *int32, ts metav1.Time) *v1.Pod {

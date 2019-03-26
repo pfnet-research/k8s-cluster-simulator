@@ -28,16 +28,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/clock"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/config"
-	l "github.com/ordovicia/k8s-cluster-simulator/pkg/log"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/metrics"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/node"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/pod"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/queue"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/scheduler"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/submitter"
-	"github.com/ordovicia/k8s-cluster-simulator/pkg/util"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/config"
+	l "github.com/pfnet-research/k8s-cluster-simulator/pkg/log"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/submitter"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
 // KubeSim represents a simulated kubernetes cluster.
