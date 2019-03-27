@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Adds lincense header to files.
+# Adds a lincense header to files.
 # FIXME: Reserve shebang
 
 LICENSE_LINE='Licensed under the Apache License, Version 2.0 (the "License");'
@@ -37,26 +37,18 @@ LICENSE_HEADER=(
 
 cd $(git rev-parse --show-toplevel)
 
-function err() {
-    echo -e "\033[031m$1\033[0m"
-    exit $2
-}
-
 files=$(git ls-files | grep -v vendor | grep -e ".go" -e ".sh" -e ".py")
 for f in ${files[@]}; do
     if ! grep "$LICENSE_LINE" $f --quiet; then
         echo "Add license header to $f"
 
-        b=$(basename $f)
         comment=""
-        if [[ $b == *.go ]]; then
+        if [[ $f == *.go ]]; then
             comment="//"
-        elif [[ $b == *.sh ]]; then
+        elif [[ $f == *.sh ]]; then
             comment="#"
-        elif [[ $b == *.py ]]; then
+        else # *.py
             comment="#"
-        else
-            err "Unkown file extension" 1
         fi
 
         tmpfile=$(mktemp)
@@ -69,8 +61,7 @@ for f in ${files[@]}; do
         done
         echo >> $tmpfile
 
-        tmp2=$(mktemp)
-        cat $tmpfile $f > $tmp2
-        mv $tmp2 $f
+        cat $f >> $tmpfile
+        mv $tmpfile $f
     fi
 done
