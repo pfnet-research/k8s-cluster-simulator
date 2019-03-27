@@ -15,7 +15,6 @@
 # limitations under the License.
 
 # Adds a lincense header to files.
-# FIXME: Reserve shebang
 
 LICENSE_LINE='Licensed under the Apache License, Version 2.0 (the "License");'
 
@@ -52,6 +51,14 @@ for f in ${files[@]}; do
         fi
 
         tmpfile=$(mktemp)
+
+        has_shebang=0
+        if [[ $(head $f -n 1) == \#!* ]]; then
+            has_shebang=1
+            echo $(head $f -n 1) >> $tmpfile
+            echo >> $tmpfile
+        fi
+
         for l in "${LICENSE_HEADER[@]}"; do
             if [ -z "$l" ]; then
                 echo "${comment}" >> $tmpfile
@@ -61,7 +68,16 @@ for f in ${files[@]}; do
         done
         echo >> $tmpfile
 
-        cat $f >> $tmpfile
+        if [ $has_shebang -eq 1 ]; then
+            if [ -z "$(head $f -n 2 | tail -n 1)" ]; then
+                tail -n +3 $f >> $tmpfile
+            else
+                tail -n +2 $f >> $tmpfile
+            fi
+        else
+            cat $f >> $tmpfile
+        fi
+
         mv $tmpfile $f
     fi
 done
