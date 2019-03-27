@@ -41,6 +41,8 @@ for f in ${files[@]}; do
     if ! grep "$LICENSE_LINE" $f --quiet; then
         echo "Add license header to $f"
 
+        perm=$(stat $f -c "%a")
+
         comment=""
         if [[ $f == *.go ]]; then
             comment="//"
@@ -79,5 +81,6 @@ for f in ${files[@]}; do
         fi
 
         mv $tmpfile $f
+        chmod $perm $f
     fi
 done
