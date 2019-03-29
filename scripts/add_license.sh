@@ -16,7 +16,8 @@
 
 # Adds a lincense header to files.
 
-LICENSE_LINE='Licensed under the Apache License, Version 2.0 (the "License");'
+LICENSE_LINE='Licensed under the Apache License, '
+LICENSE_LINE+='Version 2.0 (the "License");'
 
 LICENSE_HEADER=(
     'Copyright 2019 Preferred Networks, Inc.'
