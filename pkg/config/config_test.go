@@ -27,7 +27,7 @@ import (
 )
 
 func TestBuildMetricsFile(t *testing.T) {
-	_, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err := BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "",
 		Formatter: "",
 	}})
@@ -35,7 +35,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "",
 		Formatter: "foo",
 	}})
@@ -43,7 +43,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "foo",
 		Formatter: "",
 	}})
@@ -115,7 +115,7 @@ func TestBuildNode(t *testing.T) {
 	spec := v1.NodeSpec{
 		Unschedulable: false,
 		Taints: []v1.Taint{
-			v1.Taint{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
+			{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
 		},
 	}
 

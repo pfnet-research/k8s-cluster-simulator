@@ -54,11 +54,14 @@ func (node *Node) ToV1() *v1.Node {
 }
 
 // ToNodeInfo creates *nodeinfo.NodeInfo object from this Node.
-func (node *Node) ToNodeInfo(clock clock.Clock) *nodeinfo.NodeInfo {
+func (node *Node) ToNodeInfo(clock clock.Clock) (*nodeinfo.NodeInfo, error) {
 	pods := node.runningAndTerminatingPodsV1WithStatus(clock)
 	nodeInfo := nodeinfo.NewNodeInfo(pods...)
-	nodeInfo.SetNode(node.ToV1())
-	return nodeInfo
+	err := nodeInfo.SetNode(node.ToV1())
+	if err != nil {
+		return nil, err
+	}
+	return nodeInfo, nil
 }
 
 // Metrics returns the Metrics of this Node at the given clock.

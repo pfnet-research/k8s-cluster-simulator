@@ -19,6 +19,7 @@
     ],
     "Exclude": [
         "pkg/client",
-        "vendor/"
+        "vendor/",
+        "pkg/.*_k8s.go"
     ]
 }

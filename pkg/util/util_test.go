@@ -64,7 +64,7 @@ func TestBuildResourceList(t *testing.T) {
 		"foo":    "bar",
 	}
 
-	actual, err := util.BuildResourceList(rsrcInvalid)
+	_, err := util.BuildResourceList(rsrcInvalid)
 	if err == nil {
 		t.Error("nil error")
 	}
@@ -103,7 +103,7 @@ func TestPodTotalResourceRequests(t *testing.T) {
 	pod := v1.Pod{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
 							"cpu":            resource.MustParse("3"),
@@ -117,7 +117,7 @@ func TestPodTotalResourceRequests(t *testing.T) {
 						},
 					},
 				},
-				v1.Container{
+				{
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
 							"cpu":            resource.MustParse("2"),

@@ -120,6 +120,6 @@ func buildScheduler() scheduler.Scheduler {
 }
 
 // for test
-func lifo(pod0, pod1 *v1.Pod) bool {
+func lifo(pod0, pod1 *v1.Pod) bool { // nolint
 	return pod1.CreationTimestamp.Before(&pod0.CreationTimestamp)
 }
