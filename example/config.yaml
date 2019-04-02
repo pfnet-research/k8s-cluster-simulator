@@ -19,7 +19,8 @@ metricsTick: 60
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- formatter: table
+- path: /dev/stdout
+  formatter: table
 - path: kubesim.log
   formatter: JSON
 - path: kubesim-hr.log

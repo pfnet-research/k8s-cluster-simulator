@@ -61,6 +61,10 @@ func BuildMetricsLogger(conf []MetricsLoggerConfig) ([]*metrics.FileWriter, erro
 	writers := make([]*metrics.FileWriter, 0, len(conf))
 
 	for _, conf := range conf {
+		if conf.Path == "" {
+			return nil, strongerrors.InvalidArgument(errors.New("path must not be empty"))
+		}
+
 		formatter, err := buildFormatter(conf.Formatter)
 		if err != nil {
 			return nil, err
