@@ -15,11 +15,11 @@ startClock: 2019-01-01T00:00:00+09:00
 metricsTick: 60
 
 # Metrics of simulated kubernetes cluster is written
-# to a file at this path or standard out if not specified.
+# to standard out, standard error or files at given paths.
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- dest: /dev/stdout
+- dest: stdout
   formatter: table
 - dest: kubesim.log
   formatter: JSON
