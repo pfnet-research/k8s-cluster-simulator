@@ -77,39 +77,52 @@ func buildScheduler() scheduler.Scheduler {
 
 ### Pod submitter interface
 
-See [pkg/submitter/submitter.go](pkg/submitter/submitter.go)
-and [pkg/scheduler/scheduler.go](pkg/scheduler/scheduler.go).
+See [pkg/submitter/submitter.go](pkg/submitter/submitter.go).
 
 ```go
+// Submitter defines the submitter interface.
 type Submitter interface {
-    // Submit submits pods to the simulated cluster.
-    // They are called in the same order that they are registered.
-    // These functions must *not* block.
+	// Submit submits pods to a simulated cluster.
+	// The return value is a list of submitter events.
+	// Submitters are called serially in the same order that they are registered to the simulated
+	// cluster.
+	// This method must never block.
     Submit(clock clock.Clock, nodeLister algorithm.NodeLister, metrics metrics.Metrics) ([]Event, error)
 }
 
-// Submit can returns any of the following types of events.
+// Event defines the interface of a submitter event.
+// Submit can returns any type in a list that implements this interface.
+type Event interface {
+	IsSubmitterEvent() bool
+}
 
-// Submit a pod to the cluster.
+// SubmitEvent represents an event of submitting a pod to a cluster.
 type SubmitEvent struct {
-    Pod *v1.Pod
+	Pod *v1.Pod
 }
 
-// Delete a pending or running pod from the cluster.
+// DeleteEvent represents an event of deleting a pod from a cluster.
 type DeleteEvent struct {
-    PodName      string
-    PodNamespace string
+	PodName      string
+	PodNamespace string
 }
 
-// Update manifest of a pending pod to a new one.
+// UpdateEvent represents an event of updating the manifest of a pending pod.
 type UpdateEvent struct {
-    PodName      string
-    PodNamespace string
-    NewPod       *v1.Pod
+	PodName      string
+	PodNamespace string
+	NewPod       *v1.Pod
+}
+
+// TerminateSubmitterEvent represents an event of terminating the submission process.
+type TerminateSubmitterEvent struct {
 }
 ```
 
 ### `kube-scheduler`-compatible scheduler interface
+
+See [pkg/scheduler/generic_scheduler.go](pkg/scheduler/generic_scheduler.go) and
+[pkg/scheduler/extender.go](pkg/scheduler/extender.go).
 
 k8s-cluster-simulator provides `GenericScheduler`, which follows the behavior of kube-scheduler's
 `genericScheduler`.
@@ -119,66 +132,93 @@ predicates and prioritizers.
 The interfaces of predicates and prioritizers are similar to those of kube-scheduler.
 
 ```go
-type Extender struct {
-    // Name identifies the Extender.
-    Name string
-
-    // Filter filters out the nodes that cannot run the given pod.
-    // This function can be nil.
-    Filter func(api.ExtenderArgs) api.ExtenderFilterResult
-
-    // Prioritize ranks each node that has passed the filtering stage.
-    // The weighted scores are summed up and the total score is used for the node selection.
-    Prioritize func(api.ExtenderArgs) api.HostPriorityList
-    Weight     int
-
-    // NodeCacheCapable specifies that the extender is capable of caching node information, so the
-    // scheduler should only send minimal information about the eligible nodes assuming that the
-    // extender already cached full details of all nodes in the cluster.
-    // Specifically, ExtenderArgs.NodeNames is populated only if NodeCacheCapable == true, and
-    // ExtenderArgs.Nodes.Items is populated only if NodeCacheCapable == false.
-    NodeCacheCapable bool
-
-    // Ignorable specifies whether the extender is ignorable, i.e., scheduling should not fail when
-    // the extender returns an error.
-    Ignorable bool
+// NewGenericScheduler creates a new GenericScheduler.
+func NewGenericScheduler(preeptionEnabled bool) GenericScheduler {
+	return GenericScheduler{
+		predicates:        map[string]predicates.FitPredicate{},
+		preemptionEnabled: preeptionEnabled,
+	}
 }
 
-func (sched *GenericScheduler) AddExtender(extender Extender)
+// AddExtender adds an extender to this GenericScheduler.
+func (sched *GenericScheduler) AddExtender(extender Extender) {
+	sched.extenders = append(sched.extenders, extender)
+}
 
-func (sched *GenericScheduler) AddPredicate(name string, predicate predicates.FitPredicate)
-func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityConfig)
+// AddPredicate adds a predicate plugin to this GenericScheduler.
+func (sched *GenericScheduler) AddPredicate(name string, predicate predicates.FitPredicate) {
+	sched.predicates[name] = predicate
+}
+
+// AddPrioritizer adds a prioritizer plugin to this GenericScheduler.
+func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityConfig) {
+	sched.prioritizers = append(sched.prioritizers, prioritizer)
+}
+
+// Extender reperesents a scheduler extender.
+type Extender struct {
+	// Name identifies this Extender.
+	Name string
+
+	// Filter filters out the nodes that cannot run the given pod in api.ExtenderArgs.
+	// This function can be nil.
+	Filter func(api.ExtenderArgs) api.ExtenderFilterResult
+
+	// Prioritize ranks each node that has passes the filtering stage.
+	// The weighted scores are summed up and the total score is used for the node selection.
+	Prioritize func(api.ExtenderArgs) api.HostPriorityList
+	Weight     int
+
+	// NodeCacheCapable specifies that this Extender is capable of caching node information, so the
+	// scheduler should only send minimal information about the eligible nodes assuming that the
+	// extender already cached full details of all nodes in the cluster.
+	// Specifically, ExtenderArgs.NodeNames is populated iff NodeCacheCapable == true, and
+	// ExtenderArgs.Nodes.Items is populated iff NodeCacheCapable == false.
+	NodeCacheCapable bool
+
+	// Ignorable specifies whether the extender is ignorable (i.e. the scheduler process should not
+	// fail when this extender returns an error).
+	Ignorable bool
+}
 ```
 
 ### Lowest-level scheduler interface
+
+See [pkg/scheduler/scheduler.go](pkg/scheduler/scheduler.go).
 
 k8s-cluster-simulator also supports the lowest-level scheduler interface, which makes scheduling
 decisions for (subset of) pending pods and running pods, given the cluster state at a clock.
 
 ```go
+// Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
-    // Schedule makes scheduling decisions for (subset of) pending pods and running pods.
-    // The return value is a list of scheduling events.
-    Schedule(
-        clock clock.Clock,
-        podQueue queue.PodQueue,
-        nodeLister algorithm.NodeLister,
-        nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]Event, error)
+	// Schedule makes scheduling decisions for (subset of) pending pods and running pods.
+	// The return value is a list of scheduling events.
+	// This method must never block.
+	Schedule(
+		clock clock.Clock,
+		podQueue queue.PodQueue,
+		nodeLister algorithm.NodeLister,
+		nodeInfoMap map[string]*nodeinfo.NodeInfo) ([]Event, error)
 }
 
-// Schedule can return any of the following types of events.
+// Event defines the interface of a scheduling event.
+// Submit can returns any type in a list that implements this interface.
+type Event interface {
+	IsSchedulerEvent() bool
+}
 
-// Bind a pod to a node.
+// BindEvent represents an event of deciding the binding of a pod to a node.
 type BindEvent struct {
-    Pod            *v1.Pod
-    ScheduleResult core.ScheduleResult
+	Pod            *v1.Pod
+	ScheduleResult core.ScheduleResult
 }
 
-// Delete (preempt) a running pod on a node.
+// DeleteEvent represents an event of the deleting a bound pod on a node.
 type DeleteEvent struct {
-    PodNamespace string
-    PodName      string
-    NodeName     string
+	PodNamespace string
+	PodName      string
+	NodeName     string
 }
 ```
 
@@ -241,19 +281,12 @@ v1.Node{
         Kind:       "Node",
         APIVersion: "v1",
     },
-    ObjectMeta: metav1.ObjectMeta{
-        Name:        // Determined by the config
-        Labels:      // Determined by the config
-        Annotations: // Determined by the config
-    },
-    Spec: v1.NodeSpec{
-        Unschedulable: false,
-        Taints:         // Determined by the config
-    },
+    ObjectMeta: // determined by the config
+    Spec:       // determined by the config
     Status: v1.NodeStatus{
-        Capacity:       // Determined by the config
-        Allocatable:    // Same as Capacity
-        Conditions:  []v1.NodeCondition{    // Populated
+        Capacity:                           // Determined by the config
+        Allocatable:                        // Same as Capacity
+        Conditions:  []v1.NodeCondition{    // populated by the simulator
             {
                 Type:               v1.NodeReady,
                 Status:             v1.ConditionTrue,
@@ -316,4 +349,3 @@ Please see each file for more detail.
 [build-link]:  http://travis-ci.org/pfnet-research/k8s-cluster-simulator
 [cov-image]:   https://coveralls.io/repos/pfnet-research/k8s-cluster-simulator/badge.png
 [cov-link]:    https://coveralls.io/r/pfnet-research/k8s-cluster-simulator
-
