@@ -3,10 +3,12 @@ go:
 - "1.11.x"
 
 before_install:
-- go get github.com/mattn/goveralls
+- export PATH=$GOPATH/bin:$PATH
+- go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+- go get -u github.com/mattn/goveralls
 
 script:
-- make test coverage
-- $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+- make lint test coverage
+- goveralls -coverprofile=profile.cov -service=travis-ci
 - make test-example
 # - make check-license

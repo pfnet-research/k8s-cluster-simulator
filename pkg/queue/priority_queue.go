@@ -223,6 +223,7 @@ func (pq *rawPriorityQueue) Pop() interface{} {
 	return item
 }
 
+// nolint
 func (pq *rawPriorityQueue) front() *item {
 	return pq.items[pq.keys[0]]
 }

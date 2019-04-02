@@ -28,19 +28,19 @@ import (
 )
 
 func TestBuildMetricsFile(t *testing.T) {
-	_, err := BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err := BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "",
 		Formatter: "",
 	}})
 	assert.EqualError(t, err, "empty metricsFile.Path")
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "",
 		Formatter: "foo",
 	}})
 	assert.EqualError(t, err, "empty metricsFile.Path")
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{MetricsFileConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "foo",
 		Formatter: "",
 	}})
@@ -106,7 +106,7 @@ func TestBuildNode(t *testing.T) {
 	spec := v1.NodeSpec{
 		Unschedulable: false,
 		Taints: []v1.Taint{
-			v1.Taint{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
+			{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
 		},
 	}
 
