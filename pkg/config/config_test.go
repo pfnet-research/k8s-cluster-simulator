@@ -32,19 +32,15 @@ func TestBuildMetricsLogger(t *testing.T) {
 		Dest:      "",
 		Formatter: "",
 	}})
-	assert.EqualError(t, err, "empty metricsFile.Path")
-
-	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
-		Dest:      "",
-		Formatter: "foo",
-	}})
-	assert.EqualError(t, err, "empty metricsFile.Path")
+	assert.EqualError(t, err, "destination must not be empty")
 
 	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
 		Dest:      "foo",
-		Formatter: "",
+		Formatter: "invalid",
 	}})
-	assert.EqualError(t, err, "formatter \"\" is not supported")
+	assert.EqualError(t, err, "formatter \"invalid\" is not supported")
+
+	// TODO: Test correct cases
 }
 
 func TestBuildFormatter(t *testing.T) {
@@ -66,8 +62,8 @@ func TestBuildFormatter(t *testing.T) {
 		t.Errorf("got: %+v\nwant: %+v", actual2, expected2)
 	}
 
-	_, err := buildFormatter("Invalid")
-	assert.EqualError(t, err, "formatter \"Invalid\" is not supported")
+	_, err := buildFormatter("invalid")
+	assert.EqualError(t, err, "formatter \"invalid\" is not supported")
 }
 
 func TestBuildNode(t *testing.T) {
