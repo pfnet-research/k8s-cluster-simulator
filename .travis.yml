@@ -3,11 +3,12 @@ go:
 - "1.11.x"
 
 before_install:
+- export PATH=$GOPATH/bin:$PATH
 - go get -u gopkg.in/alecthomas/gometalinter.v3
 - go get -u github.com/mattn/goveralls
 
 script:
 - make lint test coverage
-- $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+- goveralls -coverprofile=profile.cov -service=travis-ci
 - make test-example
 # - make check-license
