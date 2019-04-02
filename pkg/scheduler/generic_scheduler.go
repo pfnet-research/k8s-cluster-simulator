@@ -103,7 +103,7 @@ func (sched *GenericScheduler) Schedule(
 		if err != nil {
 			updatePodStatusSchedulingFailure(clock, pod, err)
 
-			// If failed to select a node that can accomodate the pod, ...
+			// If failed to select a node that can accommodate the pod, ...
 			if fitError, ok := err.(*core.FitError); ok {
 				log.L.Tracef("Pod %v does not fit in any node", pod)
 				log.L.Debugf("Pod %s does not fit in any node", podKey)
@@ -129,7 +129,7 @@ func (sched *GenericScheduler) Schedule(
 			}
 		}
 
-		// If found a node that can accomodate the pod, ...
+		// If found a node that can accommodate the pod, ...
 		log.L.Debugf("Selected node %s", result.SuggestedHost)
 
 		pod, _ = pendingPods.Pop()
@@ -171,7 +171,7 @@ func (sched *GenericScheduler) scheduleOne(
 		return result, core.ErrNoNodesAvailable
 	}
 
-	// Filter out nodes that cannot accomodate the pod.
+	// Filter out nodes that cannot accommodate the pod.
 	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
@@ -184,7 +184,7 @@ func (sched *GenericScheduler) scheduleOne(
 			NumAllNodes:      len(nodes),
 			FailedPredicates: failedPredicateMap,
 		}
-	case 1: // Only one node can accomodate the pod; just return it.
+	case 1: // Only one node can accommodate the pod; just return it.
 		return core.ScheduleResult{
 			SuggestedHost:  nodesFiltered[0].Name,
 			EvaluatedNodes: 1 + len(failedPredicateMap),

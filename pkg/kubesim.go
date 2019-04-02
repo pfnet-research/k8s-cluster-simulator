@@ -272,7 +272,7 @@ func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	return writers, nil
 }
 
-// toTerminate determins whether the main loop of this KubeSim can be terminated,
+// toTerminate determines whether the main loop of this KubeSim can be terminated,
 // because all submitters are terminated, no pods are running on the cluster, and there are no
 // pending pods in the queue.
 func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
@@ -315,7 +315,10 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 					log.L.Debugf("Submitter %s: Submit %s", name, key)
 				}
 
-				k.pendingPods.Push(pod)
+				err := k.pendingPods.Push(pod)
+				if err != nil {
+					return err
+				}
 			} else if del, ok := e.(*submitter.DeleteEvent); ok {
 				log.L.Debugf("Submitter %s: Delete %s",
 					name, util.PodKeyFromNames(del.PodNamespace, del.PodName))
@@ -352,7 +355,11 @@ func (k *KubeSim) schedule() error {
 	// Build up-to-date NodeInfo.
 	nodeInfoMap := make(map[string]*nodeinfo.NodeInfo, len(k.nodes))
 	for name, node := range k.nodes {
-		nodeInfoMap[name] = node.ToNodeInfo(k.clock)
+		info, err := node.ToNodeInfo(k.clock)
+		if err != nil {
+			return err
+		}
+		nodeInfoMap[name] = info
 	}
 
 	// The scheduler makes scheduling decision.
@@ -412,9 +419,9 @@ func (k *KubeSim) deletePodFromNode(podNamespace, podName string) {
 	k.boundPods[key].Delete(k.clock)
 
 	nodeName := k.boundPods[key].ToV1().Spec.NodeName
-	deletedFromNode := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)
+	deletedFromNode := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName) // nolint
 
-	if !deletedFromNode {
+	if !deletedFromNode { // nolint
 		//
 	}
 }

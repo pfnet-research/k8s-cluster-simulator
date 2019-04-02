@@ -108,7 +108,7 @@ func (s *mySubmitter) newPod(idx uint64) *v1.Pod {
 		Spec: v1.PodSpec{
 			Priority: &prio,
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:  "container",
 					Image: "container",
 					Resources: v1.ResourceRequirements{

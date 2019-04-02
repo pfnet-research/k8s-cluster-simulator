@@ -26,8 +26,9 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 )
 
-func TestBuildMetricsLogger(t *testing.T) {
-	_, err := BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
+
+func TestBuildMetricsFile(t *testing.T) {
+	_, err := BuildMetricsFile([]MetricsFileConfig{{
 		Dest:      "",
 		Formatter: "",
 	}})
@@ -35,7 +36,7 @@ func TestBuildMetricsLogger(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Dest:      "",
 		Formatter: "foo",
 	}})
@@ -43,7 +44,7 @@ func TestBuildMetricsLogger(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
+	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Dest:      "foo",
 		Formatter: "",
 	}})
@@ -92,7 +93,7 @@ func TestBuildNode(t *testing.T) {
 	spec := v1.NodeSpec{
 		Unschedulable: false,
 		Taints: []v1.Taint{
-			v1.Taint{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
+			{Key: "k", Value: "v", Effect: v1.TaintEffectNoSchedule},
 		},
 	}
 
