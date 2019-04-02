@@ -1,0 +1,18 @@
+run:
+  tests: false
+  skip-files:
+    - "pkg/.*_k8s.go$"
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+linters:
+  enable:
+  - gofmt
+  - goimports
+  - unconvert
+  - misspell
+  - interfacer
+  - maligned
+  - prealloc
+  fast: false

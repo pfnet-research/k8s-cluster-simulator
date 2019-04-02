@@ -33,7 +33,7 @@ var (
 	ErrDifferentNames = errors.New("Original and new pods have different names")
 )
 
-// ErrNoMatchingPod is returnd from Update.
+// ErrNoMatchingPod is returned from Update.
 type ErrNoMatchingPod struct {
 	key string
 }

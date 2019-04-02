@@ -50,10 +50,13 @@ func (w *FileWriter) Write(metrics *Metrics) error {
 	if err != nil {
 		return err
 	}
-	w.file.WriteString(str)
-	w.file.Write([]byte{'\n'})
+	_, err = w.file.WriteString(str)
+	if err != nil {
+		return err
+	}
+	_, err = w.file.Write([]byte{'\n'})
 
-	return nil
+	return err
 }
 
 var _ = Writer(&FileWriter{})

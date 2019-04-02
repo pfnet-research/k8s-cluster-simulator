@@ -13,6 +13,10 @@ clean::
 test:
 	go test $(shell go list ./... | grep -v /vendor/) -race -short -v
 
+.PHONY: lint
+lint:
+	golangci-lint run --config golangci.yml
+
 .PHONY: run-example
 run-example:
 	go run $(shell go list ./example/...) --config example/config
