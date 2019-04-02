@@ -428,9 +428,9 @@ func (k *KubeSim) deletePodFromNode(podNamespace, podName string) {
 	k.boundPods[key].Delete(k.clock)
 
 	nodeName := k.boundPods[key].ToV1().Spec.NodeName
-	deletedFromNode := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName)
+	deletedFromNode := k.nodes[nodeName].DeletePod(k.clock, podNamespace, podName) // nolint
 
-	if !deletedFromNode {
+	if !deletedFromNode { // nolint
 		//
 	}
 }
