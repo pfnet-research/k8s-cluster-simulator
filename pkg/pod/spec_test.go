@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,9 +39,7 @@ func TestParseSpec(t *testing.T) {
 	}
 
 	_, err := parseSpec(pod)
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "simSpec annotation not defined")
 
 	pod = &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -135,7 +134,5 @@ func TestParseSpecYAML(t *testing.T) {
     nvidia.com/gpu: 1
 `
 	_, err = parseSpecYAML(yamlStrInvalid)
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "Invalid spec.resoruceUsage field")
 }
