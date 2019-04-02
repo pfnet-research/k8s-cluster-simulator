@@ -4,7 +4,7 @@ go:
 
 before_install:
 - export PATH=$GOPATH/bin:$PATH
-- go get -u gopkg.in/alecthomas/gometalinter.v3
+- go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 - go get -u github.com/mattn/goveralls
 
 script:
