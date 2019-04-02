@@ -39,7 +39,7 @@ type Config struct {
 // Made public to be parsed from YAML.
 
 type MetricsLoggerConfig struct {
-	// Dest is an output device of file path in which the metrics is written.
+	// Dest is an output device or file path in which the metrics is written.
 	Dest string
 	// Formetter is a type of metrics format.
 	Formatter string
