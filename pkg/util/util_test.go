@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,9 +66,7 @@ func TestBuildResourceList(t *testing.T) {
 	}
 
 	_, err := util.BuildResourceList(rsrcInvalid)
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "invalid foo value \"bar\"")
 }
 
 func TestResourceListSum(t *testing.T) {
@@ -235,10 +234,7 @@ func TestPodKey(t *testing.T) {
 			Name:      "name-0",
 		},
 	})
-
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "Empty pod namespace")
 
 	_, err = util.PodKey(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -246,8 +242,5 @@ func TestPodKey(t *testing.T) {
 			Name:      "",
 		},
 	})
-
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "Empty pod name")
 }

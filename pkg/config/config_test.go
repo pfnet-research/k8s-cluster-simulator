@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,25 +32,19 @@ func TestBuildMetricsLogger(t *testing.T) {
 		Dest:      "",
 		Formatter: "",
 	}})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "empty metricsFile.Path")
 
 	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
 		Dest:      "",
 		Formatter: "foo",
 	}})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "empty metricsFile.Path")
 
 	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
 		Dest:      "foo",
 		Formatter: "",
 	}})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "formatter \"\" is not supported")
 }
 
 func TestBuildFormatter(t *testing.T) {
@@ -72,9 +67,7 @@ func TestBuildFormatter(t *testing.T) {
 	}
 
 	_, err := buildFormatter("Invalid")
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "formatter \"Invalid\" is not supported")
 }
 
 func TestBuildNode(t *testing.T) {
