@@ -17,6 +17,7 @@ package queue_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -139,17 +140,13 @@ func TestFIFOQueueUpdate(t *testing.T) {
 	pod0 := newPod("pod-0")
 
 	err := q.Update("default", "pod-0", pod0)
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "No pod with key \"default/pod-0\"")
 
 	q.Push(pod0)
 
 	pod1 := newPod("pod-1")
 	err = q.Update("default", "pod-0", pod1)
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "Original and new pods have different names")
 
 	pod02 := pod0.DeepCopy()
 	prio := int32(1)

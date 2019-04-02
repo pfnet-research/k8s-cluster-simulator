@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,25 +32,19 @@ func TestBuildMetricsFile(t *testing.T) {
 		Path:      "",
 		Formatter: "",
 	}})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "empty metricsFile.Path")
 
 	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "",
 		Formatter: "foo",
 	}})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "empty metricsFile.Path")
 
 	_, err = BuildMetricsFile([]MetricsFileConfig{{
 		Path:      "foo",
 		Formatter: "",
 	}})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "formatter \"\" is not supported")
 }
 
 func TestBuildMetricsStdout(t *testing.T) {
@@ -63,9 +58,7 @@ func TestBuildMetricsStdout(t *testing.T) {
 	_, err = BuildMetricsStdout(MetricsStdoutConfig{
 		Formatter: "foo",
 	})
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "formatter \"foo\" is not supported")
 
 	_, err = BuildMetricsStdout(MetricsStdoutConfig{
 		Formatter: "JSON",
@@ -95,9 +88,7 @@ func TestBuildFormatter(t *testing.T) {
 	}
 
 	_, err := buildFormatter("Invalid")
-	if err == nil {
-		t.Error("nil error")
-	}
+	assert.EqualError(t, err, "formatter \"Invalid\" is not supported")
 }
 
 func TestBuildNode(t *testing.T) {
