@@ -26,9 +26,8 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 )
 
-
-func TestBuildMetricsFile(t *testing.T) {
-	_, err := BuildMetricsFile([]MetricsFileConfig{{
+func TestBuildMetricsLogger(t *testing.T) {
+	_, err := BuildMetricsLogger([]MetricsLoggerConfig{{
 		Dest:      "",
 		Formatter: "",
 	}})
@@ -36,7 +35,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{{
+	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
 		Dest:      "",
 		Formatter: "foo",
 	}})
@@ -44,7 +43,7 @@ func TestBuildMetricsFile(t *testing.T) {
 		t.Error("nil error")
 	}
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{{
+	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
 		Dest:      "foo",
 		Formatter: "",
 	}})
