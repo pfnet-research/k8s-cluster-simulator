@@ -3,8 +3,8 @@ go:
 - "1.11.x"
 
 before_install:
-- go get gopkg.in/alecthomas/gometalinter.v3
-- go get github.com/mattn/goveralls
+- go get -u gopkg.in/alecthomas/gometalinter.v3
+- go get -u github.com/mattn/goveralls
 
 script:
 - make lint test coverage
