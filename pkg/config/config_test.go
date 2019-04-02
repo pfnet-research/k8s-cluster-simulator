@@ -28,7 +28,7 @@ import (
 
 func TestBuildMetricsLogger(t *testing.T) {
 	_, err := BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
-		Path:      "",
+		Dest:      "",
 		Formatter: "",
 	}})
 	if err == nil {
@@ -36,7 +36,7 @@ func TestBuildMetricsLogger(t *testing.T) {
 	}
 
 	_, err = BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
-		Path:      "",
+		Dest:      "",
 		Formatter: "foo",
 	}})
 	if err == nil {
@@ -44,7 +44,7 @@ func TestBuildMetricsLogger(t *testing.T) {
 	}
 
 	_, err = BuildMetricsLogger([]MetricsLoggerConfig{MetricsLoggerConfig{
-		Path:      "foo",
+		Dest:      "foo",
 		Formatter: "",
 	}})
 	if err == nil {

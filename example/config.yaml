@@ -19,11 +19,11 @@ metricsTick: 60
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- path: /dev/stdout
+- dest: /dev/stdout
   formatter: table
-- path: kubesim.log
+- dest: kubesim.log
   formatter: JSON
-- path: kubesim-hr.log
+- dest: kubesim-hr.log
   formatter: humanReadable
 
 # Write configuration of each node.

@@ -39,8 +39,8 @@ type Config struct {
 // Made public to be parsed from YAML.
 
 type MetricsLoggerConfig struct {
-	// Path is a file path in which the metrics is written.
-	Path string
+	// Dest is an output device of file path in which the metrics is written.
+	Dest string
 	// Formetter is a type of metrics format.
 	Formatter string
 }
@@ -61,8 +61,8 @@ func BuildMetricsLogger(conf []MetricsLoggerConfig) ([]*metrics.FileWriter, erro
 	writers := make([]*metrics.FileWriter, 0, len(conf))
 
 	for _, conf := range conf {
-		if conf.Path == "" {
-			return nil, strongerrors.InvalidArgument(errors.New("path must not be empty"))
+		if conf.Dest == "" {
+			return nil, strongerrors.InvalidArgument(errors.New("destination must not be empty"))
 		}
 
 		formatter, err := buildFormatter(conf.Formatter)
@@ -70,7 +70,7 @@ func BuildMetricsLogger(conf []MetricsLoggerConfig) ([]*metrics.FileWriter, erro
 			return nil, err
 		}
 
-		writer, err := metrics.NewFileWriter(conf.Path, formatter)
+		writer, err := metrics.NewFileWriter(conf.Dest, formatter)
 		if err != nil {
 			return nil, err
 		}
