@@ -27,45 +27,20 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 )
 
-func TestBuildMetricsFile(t *testing.T) {
-	_, err := BuildMetricsFile([]MetricsFileConfig{{
-		Path:      "",
+func TestBuildMetricsLogger(t *testing.T) {
+	_, err := BuildMetricsLogger([]MetricsLoggerConfig{{
+		Dest:      "",
 		Formatter: "",
 	}})
-	assert.EqualError(t, err, "empty metricsFile.Path")
+	assert.EqualError(t, err, "destination must not be empty")
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{{
-		Path:      "",
-		Formatter: "foo",
+	_, err = BuildMetricsLogger([]MetricsLoggerConfig{{
+		Dest:      "foo",
+		Formatter: "invalid",
 	}})
-	assert.EqualError(t, err, "empty metricsFile.Path")
+	assert.EqualError(t, err, "formatter \"invalid\" is not supported")
 
-	_, err = BuildMetricsFile([]MetricsFileConfig{{
-		Path:      "foo",
-		Formatter: "",
-	}})
-	assert.EqualError(t, err, "formatter \"\" is not supported")
-}
-
-func TestBuildMetricsStdout(t *testing.T) {
-	actual, err := BuildMetricsStdout(MetricsStdoutConfig{
-		Formatter: "",
-	})
-	if actual != nil || err != nil {
-		t.Errorf("got: (%+v, %+v)\nwant: (nil, nil)", actual, err)
-	}
-
-	_, err = BuildMetricsStdout(MetricsStdoutConfig{
-		Formatter: "foo",
-	})
-	assert.EqualError(t, err, "formatter \"foo\" is not supported")
-
-	_, err = BuildMetricsStdout(MetricsStdoutConfig{
-		Formatter: "JSON",
-	})
-	if err != nil {
-		t.Errorf("error %s", err.Error())
-	}
+	// TODO: Test correct cases
 }
 
 func TestBuildFormatter(t *testing.T) {
@@ -87,8 +62,8 @@ func TestBuildFormatter(t *testing.T) {
 		t.Errorf("got: %+v\nwant: %+v", actual2, expected2)
 	}
 
-	_, err := buildFormatter("Invalid")
-	assert.EqualError(t, err, "formatter \"Invalid\" is not supported")
+	_, err := buildFormatter("invalid")
+	assert.EqualError(t, err, "formatter \"invalid\" is not supported")
 }
 
 func TestBuildNode(t *testing.T) {

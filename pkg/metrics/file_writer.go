@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"os"
+	"strings"
 )
 
 // FileWriter is a Writer that writes metrics to a file.
@@ -24,14 +25,24 @@ type FileWriter struct {
 	formatter Formatter
 }
 
-// NewFileWriter creates a new FileWriter with a file at the given path, and the formatter that
-// formats metrics to a string.
-// If the file exists, it will be truncaed.
+// NewFileWriter creates a new FileWriter with an output device or file at the given path, and the formatter that
+// formats metrics to a string
+// If /dev/stdout or stdout is given, the standard out is set.
+// If /dev/stderr or stderr is given, the standard error is set.
+// Otherwise, the file of a given path is set and it will be truncated if it exists.
 // Returns error if failed to create a file.
-func NewFileWriter(path string, formatter Formatter) (*FileWriter, error) {
-	file, err := os.Create(path)
-	if err != nil {
-		return nil, err
+func NewFileWriter(dest string, formatter Formatter) (*FileWriter, error) {
+	var file *os.File
+	if dest == "/dev/stdout" || strings.ToLower(dest) == "stdout" {
+		file = os.Stdout
+	} else if dest == "/dev/stderr" || strings.ToLower(dest) == "stderr" {
+		file = os.Stderr
+	} else {
+		f, err := os.Create(dest)
+		if err != nil {
+			return nil, err
+		}
+		file = f
 	}
 
 	return &FileWriter{

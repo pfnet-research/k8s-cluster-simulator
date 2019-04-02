@@ -32,19 +32,16 @@ type Config struct {
 	Tick          int
 	StartClock    string
 	MetricsTick   int
-	MetricsFile   []MetricsFileConfig
-	MetricsStdout MetricsStdoutConfig
+	MetricsLogger []MetricsLoggerConfig
 	Cluster       []NodeConfig
 }
 
 // Made public to be parsed from YAML.
 
-type MetricsFileConfig struct {
-	Path      string
-	Formatter string
-}
-
-type MetricsStdoutConfig struct {
+type MetricsLoggerConfig struct {
+	// Dest is an output device or file path in which the metrics is written.
+	Dest string
+	// Formatter is a type of metrics format.
 	Formatter string
 }
 
@@ -58,14 +55,14 @@ type NodeStatus struct {
 	Allocatable map[v1.ResourceName]string
 }
 
-// BuildMetricsFile builds metrics.FileWriter with the given MetricsFileConfig.
+// BuildMetricsLogger builds metrics.FileWriter with the given MetricsLoggerConfig.
 // Returns error if the config is invalid or failed to create a FileWriter.
-func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
+func BuildMetricsLogger(conf []MetricsLoggerConfig) ([]*metrics.FileWriter, error) {
 	writers := make([]*metrics.FileWriter, 0, len(conf))
 
 	for _, conf := range conf {
-		if conf.Path == "" {
-			return nil, strongerrors.InvalidArgument(errors.New("empty metricsFile.Path"))
+		if conf.Dest == "" {
+			return nil, strongerrors.InvalidArgument(errors.New("destination must not be empty"))
 		}
 
 		formatter, err := buildFormatter(conf.Formatter)
@@ -73,7 +70,7 @@ func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
 			return nil, err
 		}
 
-		writer, err := metrics.NewFileWriter(conf.Path, formatter)
+		writer, err := metrics.NewFileWriter(conf.Dest, formatter)
 		if err != nil {
 			return nil, err
 		}
@@ -82,22 +79,6 @@ func BuildMetricsFile(conf []MetricsFileConfig) ([]*metrics.FileWriter, error) {
 	}
 
 	return writers, nil
-}
-
-// BuildMetricsStdout builds a metrics.StdoutWriter with the given MetricsStdoutConfig.
-// Returns error if failed to parse.
-func BuildMetricsStdout(conf MetricsStdoutConfig) (*metrics.StdoutWriter, error) {
-	if conf.Formatter == "" {
-		return nil, nil
-	}
-
-	formatter, err := buildFormatter(conf.Formatter)
-	if err != nil {
-		return nil, err
-	}
-
-	w := metrics.NewStdoutWriter(formatter)
-	return &w, nil
 }
 
 func buildFormatter(conf string) (metrics.Formatter, error) {
