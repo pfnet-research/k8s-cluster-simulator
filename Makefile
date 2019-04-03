@@ -21,9 +21,9 @@ lint:
 run-example:
 	go run $(shell go list ./example/...) --config example/config
 
-.PHONY: test-example
-test-example:
-	./test/run_example.sh
+.PHONY: e2e
+e2e:
+	@go test -v $(PROJECT_ROOT)/test/e2e/e2e_test.go
 
 .PHONY: coverage
 coverage:
