@@ -1,4 +1,4 @@
-// +build e2e
+// +build !no_e2e
 
 // Copyright 2019 Preferred Networks, Inc.
 //
