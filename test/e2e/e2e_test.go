@@ -82,7 +82,7 @@ func TestRunExample(t *testing.T) {
 		if err != nil {
 			fmt.Printf("failed to kill the process: %v\n", err)
 		}
-		t.Fatalf("failed to complete the example within %s", deadline.String())
+		t.Fatalf("failed to complete the example within %s\n%s", deadline.String(), stderr.String())
 	case err = <-done:
 		if err != nil {
 			t.Fatalf("failed to execute the process: %s", stderr.String())
