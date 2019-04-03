@@ -23,7 +23,7 @@ run-example:
 
 .PHONY: e2e
 e2e:
-	@go test -v $(PROJECT_ROOT)/test/e2e/e2e_test.go
+	@go test -v -tags e2e $(shell go list ./test/...)
 
 .PHONY: coverage
 coverage:
