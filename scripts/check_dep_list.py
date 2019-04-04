@@ -32,13 +32,24 @@ WHITELIST_DEPLIST = [  # may be missing in DEPENDENCIES.md
 ]
 
 
-def main():
+def main(verbose=False):
     ok = True
 
     gopkg = deps_gopkg()
+    if verbose:
+        print("Dependencies in " + GOPKG_PATH + ":")
+        for g in gopkg:
+            print("-", g)
+        print()
+
+    deplist = deps_list()
+    if verbose:
+        print("Dependencies in " + DEPLIST_PATH + ":")
+        for d in deplist:
+            print("-", d)
 
     deplist_names = []
-    for d in deps_list():
+    for d in deplist:
         if len(d[1]) == 0:
             print('License of "{}" must not be empty.'.format(d[0], ))
             ok = False
@@ -113,4 +124,10 @@ def deps_list():
 
 
 if __name__ == "__main__":
-    exit(0 if main() else 1)
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument("-v", "--verbose", action="store_true")
+
+    args = parser.parse_args()
+    exit(main(args.verbose))
