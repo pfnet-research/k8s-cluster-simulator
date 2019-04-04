@@ -20,6 +20,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+GOPKG_PATH = "Gopkg.toml"
+DEPLIST_PATH = "DEPENDENCIES.md"
+
 WHITELIST_GOPKG = [  # may be missing in Gopkg.toml
     "k8s.io/api",
     "k8s.io/apimachinery",
@@ -44,16 +47,16 @@ def main():
 
     for g in gopkg:
         if g not in deplist_names and g not in WHITELIST_DEPLIST:
-            print('"{}" is missing in DEPENDENCIES.md.'.format(g, ))
+            print('"{}" is missing in {}.'.format(g, DEPLIST_PATH))
             ok = False
 
     for d in deplist_names:
         if d not in gopkg and d not in WHITELIST_GOPKG:
-            print('DEPENDENCIES.md has "{}",'.format(d, ),
+            print('{} has "{}",'.format(DEPLIST_PATH, d),
                   "despite that this package doesn't depend on it.")
             ok = False
 
-    return ok
+    return 0 if ok else 1
 
 
 def deps_gopkg():
@@ -64,7 +67,7 @@ def deps_gopkg():
     """
 
     dep_names = []
-    with (PROJECT_ROOT / "Gopkg.toml").open() as f:
+    with (PROJECT_ROOT / GOPKG_PATH).open() as f:
         deps = toml.load(f)
         for c in deps["constraint"]:
             dep_names.append(c["name"])
@@ -80,12 +83,12 @@ def deps_list():
     import re
 
     RE_TABLE_HEADER = re.compile(r"^\| Name\s* \| License\s* \|$")
-    RE_URL = re.compile(r"^\| \[(.+?)\]\(.+?\)\s* \| (.*)\s* \|$")
-    RE_NOURL = re.compile(r"^\| (.+?)\s* \| (.*)\s* \|$")
+    RE_URL = re.compile(r"^\| \[(.+?)\]\(.+?\)\s* \| (.*?)\s* \|$")
+    RE_NOURL = re.compile(r"^\| (.+?)\s* \| (.*?)\s* \|$")
 
     deps = []
 
-    with (PROJECT_ROOT / "DEPENDENCIES.md").open() as f:
+    with (PROJECT_ROOT / DEPLIST_PATH).open() as f:
         # skip until header of deps table
         while not RE_TABLE_HEADER.match(f.readline()):
             pass
