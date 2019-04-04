@@ -11,7 +11,7 @@ clean::
 
 .PHONY: test
 test:
-	go test $(shell go list ./... | grep -v /vendor/) -race -short -v
+	go test -v -race -short -tags no_e2e $(shell go list ./... | grep -v /vendor/) 
 
 .PHONY: lint
 lint:
@@ -21,9 +21,9 @@ lint:
 run-example:
 	go run $(shell go list ./example/...) --config example/config
 
-.PHONY: test-example
-test-example:
-	./test/run_example.sh
+.PHONY: e2e
+e2e:
+	@go test -v ${PROJECT_ROOT}/test/e2e/e2e_test.go
 
 .PHONY: coverage
 coverage:
