@@ -11,4 +11,4 @@ script:
 - make lint test coverage
 - goveralls -coverprofile=profile.cov -service=travis-ci
 - make e2e
-# - make check-license
+# - python3 ./scripts/check_license.py
