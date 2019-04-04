@@ -17,10 +17,12 @@ Checks whether files have an appropriate license header.
 """
 
 from pathlib import Path
+import subprocess
 
 from license_header import license_header, has_license_header
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(subprocess.check_output(
+    "git rev-parse --show-toplevel".split()).strip().decode("utf-8"))
 
 
 def main():

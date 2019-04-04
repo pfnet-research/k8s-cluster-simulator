@@ -17,10 +17,12 @@ Adds a license header to files.
 """
 
 from pathlib import Path
+import subprocess
 
 from license_header import license_header, has_license_header
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(subprocess.check_output(
+    "git rev-parse --show-toplevel".split()).strip().decode("utf-8"))
 
 
 def main():
@@ -39,7 +41,7 @@ def add(paths, license_header):
 
         print("Add license header to file", p.relative_to(PROJECT_ROOT))
 
-        with open(p) as f:
+        with p.open() as f:
             content = f.readlines()
 
             if content[0][:2] == "#!":  # reserve shebangs
@@ -52,7 +54,7 @@ def add(paths, license_header):
             else:
                 content_new = [license_header, "\n", "\n"] + content
 
-        with open(p, "w") as f:
+        with p.open("w") as f:
             f.write(''.join(content_new))
 
 
