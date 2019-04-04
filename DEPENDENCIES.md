@@ -11,3 +11,4 @@
 | [github.com/spf13/cobra](https://github.com/spf13/cobra)                     | Apache-2.0 |
 | [github.com/spf13/viper](https://github.com/spf13/viper)                     | MIT        |
 | [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)                                 | Apache-2.0 |
+| [github.com/stretchr/testify](https://github.com/stretchr/testify)           | MIT        |
