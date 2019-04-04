@@ -25,17 +25,20 @@ PROJECT_ROOT = Path(subprocess.check_output(
     "git rev-parse --show-toplevel".split()).strip().decode("utf-8"))
 
 
-def main():
+def main(verbose=False):
     add(PROJECT_ROOT.glob("*[!vendor]/**/*_k8s.go"),
-        license_header("//", True))
+        license_header("//", True), verbose)
     add([p for p in PROJECT_ROOT.glob("*[!vendor]/**/*.go")
-         if p.name[-7:] != "_k8s.go"], license_header("//"))
-    add(PROJECT_ROOT.glob("*[!vendor]/**/*.py"), license_header("#"))
-    add(PROJECT_ROOT.glob("*[!vendor]/**/*.sh"), license_header("#"))
+         if p.name[-7:] != "_k8s.go"], license_header("//"), verbose)
+    add(PROJECT_ROOT.glob("*[!vendor]/**/*.py"), license_header("#"), verbose)
+    add(PROJECT_ROOT.glob("*[!vendor]/**/*.sh"), license_header("#"), verbose)
 
 
-def add(paths, license_header):
+def add(paths, license_header, verbose):
     for p in paths:
+        if verbose:
+            print("Checking", p.relative_to(PROJECT_ROOT))
+
         if has_license_header(p, license_header):
             continue
 
@@ -59,4 +62,10 @@ def add(paths, license_header):
 
 
 if __name__ == "__main__":
-    main()
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument("-v", "--verbose", action="store_true")
+
+    args = parser.parse_args()
+    main(args.verbose)

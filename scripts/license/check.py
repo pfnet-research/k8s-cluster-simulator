@@ -25,26 +25,31 @@ PROJECT_ROOT = Path(subprocess.check_output(
     "git rev-parse --show-toplevel".split()).strip().decode("utf-8"))
 
 
-def main():
+def main(verbose=False):
     ok = True
 
     ok &= check(
-        PROJECT_ROOT.glob("*[!vendor]/**/*_k8s.go"),
-        license_header("//", modification=True))
+        PROJECT_ROOT.glob("./*[!vendor]/**/*_k8s.go"),
+        license_header("//", modification=True), verbose)
     ok &= check(
         [p for p in PROJECT_ROOT.glob(
-            "*[!vendor]/**/*.go") if p.name[-7:] != "_k8s.go"],
-        license_header("//"))
-    ok &= check(PROJECT_ROOT.glob("*[!vendor]/**/*.py"), license_header("#"))
-    ok &= check(PROJECT_ROOT.glob("*[!vendor]/**/*.sh"), license_header("#"))
+            "./*[!vendor]/**/*.go") if p.name[-7:] != "_k8s.go"],
+        license_header("//"), verbose)
+    ok &= check(
+        PROJECT_ROOT.glob("./*[!vendor]/**/*.py"), license_header("#"), verbose)
+    ok &= check(
+        PROJECT_ROOT.glob("./*[!vendor]/**/*.sh"), license_header("#"), verbose)
 
     return 0 if ok else 1
 
 
-def check(paths, license_header):
+def check(paths, license_header, verbose):
     ok = True
 
     for p in paths:
+        if verbose:
+            print("Checking", p.relative_to(PROJECT_ROOT))
+
         if not p.exists():
             print("File", p.relative_to(PROJECT_ROOT), "does not exist")
             ok = False
@@ -58,4 +63,10 @@ def check(paths, license_header):
 
 
 if __name__ == "__main__":
-    exit(main())
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument("-v", "--verbose", action="store_true")
+
+    args = parser.parse_args()
+    exit(main(args.verbose))
