@@ -57,4 +57,4 @@ def add(paths, license_header):
 
 
 if __name__ == "__main__":
-    exit(main())
+    main()
