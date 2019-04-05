@@ -51,4 +51,4 @@ def has_license_header(path, license_header):
     Returns whether the file at `path` contains `license_header` string.
     """
 
-    return license_header in open(path).read()
+    return license_header in path.open().read()
