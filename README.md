@@ -347,5 +347,5 @@ Please see each file for more detail.
 
 [build-image]: https://secure.travis-ci.org/pfnet-research/k8s-cluster-simulator.svg
 [build-link]:  http://travis-ci.org/pfnet-research/k8s-cluster-simulator
-[cov-image]:   https://coveralls.io/repos/pfnet-research/k8s-cluster-simulator/badge.png
-[cov-link]:    https://coveralls.io/r/pfnet-research/k8s-cluster-simulator
+[cov-image]:   https://coveralls.io/repos/github/pfnet-research/k8s-cluster-simulator/badge.svg?branch=master
+[cov-link]:    https://coveralls.io/github/pfnet-research/k8s-cluster-simulator?branch=master
