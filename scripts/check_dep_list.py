@@ -37,37 +37,43 @@ WHITELIST_DEPLIST = [  # may be missing in DEPENDENCIES.md
 def main(verbose=False):
     ok = True
 
-    gopkg = deps_gopkg()
+    gopkg = sorted(deps_gopkg())
     if verbose:
-        print("Dependencies in " + GOPKG_PATH + ":")
+        print("Dependencies written in", GOPKG_PATH)
         for g in gopkg:
             print("-", g)
         print()
 
-    deplist = deps_list()
+    deplist = sorted(deps_list(), key=lambda d: d[0])
     if verbose:
-        print("Dependencies in " + DEPLIST_PATH + ":")
+        print("Dependencies written in", DEPLIST_PATH)
         for d in deplist:
+            print("- {:40s} {:20s}".format(*d))
+        print()
+
+    deplist_missing_license = [d[0] for d in deplist if len(d[1]) == 0]
+    if len(deplist_missing_license) > 0:
+        ok = False
+        print("The following dependencies in",
+              DEPLIST_PATH, "are missing license notice")
+        for d in deplist_missing_license:
             print("-", d)
 
-    deplist_names = []
-    for d in deplist:
-        if len(d[1]) == 0:
-            print('License of "{}" must not be empty.'.format(d[0], ))
-            ok = False
-            continue
-        deplist_names.append(d[0])
+    deplist_names = [d[0] for d in deplist if len(d[1]) > 0]
 
-    for g in gopkg:
-        if g not in deplist_names and g not in WHITELIST_DEPLIST:
-            print('"{}" is missing in {}.'.format(g, DEPLIST_PATH))
-            ok = False
-
-    for d in deplist_names:
-        if d not in gopkg and d not in WHITELIST_GOPKG:
-            print('{} has "{}",'.format(DEPLIST_PATH, d),
-                  "despite that this package doesn't depend on it.")
-            ok = False
+    gopkg_missing = [g for g in gopkg
+                     if (g not in deplist_names) and (g not in WHITELIST_DEPLIST)]
+    deplist_missing = [d for d in deplist_names
+                       if (d not in gopkg) and (d not in WHITELIST_GOPKG)]
+    if len(gopkg_missing) > 0 or len(deplist_missing) > 0:
+        ok = False
+        print("Difference between", GOPKG_PATH, "and", DEPLIST_PATH)
+        for g in gopkg_missing:
+            print("{:40s} <".format(g, ))
+        for d in deplist_missing:
+            print("{:40s} > {}".format("", d))
+    elif verbose:
+        print(DEPLIST_PATH, "is synced with", GOPKG_PATH)
 
     return 0 if ok else 1
 
