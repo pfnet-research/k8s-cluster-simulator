@@ -17,8 +17,10 @@ Validates that DEPENDENCIES.md is synced with Gopkg.toml.
 """
 
 from pathlib import Path
+import subprocess
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(subprocess.check_output(
+    "git rev-parse --show-toplevel".split()).strip().decode("utf-8"))
 
 GOPKG_PATH = "Gopkg.toml"
 DEPLIST_PATH = "DEPENDENCIES.md"
