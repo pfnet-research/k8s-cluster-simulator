@@ -2,6 +2,11 @@ language: go
 go:
 - "1.11.x"
 
+addons:
+  apt:
+    packages:
+    - python3
+
 before_install:
 - export PATH=$GOPATH/bin:$PATH
 - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -11,4 +16,4 @@ script:
 - make lint test coverage
 - goveralls -coverprofile=profile.cov -service=travis-ci
 - make e2e
-# - make check-license
+- python3 ./scripts/license/check.py -v
