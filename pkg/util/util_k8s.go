@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Modifications copyright (C) 2019 Preferred Networks, Inc.
+// Modifications copyright 2019 Preferred Networks, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
