@@ -3,6 +3,10 @@
   version = "~0.2.1"
 
 [[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "~1.4.1"
+
+[[constraint]]
   name = "github.com/pkg/errors"
   version = "~0.8.1"
 
@@ -39,4 +43,3 @@
 [[constraint]]
   name = "github.com/spf13/cobra"
   version = "~0.0.3"
-
