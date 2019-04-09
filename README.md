@@ -21,14 +21,6 @@ if err != nil {
 // 2. Register one or more pod submitters to KubeSim.
 kubesim.AddSubmitter(newMySubmitter(8))
 
-// SIGINT (Ctrl-C) and SIGTERM cancel the sumbitter and kubesim.Run().
-sig := make(chan os.Signal, 1)
-signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-go func() {
-    <-sig
-    cancel()
-}()
-
 // 3. Run the main loop of KubeSim.
 //    In each execution of the loop, KubeSim
 //      1) stores pods submitted from the registered submitters to its queue,
