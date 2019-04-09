@@ -25,7 +25,7 @@ import (
 // PriorityQueue stores pods in a priority queue.
 // The pods are sorted by their priority, which can be configured by users.
 type PriorityQueue struct {
-	// PriorityQueue wraps rawPriorityQueue for type-safetiness.
+	// PriorityQueue wraps rawPriorityQueue for type-safety.
 
 	inner         rawPriorityQueue
 	nominatedPods map[string]map[string]*v1.Pod
