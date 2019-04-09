@@ -30,6 +30,7 @@ import (
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/config"
+	submittermap "github.com/pfnet-research/k8s-cluster-simulator/pkg/kubesim/submitter_map"
 	l "github.com/pfnet-research/k8s-cluster-simulator/pkg/log"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
@@ -49,7 +50,7 @@ type KubeSim struct {
 	pendingPods queue.PodQueue
 	boundPods   map[string]*pod.Pod
 
-	submitters map[string]submitter.Submitter
+	submitters *submittermap.SubmitterMap
 	scheduler  scheduler.Scheduler
 
 	metricsWriters []metrics.Writer
@@ -96,7 +97,7 @@ func NewKubeSim(
 		pendingPods: queue,
 		boundPods:   map[string]*pod.Pod{},
 
-		submitters: map[string]submitter.Submitter{},
+		submitters: submittermap.New(),
 		scheduler:  sched,
 
 		metricsTick:    time.Duration(metricsTick) * time.Second,
@@ -121,7 +122,9 @@ func NewKubeSimFromConfigPath(
 
 // AddSubmitter adds the new submitter to this KubeSim.
 func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
-	k.submitters[name] = submitter
+	if _, found := k.submitters.Store(name, submitter); found {
+		log.L.Warnf("Submitter %q already present", name)
+	}
 }
 
 // Run executes the main loop, which invokes submitters and the scheduler, and binds pods to the
@@ -134,14 +137,14 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		return err
 	}
 
-	submitterAddedEver := len(k.submitters) > 0
+	submitterAddedEver := k.submitters.Len() > 0
 
 	for {
 		if k.toTerminate(submitterAddedEver) {
 			log.L.Debug("Terminate KubeSim")
 			break
 		}
-		submitterAddedEver = submitterAddedEver || len(k.submitters) > 0
+		submitterAddedEver = submitterAddedEver || k.submitters.Len() > 0
 
 		select {
 		case <-ctx.Done():
@@ -283,7 +286,7 @@ func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
 			}
 		}
 
-		if submitterAddedEver && len(k.submitters) == 0 { // all submitters are terminated
+		if submitterAddedEver && k.submitters.Len() == 0 { // all submitters are terminated
 			return true
 		}
 	}
@@ -292,10 +295,13 @@ func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
 }
 
 func (k *KubeSim) submit(metrics metrics.Metrics) error {
-	for name, subm := range k.submitters {
-		events, err := subm.Submit(k.clock, k, metrics)
-		if err != nil {
-			return err
+	err := error(nil)
+
+	k.submitters.Range(func(name string, subm submitter.Submitter) bool {
+		events, e := subm.Submit(k.clock, k, metrics)
+		if e != nil {
+			err = e
+			return false
 		}
 
 		for _, e := range events {
@@ -308,16 +314,18 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				log.L.Tracef("Submitter %s: Submit %v", name, pod)
 
 				if l.IsDebugEnabled() {
-					key, err := util.PodKey(pod)
-					if err != nil {
-						return err
+					key, e := util.PodKey(pod)
+					if e != nil {
+						err = e
+						return false
 					}
 					log.L.Debugf("Submitter %s: Submit %s", name, key)
 				}
 
-				err := k.pendingPods.Push(pod)
-				if err != nil {
-					return err
+				e := k.pendingPods.Push(pod)
+				if e != nil {
+					err = e
+					return false
 				}
 			} else if del, ok := e.(*submitter.DeleteEvent); ok {
 				log.L.Debugf("Submitter %s: Delete %s",
@@ -332,23 +340,28 @@ func (k *KubeSim) submit(metrics metrics.Metrics) error {
 				log.L.Debugf("Submitter %s: Update %s",
 					name, util.PodKeyFromNames(up.PodNamespace, up.PodName))
 
-				if err := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod); err != nil {
-					if e, ok := err.(*queue.ErrNoMatchingPod); ok {
+				if e := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod); e != nil {
+					if e, ok := e.(*queue.ErrNoMatchingPod); ok {
 						log.L.Warnf("Error updating pod: %s", e.Error())
 					} else {
-						return err
+						err = e
+						return false
 					}
 				}
 			} else if _, ok := e.(*submitter.TerminateSubmitterEvent); ok {
 				log.L.Debugf("Submitter %s: Terminate", name)
-				delete(k.submitters, name)
+				if _, found := k.submitters.Delete(name); !found {
+					log.L.Panicf("No submitter %q to delete", name)
+				}
 			} else {
 				log.L.Panic("Unknown submitter event")
 			}
 		}
-	}
 
-	return nil
+		return true
+	})
+
+	return err
 }
 
 func (k *KubeSim) schedule() error {
