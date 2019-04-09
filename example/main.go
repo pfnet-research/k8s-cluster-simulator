@@ -51,7 +51,7 @@ var rootCmd = &cobra.Command{
 	Short: "k8s-cluster-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx := newInterruptableContext()
 
 		// 1. Create a KubeSim with a pod queue and a scheduler.
 		queue := queue.NewPriorityQueue()
@@ -63,14 +63,6 @@ var rootCmd = &cobra.Command{
 
 		// 2. Register one or more pod submitters to KubeSim.
 		kubesim.AddSubmitter("MySubmitter", newMySubmitter(8))
-
-		// SIGINT (Ctrl-C) and SIGTERM cancel the sumbitter and kubesim.Run().
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-		go func() {
-			<-sig
-			cancel()
-		}()
 
 		// 3. Run the main loop of KubeSim.
 		//    In each execution of the loop, KubeSim
@@ -117,6 +109,20 @@ func buildScheduler() scheduler.Scheduler {
 	})
 
 	return &sched
+}
+
+func newInterruptableContext() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// SIGINT (Ctrl-C) and SIGTERM cancel kubesim.Run().
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sig
+		cancel()
+	}()
+
+	return ctx
 }
 
 // for test
