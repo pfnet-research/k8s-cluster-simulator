@@ -25,7 +25,7 @@ import (
 // performant than using a pair of map and sync.Mutex.
 type SubmitterMap struct {
 	inner sync.Map
-	size  int
+	size  int // track the size to avoid unnecessary computation in Len
 }
 
 // New creates a new SubmitterMap.
