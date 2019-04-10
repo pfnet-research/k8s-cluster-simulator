@@ -20,7 +20,8 @@ if err != nil {
 }
 
 // 2. Register one or more pod submitters to KubeSim.
-kubesim.AddSubmitter(newMySubmitter(8))
+numOfSubmittingPods := 8
+kubesim.AddSubmitter(newMySubmitter(numOfSubmittingPods))
 
 // 3. Run the main loop of KubeSim.
 //    In each execution of the loop, KubeSim
