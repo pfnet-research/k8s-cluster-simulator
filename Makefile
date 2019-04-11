@@ -27,5 +27,7 @@ e2e:
 
 .PHONY: coverage
 coverage:
-	go test -covermode=count -coverprofile=profile.cov $(shell go list ./... | grep -v /vendor/)
-	go tool cover -func=profile.cov
+	@go test -covermode=count -coverprofile=profile.cov.tmp -coverpkg ./pkg/... $(shell go list ./... | grep -v /vendor/)
+	@cat profile.cov.tmp | grep -v "_k8s.go" > profile.cov
+	@rm profile.cov.tmp
+	@go tool cover -func=profile.cov
