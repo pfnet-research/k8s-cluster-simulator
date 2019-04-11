@@ -17,7 +17,8 @@ sched := buildScheduler() // see below
 kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
 
 // 2. Register one or more pod submitters to KubeSim.
-kubesim.AddSubmitter(newMySubmitter(8))
+numOfSubmittingPods := 8
+kubesim.AddSubmitter(newMySubmitter(numOfSubmittingPods))
 
 // 3. Run the main loop of KubeSim.
 //    In each execution of the loop, KubeSim
@@ -335,8 +336,8 @@ Please see each file for more detail.
 * [pkg/util/util_k8s.go](pkg/util/util_k8s.go)
 
 
-[build-image]: https://secure.travis-ci.org/pfnet-research/k8s-cluster-simulator.svg
-[build-link]:  http://travis-ci.org/pfnet-research/k8s-cluster-simulator
+[build-image]: https://travis-ci.com/pfnet-research/k8s-cluster-simulator.svg
+[build-link]:  http://travis-ci.com/pfnet-research/k8s-cluster-simulator
 [cov-image]:   https://coveralls.io/repos/github/pfnet-research/k8s-cluster-simulator/badge.svg?branch=master
 [cov-link]:    https://coveralls.io/github/pfnet-research/k8s-cluster-simulator?branch=master
 [godoc-image]: https://godoc.org/github.com/pfnet-research/k8s-cluster-simulator/pkg?status.svg

@@ -59,7 +59,8 @@ var rootCmd = &cobra.Command{
 		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
 
 		// 2. Register one or more pod submitters to KubeSim.
-		kubesim.AddSubmitter("MySubmitter", newMySubmitter(8))
+		numOfSubmittingPods := 8
+		kubesim.AddSubmitter("MySubmitter", newMySubmitter(numOfSubmittingPods))
 
 		// 3. Run the main loop of KubeSim.
 		//    In each execution of the loop, KubeSim
