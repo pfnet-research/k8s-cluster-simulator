@@ -57,7 +57,7 @@ func (s *mySubmitter) Submit(
 
 	events := make([]submitter.Event, 0, submissionNum+1)
 
-	if s.podIdx > 0 { // Test deleting previously submitted pod
+	if s.podIdx > 0 && s.podIdx%8 == 0 { // Test deleting previously submitted pod
 		podName := fmt.Sprintf("pod-%d", s.podIdx-1)
 		events = append(events, &submitter.DeleteEvent{PodNamespace: "default", PodName: podName})
 	}
