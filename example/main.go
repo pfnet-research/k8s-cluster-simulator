@@ -56,10 +56,7 @@ var rootCmd = &cobra.Command{
 		// 1. Create a KubeSim with a pod queue and a scheduler.
 		queue := queue.NewPriorityQueue()
 		sched := buildScheduler() // see below
-		kubesim, err := kubesim.NewKubeSimFromConfigPath(configPath, queue, sched)
-		if err != nil {
-			log.G(context.TODO()).WithError(err).Fatalf("Error creating KubeSim: %s", err.Error())
-		}
+		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
 
 		// 2. Register one or more pod submitters to KubeSim.
 		kubesim.AddSubmitter("MySubmitter", newMySubmitter(8))
