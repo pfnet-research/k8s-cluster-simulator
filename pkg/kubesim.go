@@ -104,8 +104,8 @@ func NewKubeSim(
 	}, nil
 }
 
-// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file path),
-// queue, and scheduler.
+// NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file
+// extension), queue, and scheduler.
 // Returns error if the configuration failed.
 func NewKubeSimFromConfigPath(
 	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
@@ -119,8 +119,8 @@ func NewKubeSimFromConfigPath(
 	return NewKubeSim(conf, queue, sched)
 }
 
-// NewKubeSimFromConfigPathOrDie creates a new KubeSim with config from confPath (excluding file path),
-// queue, and scheduler.
+// NewKubeSimFromConfigPathOrDie creates a new KubeSim with config from confPath (excluding file
+// extension), queue, and scheduler.
 // If an error occurs during the initialization, it panics and stops the execution.
 func NewKubeSimFromConfigPathOrDie(
 	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
