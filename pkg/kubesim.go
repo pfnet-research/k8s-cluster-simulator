@@ -119,6 +119,21 @@ func NewKubeSimFromConfigPath(
 	return NewKubeSim(conf, queue, sched)
 }
 
+// NewKubeSimFromConfigPathOrDie creates a new KubeSim with config from confPath (excluding file path),
+// queue, and scheduler.
+// If an error occurs during the initialization, it panics and stops the execution.
+func NewKubeSimFromConfigPathOrDie(
+	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
+) *KubeSim {
+
+	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, sched)
+	if err != nil {
+		log.L.Fatal(err)
+	}
+
+	return kubesim
+}
+
 // AddSubmitter adds the new submitter to this KubeSim.
 func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
 	k.submitters[name] = submitter
