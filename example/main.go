@@ -43,7 +43,7 @@ var configPath string
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(
-		&configPath, "config", "config", "config file (exclusing file extension)")
+		&configPath, "config", "config", "config file (excluding file extension)")
 }
 
 var rootCmd = &cobra.Command{
