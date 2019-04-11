@@ -11,16 +11,13 @@ Kubernetes cluster simulator for evaluating schedulers.
 See [example](example) directory.
 
 ```go
-// 1. Create a KubeSim with a pod queue and a scheduler.
+// 1. Create a KubeSim with a pod queue, submitter and a scheduler.
 queue := queue.NewPriorityQueue()
-sched := buildScheduler() // see below
-kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
+subm := buildSubmitter()    // see below
+sched := buildScheduler()   // see below
+kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, subm, sched)
 
-// 2. Register one or more pod submitters to KubeSim.
-numOfSubmittingPods := 8
-kubesim.AddSubmitter(newMySubmitter(numOfSubmittingPods))
-
-// 3. Run the main loop of KubeSim.
+// 2. Run the main loop of KubeSim.
 //    In each execution of the loop, KubeSim
 //      1) stores pods submitted from the registered submitters to its queue,
 //      2) invokes scheduler with pending pods and cluster state,
@@ -28,6 +25,11 @@ kubesim.AddSubmitter(newMySubmitter(numOfSubmittingPods))
 //      4) progresses the simulated clock
 if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
     log.L.Fatal(err)
+}
+
+func buildSubmitter() submitter.Submitter {
+    numOfSubmittingPods := 8
+    return newMySubmitter(numOfSubmittingPods)
 }
 
 func buildScheduler() scheduler.Scheduler {
