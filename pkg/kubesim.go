@@ -49,19 +49,18 @@ type KubeSim struct {
 	pendingPods queue.PodQueue
 	boundPods   map[string]*pod.Pod
 
-	submitters map[string]submitter.Submitter
-	scheduler  scheduler.Scheduler
+	submitter submitter.Submitter
+	scheduler scheduler.Scheduler
 
 	metricsWriters []metrics.Writer
 	metricsTick    time.Duration
 }
 
-// NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
+// NewKubeSim creates a new KubeSim with the given config, queue, submitter and scheduler.
 // Returns error if the configuration failed.
 func NewKubeSim(
-	conf *config.Config, queue queue.PodQueue, sched scheduler.Scheduler,
+	conf *config.Config, queue queue.PodQueue, subm submitter.Submitter, sched scheduler.Scheduler,
 ) (*KubeSim, error) {
-
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
 
 	if err := configLog(conf.LogLevel); err != nil {
@@ -96,8 +95,8 @@ func NewKubeSim(
 		pendingPods: queue,
 		boundPods:   map[string]*pod.Pod{},
 
-		submitters: map[string]submitter.Submitter{},
-		scheduler:  sched,
+		submitter: subm,
+		scheduler: sched,
 
 		metricsTick:    time.Duration(metricsTick) * time.Second,
 		metricsWriters: metricsWriters,
@@ -105,28 +104,26 @@ func NewKubeSim(
 }
 
 // NewKubeSimFromConfigPath creates a new KubeSim with config from confPath (excluding file
-// extension), queue, and scheduler.
-// Returns error if the configuration failed.
+// extension), queue, submitter and scheduler.
+// Returns error if the initialization failed.
 func NewKubeSimFromConfigPath(
-	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
+	confPath string, queue queue.PodQueue, subm submitter.Submitter, sched scheduler.Scheduler,
 ) (*KubeSim, error) {
-
 	conf, err := readConfig(confPath)
 	if err != nil {
 		return nil, errors.Errorf("Error reading config: %s", err.Error())
 	}
 
-	return NewKubeSim(conf, queue, sched)
+	return NewKubeSim(conf, queue, subm, sched)
 }
 
 // NewKubeSimFromConfigPathOrDie creates a new KubeSim with config from confPath (excluding file
-// extension), queue, and scheduler.
+// extension), queue, submitter and scheduler.
 // If an error occurs during the initialization, it panics and stops the execution.
 func NewKubeSimFromConfigPathOrDie(
-	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
+	confPath string, queue queue.PodQueue, subm submitter.Submitter, sched scheduler.Scheduler,
 ) *KubeSim {
-
-	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, sched)
+	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, subm, sched)
 	if err != nil {
 		log.L.Fatal(err)
 	}
@@ -134,12 +131,7 @@ func NewKubeSimFromConfigPathOrDie(
 	return kubesim
 }
 
-// AddSubmitter adds the new submitter to this KubeSim.
-func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
-	k.submitters[name] = submitter
-}
-
-// Run executes the main loop, which invokes submitters and the scheduler, and binds pods to the
+// Run executes the main loop, which invokes submitter and the scheduler, and binds pods to the
 // selected nodes.
 // This method blocks until ctx is done or this KubeSim finishes processing all pods.
 func (k *KubeSim) Run(ctx context.Context) error {
@@ -149,14 +141,11 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		return err
 	}
 
-	submitterAddedEver := len(k.submitters) > 0
-
 	for {
-		if k.toTerminate(submitterAddedEver) {
+		if k.toTerminate() {
 			log.L.Debug("Terminate KubeSim")
 			break
 		}
-		submitterAddedEver = submitterAddedEver || len(k.submitters) > 0
 
 		select {
 		case <-ctx.Done():
@@ -172,7 +161,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			// Rebuild metrics every tick for submitters to use.
+			// Rebuild metrics every tick for submitter to use.
 			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
 			if err != nil {
 				return err
@@ -214,11 +203,10 @@ func readConfig(path string) (*config.Config, error) {
 	}
 	log.G(context.TODO()).Debugf("Config file %s", viper.ConfigFileUsed())
 
-	var conf = config.Config{
+	conf := config.Config{
 		LogLevel: "info",
 		Tick:     10,
 	}
-
 	if err := viper.Unmarshal(&conf); err != nil {
 		return nil, err
 	}
@@ -242,7 +230,6 @@ func configLog(logLevel string) error {
 
 func buildClock(startClock string) (clock.Clock, error) {
 	clk := clock.NewClock(time.Now())
-
 	if startClock != "" {
 		c, err := time.Parse(time.RFC3339, startClock)
 		if err != nil {
@@ -287,10 +274,10 @@ func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	return writers, nil
 }
 
-// toTerminate determines whether the main loop of this KubeSim can be terminated,
-// because all submitters are terminated, no pods are running on the cluster, and there are no
+// toTerminate determines whether the main loop of this KubeSim can be terminated
+// because submitter is terminated, no pods are running on the cluster, and there are no
 // pending pods in the queue.
-func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
+func (k *KubeSim) toTerminate() bool {
 	if _, err := k.pendingPods.Front(); err == queue.ErrEmptyQueue { // queue is empty
 		for _, node := range k.nodes { // cluster is empty
 			if node.PodsNum(k.clock) > 0 {
@@ -298,7 +285,7 @@ func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
 			}
 		}
 
-		if submitterAddedEver && len(k.submitters) == 0 { // all submitters are terminated
+		if k.submitter == nil { // submitter is terminated
 			return true
 		}
 	}
@@ -307,59 +294,57 @@ func (k *KubeSim) toTerminate(submitterAddedEver bool) bool {
 }
 
 func (k *KubeSim) submit(metrics metrics.Metrics) error {
-	for name, subm := range k.submitters {
-		events, err := subm.Submit(k.clock, k, metrics)
-		if err != nil {
-			return err
-		}
+	if k.submitter == nil {
+		return nil
+	}
 
-		for _, e := range events {
-			if submitted, ok := e.(*submitter.SubmitEvent); ok {
-				pod := submitted.Pod
-				pod.UID = types.UID(pod.Name) // FIXME
-				pod.CreationTimestamp = k.clock.ToMetaV1()
-				pod.Status.Phase = v1.PodPending
+	events, err := k.submitter.Submit(k.clock, k, metrics)
+	if err != nil {
+		return err
+	}
 
-				log.L.Tracef("Submitter %s: Submit %v", name, pod)
+	for _, e := range events {
+		if submitted, ok := e.(*submitter.SubmitEvent); ok {
+			pod := submitted.Pod
+			pod.UID = types.UID(pod.Name) // FIXME
+			pod.CreationTimestamp = k.clock.ToMetaV1()
+			pod.Status.Phase = v1.PodPending
 
-				if l.IsDebugEnabled() {
-					key, err := util.PodKey(pod)
-					if err != nil {
-						return err
-					}
-					log.L.Debugf("Submitter %s: Submit %s", name, key)
-				}
-
-				err := k.pendingPods.Push(pod)
+			log.L.Tracef("Submit %v", pod)
+			if l.IsDebugEnabled() {
+				key, err := util.PodKey(pod)
 				if err != nil {
 					return err
 				}
-			} else if del, ok := e.(*submitter.DeleteEvent); ok {
-				log.L.Debugf("Submitter %s: Delete %s",
-					name, util.PodKeyFromNames(del.PodNamespace, del.PodName))
-
-				if delFromQ := k.pendingPods.Delete(del.PodNamespace, del.PodName); !delFromQ {
-					k.deletePodFromNode(del.PodNamespace, del.PodName)
-				}
-			} else if up, ok := e.(*submitter.UpdateEvent); ok {
-				log.L.Tracef("Submitter %s: Update %s to %v",
-					name, util.PodKeyFromNames(up.PodNamespace, up.PodName), up.NewPod)
-				log.L.Debugf("Submitter %s: Update %s",
-					name, util.PodKeyFromNames(up.PodNamespace, up.PodName))
-
-				if err := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod); err != nil {
-					if e, ok := err.(*queue.ErrNoMatchingPod); ok {
-						log.L.Warnf("Error updating pod: %s", e.Error())
-					} else {
-						return err
-					}
-				}
-			} else if _, ok := e.(*submitter.TerminateSubmitterEvent); ok {
-				log.L.Debugf("Submitter %s: Terminate", name)
-				delete(k.submitters, name)
-			} else {
-				log.L.Panic("Unknown submitter event")
+				log.L.Debugf("Submit %s", key)
 			}
+
+			err := k.pendingPods.Push(pod)
+			if err != nil {
+				return err
+			}
+		} else if del, ok := e.(*submitter.DeleteEvent); ok {
+			log.L.Debugf("Delete pod %s", util.PodKeyFromNames(del.PodNamespace, del.PodName))
+			if delFromQ := k.pendingPods.Delete(del.PodNamespace, del.PodName); !delFromQ {
+				k.deletePodFromNode(del.PodNamespace, del.PodName)
+			}
+		} else if up, ok := e.(*submitter.UpdateEvent); ok {
+			log.L.Tracef(
+				"Update pod %s to %v", util.PodKeyFromNames(up.PodNamespace, up.PodName), up.NewPod)
+			log.L.Debugf("Update %s", util.PodKeyFromNames(up.PodNamespace, up.PodName))
+
+			if err := k.pendingPods.Update(up.PodNamespace, up.PodName, up.NewPod); err != nil {
+				if e, ok := err.(*queue.ErrNoMatchingPod); ok {
+					log.L.Warnf("Error updating pod: %s", e.Error())
+				} else {
+					return err
+				}
+			}
+		} else if _, ok := e.(*submitter.TerminateSubmitterEvent); ok {
+			log.L.Debugf("Terminate submitter")
+			k.submitter = nil
+		} else {
+			log.L.Panic("Unknown submitter event")
 		}
 	}
 
