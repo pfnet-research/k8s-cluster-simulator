@@ -8,6 +8,8 @@ addons:
     - python3
     - python3-pip
 
+go_import_path: github.com/pfnet-research/k8s-cluster-simulator
+
 before_install:
 - export PATH=$GOPATH/bin:$PATH
 
