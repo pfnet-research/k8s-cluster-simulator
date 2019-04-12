@@ -31,16 +31,20 @@ import (
 )
 
 type mySubmitter struct {
-	podIdx        uint64
+	namespace     string
 	targetPodsNum int
+	totalPodsNum  int
 	myrand        *rand.Rand
+	podIdx        int
 }
 
-func newMySubmitter(targetPodsNum int) *mySubmitter {
+func newMySubmitter(namespace string, targetPodsNum, totalPodsNum int) *mySubmitter {
 	return &mySubmitter{
-		podIdx:        0,
+		namespace:     namespace,
 		targetPodsNum: targetPodsNum,
+		totalPodsNum:  totalPodsNum,
 		myrand:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		podIdx:        0,
 	}
 }
 
@@ -59,15 +63,15 @@ func (s *mySubmitter) Submit(
 
 	if s.podIdx > 0 && s.podIdx%8 == 0 { // Test deleting previously submitted pod
 		podName := fmt.Sprintf("pod-%d", s.podIdx-1)
-		events = append(events, &submitter.DeleteEvent{PodNamespace: "default", PodName: podName})
+		events = append(events, &submitter.DeleteEvent{PodNamespace: s.namespace, PodName: podName})
 	}
 
 	for i := 0; i < submissionNum; i++ {
-		events = append(events, &submitter.SubmitEvent{Pod: s.newPod(s.podIdx)})
+		events = append(events, &submitter.SubmitEvent{Pod: s.newPod(uint64(s.podIdx))})
 		s.podIdx++
 	}
 
-	if s.podIdx > 1024 {
+	if s.podIdx > s.totalPodsNum {
 		events = append(events, &submitter.TerminateSubmitterEvent{})
 	}
 
@@ -100,7 +104,7 @@ func (s *mySubmitter) newPod(idx uint64) *v1.Pod {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("pod-%d", idx),
-			Namespace: "default",
+			Namespace: s.namespace,
 			Annotations: map[string]string{
 				"simSpec": simSpec,
 			},
