@@ -11,10 +11,10 @@ Kubernetes cluster simulator for evaluating schedulers.
 See [example](example) directory.
 
 ```go
-// 1. Create a KubeSim with a pod queue, submitter and a scheduler.
+// 1. Create a KubeSim with a pod queue, a submitter and a scheduler.
 queue := queue.NewPriorityQueue()
-subm := buildSubmitter()    // see below
-sched := buildScheduler()   // see below
+subm := buildSubmitter()  // see below
+sched := buildScheduler() // see below
 kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, subm, sched)
 
 // 2. Run the main loop of KubeSim.
@@ -40,38 +40,38 @@ func buildSubmitter() submitter.Submitter {
 }
 
 func buildScheduler() scheduler.Scheduler {
-    // 1. Create a generic scheduler that mimics a kube-scheduler.
-    sched := scheduler.NewGenericScheduler( /* preemption enabled */ true)
+	// 1. Create a generic scheduler that mimics a kube-scheduler.
+	sched := scheduler.NewGenericScheduler( /* preemption enabled */ true)
 
-    // 2. Register extender(s)
-    sched.AddExtender(
-        scheduler.Extender{
-            Name:             "MyExtender",
-            Filter:           filterExtender,
-            Prioritize:       prioritizeExtender,
-            Weight:           1,
-            NodeCacheCapable: true,
-        },
-    )
+	// 2. Register extender(s)
+	sched.AddExtender(
+		scheduler.Extender{
+			Name:             "MyExtender",
+			Filter:           filterExtender,
+			Prioritize:       prioritizeExtender,
+			Weight:           1,
+			NodeCacheCapable: true,
+		},
+	)
 
-    // 2. Register plugin(s)
-    // Predicate
-    sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
-    // Prioritizer
-    sched.AddPrioritizer(priorities.PriorityConfig{
-        Name:   "BalancedResourceAllocation",
-        Map:    priorities.BalancedResourceAllocationMap,
-        Reduce: nil,
-        Weight: 1,
-    })
-    sched.AddPrioritizer(priorities.PriorityConfig{
-        Name:   "LeastRequested",
-        Map:    priorities.LeastRequestedPriorityMap,
-        Reduce: nil,
-        Weight: 1,
-    })
+	// 2. Register plugin(s)
+	// Predicate
+	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+	// Prioritizer
+	sched.AddPrioritizer(priorities.PriorityConfig{
+		Name:   "BalancedResourceAllocation",
+		Map:    priorities.BalancedResourceAllocationMap,
+		Reduce: nil,
+		Weight: 1,
+	})
+	sched.AddPrioritizer(priorities.PriorityConfig{
+		Name:   "LeastRequested",
+		Map:    priorities.LeastRequestedPriorityMap,
+		Reduce: nil,
+		Weight: 1,
+	})
 
-    return &sched
+	return &sched
 }
 ```
 
@@ -87,7 +87,7 @@ type Submitter interface {
 	// Submitters are called serially in the same order that they are registered to the simulated
 	// cluster.
 	// This method must never block.
-    Submit(clock clock.Clock, nodeLister algorithm.NodeLister, metrics metrics.Metrics) ([]Event, error)
+	Submit(clock clock.Clock, nodeLister algorithm.NodeLister, metrics metrics.Metrics) ([]Event, error)
 }
 
 // Event defines the interface of a submitter event.

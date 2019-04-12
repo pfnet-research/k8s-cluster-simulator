@@ -54,7 +54,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := newInterruptableContext()
 
-		// 1. Create a KubeSim with a pod queue, submitter and a scheduler.
+		// 1. Create a KubeSim with a pod queue, a submitter and a scheduler.
 		queue := queue.NewPriorityQueue()
 		subm := buildSubmitter()  // see below
 		sched := buildScheduler() // see below
