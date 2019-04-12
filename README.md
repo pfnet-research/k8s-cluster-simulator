@@ -28,8 +28,15 @@ if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled 
 }
 
 func buildSubmitter() submitter.Submitter {
-    numOfSubmittingPods := 8
-    return newMySubmitter(numOfSubmittingPods)
+	numOfSubmittingPods := 4
+	numOfTotalPods := 256
+
+	return submitter.NewCompositeSubmitter(
+		map[string]submitter.Submitter{
+			"MySubmitter0": newMySubmitter("user0", numOfSubmittingPods, numOfTotalPods),
+			"MySubmitter1": newMySubmitter("user1", numOfSubmittingPods, numOfTotalPods),
+		},
+	)
 }
 
 func buildScheduler() scheduler.Scheduler {
