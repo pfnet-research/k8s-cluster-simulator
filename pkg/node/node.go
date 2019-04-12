@@ -115,7 +115,9 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 func (node *Node) DeletePod(clock clock.Clock, podNamespace, podName string) bool {
 	key := util.PodKeyFromNames(podNamespace, podName)
 	pod, ok := node.pods[key]
-	pod.Delete(clock)
+	if ok {
+		pod.Delete(clock)
+	}
 
 	return ok
 }
