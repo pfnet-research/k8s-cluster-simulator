@@ -16,29 +16,26 @@
 Checks whether files have an appropriate license header.
 """
 
+import os
 from pathlib import Path
 import subprocess
 
 from license_header import license_header, has_license_header
 
-PROJECT_ROOT = Path(subprocess.check_output(
-    "git rev-parse --show-toplevel".split()).strip().decode("utf-8"))
+PROJECT_ROOT = subprocess.check_output(
+    "git rev-parse --show-toplevel".split()).strip().decode("utf-8")
+target_dirs = [os.path.join(PROJECT_ROOT, d) for d in os.listdir(PROJECT_ROOT) if d != "vendor"]
 
 
 def main(verbose=False):
     ok = True
 
-    ok &= check(
-        PROJECT_ROOT.glob("./*[!vendor]/**/*_k8s.go"),
-        license_header("//", modification=True), verbose)
-    ok &= check(
-        [p for p in PROJECT_ROOT.glob(
-            "./*[!vendor]/**/*.go") if p.name[-7:] != "_k8s.go"],
-        license_header("//"), verbose)
-    ok &= check(
-        PROJECT_ROOT.glob("./*[!vendor]/**/*.py"), license_header("#"), verbose)
-    ok &= check(
-        PROJECT_ROOT.glob("./*[!vendor]/**/*.sh"), license_header("#"), verbose)
+    for d in target_dirs:
+        ok &= check(Path(d).glob("**/*_k8s.go"), license_header("//", modification=True), verbose)
+        ok &= check([p for p in Path(d).glob("**/*.go")
+            if p.name[-7:] != "_k8s.go"], license_header("//"), verbose)
+        ok &= check(Path(d).glob("**/*.py"), license_header("#"), verbose)
+        ok &= check(Path(d).glob("**/*.sh"), license_header("#"), verbose)
 
     return 0 if ok else 1
 
