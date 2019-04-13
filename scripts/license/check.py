@@ -38,7 +38,7 @@ def main(verbose=False):
     for d in target_dirs:
         ok &= check(Path(d).glob("**/*_k8s.go"), license_header("//", modification=True), verbose)
         ok &= check([p for p in Path(d).glob("**/*.go")
-            if p.name[-7:] != "_k8s.go"], license_header("//"), verbose)
+            if not p.name.endswith("_k8s.go")], license_header("//"), verbose)
         ok &= check(Path(d).glob("**/*.py"), license_header("#"), verbose)
         ok &= check(Path(d).glob("**/*.sh"), license_header("#"), verbose)
 
