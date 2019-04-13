@@ -24,10 +24,15 @@ from license_header import license_header, has_license_header
 
 PROJECT_ROOT = subprocess.check_output(
     "git rev-parse --show-toplevel".split()).strip().decode("utf-8")
-target_dirs = [os.path.join(PROJECT_ROOT, d) for d in os.listdir(PROJECT_ROOT) if d != "vendor"]
+target_dirs = [os.path.join(PROJECT_ROOT, d) for d in os.listdir(PROJECT_ROOT)
+               if d != "vendor" and os.path.isdir(os.path.join(PROJECT_ROOT, d))]
 
 
 def main(verbose=False):
+    add(Path(PROJECT_ROOT).glob("*.go"), license_header("//"), verbose)
+    add(Path(PROJECT_ROOT).glob("*.py"), license_header("#"), verbose)
+    add(Path(PROJECT_ROOT).glob("*.sh"), license_header("#"), verbose)
+
     for d in target_dirs:
         add(Path(d).glob("**/*_k8s.go"), license_header("//", modification=True), verbose)
         add([p for p in Path(d).glob("**/*.go")
