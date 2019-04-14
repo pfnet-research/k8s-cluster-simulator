@@ -32,7 +32,7 @@ def main(verbose=False):
     ok &= check(PROJECT_ROOT.glob("*.py"), license_header("#"), verbose)
     ok &= check(PROJECT_ROOT.glob("*.sh"), license_header("#"), verbose)
 
-    for p in PROJECT_ROOT.glob("*"):
+    for p in PROJECT_ROOT.iterdir():
         if p.name == "vendor" or not p.is_dir():
             continue
         ok &= check(p.glob("**/*_k8s.go"), license_header("//", modification=True), verbose)
