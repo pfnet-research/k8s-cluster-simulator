@@ -54,7 +54,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := newInterruptableContext()
 
-		// 1. Create a KubeSim with a pod queue, a submitter and a scheduler.
+		// 1. Create a KubeSim (a simulated cluster) with a pod queue, a submitter and a scheduler.
 		queue := queue.NewPriorityQueue()
 		subm := buildSubmitter()  // see below
 		sched := buildScheduler() // see below
@@ -76,12 +76,22 @@ func buildSubmitter() submitter.Submitter {
 	numOfSubmittingPods := 4
 	numOfTotalPods := 256
 
+	// In this example, we register two submitters to KubeSim.
+	// Each submitter emulates an individual user.
+	//
+	// While KubeSim takes only a single submitter, we can in practice register multiple submitters
+	// by wrapping them in a CompositeSubmitter instance.
+	// A CompositeSubmitter gathers multiple submitters and acts as a single submitter.
+	// No modification is needed for the wrapped submitters.
 	return submitter.NewCompositeSubmitter(
 		map[string]submitter.Submitter{
 			"MySubmitter0": newMySubmitter("user0", numOfSubmittingPods, numOfTotalPods),
 			"MySubmitter1": newMySubmitter("user1", numOfSubmittingPods, numOfTotalPods),
 		},
 	)
+
+	// If we need to use only a single submitter, we can register it directly to KubeSim.
+	// return newMySubmitter("user0", numOfSubmittingPods, numOfTotalPods)
 }
 
 func buildScheduler() scheduler.Scheduler {
