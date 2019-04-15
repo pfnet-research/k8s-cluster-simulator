@@ -30,6 +30,7 @@ import (
 	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/submitter"
 )
 
 func main() {
@@ -53,16 +54,13 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := newInterruptableContext()
 
-		// 1. Create a KubeSim with a pod queue and a scheduler.
+		// 1. Create a KubeSim (a simulated cluster) with a pod queue, a submitter and a scheduler.
 		queue := queue.NewPriorityQueue()
+		subm := buildSubmitter()  // see below
 		sched := buildScheduler() // see below
-		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
+		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, subm, sched)
 
-		// 2. Register one or more pod submitters to KubeSim.
-		numOfSubmittingPods := 8
-		kubesim.AddSubmitter("MySubmitter", newMySubmitter(numOfSubmittingPods))
-
-		// 3. Run the main loop of KubeSim.
+		// 2. Run the main loop of KubeSim.
 		//    In each execution of the loop, KubeSim
 		//      1) stores pods submitted from the registered submitters to its queue,
 		//      2) invokes scheduler with pending pods and cluster state,
@@ -72,6 +70,28 @@ var rootCmd = &cobra.Command{
 			log.L.Fatal(err)
 		}
 	},
+}
+
+func buildSubmitter() submitter.Submitter {
+	numOfSubmittingPods := 4
+	numOfTotalPods := 256
+
+	// In this example, we register two submitters to KubeSim.
+	// Each submitter emulates an individual user.
+	//
+	// While KubeSim takes only a single submitter, we can in practice register multiple submitters
+	// by wrapping them in a CompositeSubmitter instance.
+	// A CompositeSubmitter gathers multiple submitters and acts as a single submitter.
+	// No modification is needed for the wrapped submitters.
+	return submitter.NewCompositeSubmitter(
+		map[string]submitter.Submitter{
+			"MySubmitter0": newMySubmitter("user0", numOfSubmittingPods, numOfTotalPods),
+			"MySubmitter1": newMySubmitter("user1", numOfSubmittingPods, numOfTotalPods),
+		},
+	)
+
+	// If we need to use only a single submitter, we can register it directly to KubeSim.
+	// return newMySubmitter("user0", numOfSubmittingPods, numOfTotalPods)
 }
 
 func buildScheduler() scheduler.Scheduler {
