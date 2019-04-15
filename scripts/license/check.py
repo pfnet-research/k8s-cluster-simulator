@@ -28,17 +28,18 @@ PROJECT_ROOT = Path(subprocess.check_output(
 def main(verbose=False):
     ok = True
 
-    ok &= check(
-        PROJECT_ROOT.glob("./*[!vendor]/**/*_k8s.go"),
-        license_header("//", modification=True), verbose)
-    ok &= check(
-        [p for p in PROJECT_ROOT.glob(
-            "./*[!vendor]/**/*.go") if p.name[-7:] != "_k8s.go"],
-        license_header("//"), verbose)
-    ok &= check(
-        PROJECT_ROOT.glob("./*[!vendor]/**/*.py"), license_header("#"), verbose)
-    ok &= check(
-        PROJECT_ROOT.glob("./*[!vendor]/**/*.sh"), license_header("#"), verbose)
+    ok &= check(PROJECT_ROOT.glob("*.go"), license_header("//"), verbose)
+    ok &= check(PROJECT_ROOT.glob("*.py"), license_header("#"), verbose)
+    ok &= check(PROJECT_ROOT.glob("*.sh"), license_header("#"), verbose)
+
+    for p in PROJECT_ROOT.iterdir():
+        if p.name == "vendor" or not p.is_dir():
+            continue
+        ok &= check(p.glob("**/*_k8s.go"), license_header("//", modification=True), verbose)
+        ok &= check([pp for pp in p.glob("**/*.go")
+            if not pp.name.endswith("_k8s.go")], license_header("//"), verbose)
+        ok &= check(p.glob("**/*.py"), license_header("#"), verbose)
+        ok &= check(p.glob("**/*.sh"), license_header("#"), verbose)
 
     return 0 if ok else 1
 
