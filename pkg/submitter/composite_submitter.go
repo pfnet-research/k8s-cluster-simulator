@@ -30,9 +30,13 @@ type CompositeSubmitter struct {
 // NewCompositeSubmitter creates a new CompositeSubmitter with the given submitters.
 // Submitters are identified by their name of string.
 func NewCompositeSubmitter(submitters map[string]Submitter) *CompositeSubmitter {
-	return &CompositeSubmitter{
-		submitters,
+	// deep copy submitters
+	s := make(map[string]Submitter, len(submitters))
+	for k, v := range submitters {
+		s[k] = v
 	}
+
+	return &CompositeSubmitter{s}
 }
 
 // Submit implements Submitter interface.
