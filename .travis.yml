@@ -25,4 +25,4 @@ script:
 - python3 ./scripts/check_dep_list.py -v
 
 after_success:
-- goveralls -coverprofile=profile.cov -service=travis-ci
+- goveralls -coverprofile=.profile.cov -service=travis-ci

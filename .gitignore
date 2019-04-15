@@ -139,7 +139,7 @@ dmypy.json
 *.log
 
 # Coverage file
-profile.cov
+.profile.cov
 
 # Misc
 .envrc

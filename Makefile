@@ -11,7 +11,7 @@ clean::
 
 .PHONY: test
 test:
-	go test -v -race -short -tags no_e2e $(shell go list ./... | grep -v /vendor/) 
+	go test -v -race -short -tags no_e2e $(shell go list ./... | grep -v /vendor/)
 
 .PHONY: lint
 lint:
@@ -28,6 +28,6 @@ e2e:
 .PHONY: coverage
 coverage:
 	@go test -covermode=count -coverprofile=profile.cov.tmp -coverpkg ./pkg/... $(shell go list ./... | grep -v /vendor/)
-	@cat profile.cov.tmp | grep -v "_k8s.go" > profile.cov
+	@cat profile.cov.tmp | grep -v "_k8s.go" > .profile.cov
 	@rm profile.cov.tmp
-	@go tool cover -func=profile.cov
+	@go tool cover -func=.profile.cov
