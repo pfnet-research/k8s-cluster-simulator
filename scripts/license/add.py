@@ -26,12 +26,18 @@ PROJECT_ROOT = Path(subprocess.check_output(
 
 
 def main(verbose=False):
-    add(PROJECT_ROOT.glob("*[!vendor]/**/*_k8s.go"),
-        license_header("//", True), verbose)
-    add([p for p in PROJECT_ROOT.glob("*[!vendor]/**/*.go")
-         if p.name[-7:] != "_k8s.go"], license_header("//"), verbose)
-    add(PROJECT_ROOT.glob("*[!vendor]/**/*.py"), license_header("#"), verbose)
-    add(PROJECT_ROOT.glob("*[!vendor]/**/*.sh"), license_header("#"), verbose)
+    add(PROJECT_ROOT.glob("*.go"), license_header("//"), verbose)
+    add(PROJECT_ROOT.glob("*.py"), license_header("#"), verbose)
+    add(PROJECT_ROOT.glob("*.sh"), license_header("#"), verbose)
+
+    for p in PROJECT_ROOT.iterdir():
+        if p.name == "vendor" or not p.is_dir():
+            continue
+        add(p.glob("**/*_k8s.go"), license_header("//", modification=True), verbose)
+        add([pp for pp in p.glob("**/*.go")
+             if not pp.name.endswith("_k8s.go")], license_header("//"), verbose)
+        add(p.glob("**/*.py"), license_header("#"), verbose)
+        add(p.glob("**/*.sh"), license_header("#"), verbose)
 
 
 def add(paths, license_header, verbose):
