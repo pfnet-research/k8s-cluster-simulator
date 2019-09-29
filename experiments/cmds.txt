@@ -1,0 +1,1 @@
+go run $(go list ./experiments) --config ./experiments/config/c2node --workload ./experiments/config/workload  > run.out

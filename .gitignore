@@ -144,3 +144,6 @@ dmypy.json
 # Misc
 .envrc
 tmp/
+
+# vscode
+.vscode/
