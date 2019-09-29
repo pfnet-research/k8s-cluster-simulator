@@ -1,0 +1,48 @@
+module github.com/pfnet-research/k8s-cluster-simulator
+
+replace (
+	github.com/pfnet-research/k8s-cluster-simulator => ./
+	k8s.io/api => k8s.io/api v0.0.0-20190919035539-41700d9d0c5b
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918080820-40952ff8d5b6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190917163033-a891081239f5
+	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190918040322-b11291ff0a50
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20190916161055-1f2b8882058b
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.0.0-20190916161804-3af65fe0d627
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.0.0-20190913091112-9859410eb5f6
+	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190912042602-ebc0eb3a5c23
+	k8s.io/component-base => k8s.io/component-base v0.0.0-20190918040032-61bc4cc48c91
+	k8s.io/cri-api => k8s.io/cri-api v0.0.0-20190828121515-24ae4d4e8b03
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.0.0-20190913091657-9745ba0e69cf
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190917160357-d172b2afe66f
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.0.0-20190831080900-37642bccd2bd
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.0.0-20190831080623-67697732d2b9
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.0.0-20190831080806-2937954be24b
+	k8s.io/kubectl => k8s.io/kubectl v0.0.0-20190918164019-21692a0861df
+	k8s.io/kubelet => k8s.io/kubelet v0.0.0-20190913090242-4a988d086279
+	// k8s.io/kubernetes => ./vendor/k8s.io/kubernetes/
+	k8s.io/kubernetes => k8s.io/kubernetes v1.15.0
+	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20190917162005-1c48f4e41cb3
+	k8s.io/metrics => k8s.io/metrics v0.0.0-20190913085057-ae59e7bc40d2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190913083406-d0cd75593f8b
+)
+
+go 1.13
+
+// require github.com/spf13/cobra v0.0.5 // indirect
+
+require (
+	github.com/containerd/containerd v1.2.9
+	github.com/cpuguy83/strongerrors v0.2.1
+	github.com/pkg/errors v0.8.1
+	github.com/sirupsen/logrus v1.4.2
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/viper v1.4.0
+	github.com/stretchr/testify v1.3.0
+	gopkg.in/yaml.v2 v2.2.2
+	k8s.io/api v0.0.0
+	k8s.io/apimachinery v0.0.0
+	k8s.io/client-go v0.0.0
+	k8s.io/kubernetes v0.0.0-00010101000000-000000000000
+)

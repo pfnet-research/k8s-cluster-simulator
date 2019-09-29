@@ -431,6 +431,11 @@ func (k *KubeSim) gcTerminatedPodsInNodes() {
 
 func (k *KubeSim) deletePodFromNode(podNamespace, podName string) {
 	key := util.PodKeyFromNames(podNamespace, podName)
+	if k.boundPods[key] == nil {
+		//fixed the issue of deleteing a pod multiple times.
+		log.L.Debugf("pod %v was deleted", podName)
+		return
+	}
 	k.boundPods[key].Delete(k.clock)
 
 	nodeName := k.boundPods[key].ToV1().Spec.NodeName
