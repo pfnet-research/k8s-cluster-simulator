@@ -37,6 +37,7 @@ type mySubmitter struct {
 	podIdx       uint64
 	totalPodsNum uint64
 	myrand       *rand.Rand
+	tick         time.Duration
 }
 
 func newMySubmitter(totalPodsNum uint64) *mySubmitter {
@@ -44,23 +45,15 @@ func newMySubmitter(totalPodsNum uint64) *mySubmitter {
 		podIdx:       0,
 		totalPodsNum: totalPodsNum,
 		myrand:       rand.New(rand.NewSource(time.Now().UnixNano())),
+		tick:         time.Duration(10), //TODO: get tick from viper.config
 	}
 }
 
 func (s *mySubmitter) generateWorkloads(
 	clock clock.Clock,
-	_ algorithm.NodeLister,
 	met metrics.Metrics) ([]submitter.Event, error) {
 
-	// delete the workload folder first.
-	// os.RemoveAll(workloadPath)
-	// err := os.MkdirAll(workloadPath, 755)
-	// if err != nil {
-	// 	log.L.Fatalf("Cannot create the folder %v", workloadPath)
-	// 	return nil, fmt.Errorf("Cannot create the folder %v", workloadPath)
-	// }
-
-	// find the number of submission at clock time.
+	// randomly generate the number of submission at time clock.
 	submissionNum := int(s.myrand.Int31n(3))
 	events := make([]submitter.Event, 0, submissionNum+1)
 
@@ -76,11 +69,45 @@ func (s *mySubmitter) generateWorkloads(
 	return events, nil
 }
 
+func (s *mySubmitter) loadWorkload(
+	clock clock.Clock,
+	met metrics.Metrics) ([]submitter.Event, error) {
+	// find all files matching with clocks.
+	// startClock := clock
+	// endClock := clock.Add(s.tick)
+	podNames := podMap[clock.ToRFC3339()]
+	// load the pods and submit them.
+
+	events := make([]submitter.Event, 0, len(podNames)+1)
+
+	for _, podName := range podNames {
+		fileName := fmt.Sprintf("%s@%s", clock.ToRFC3339(), podName)
+		filePath := fmt.Sprintf("%s/%s", workloadPath, fileName)
+		newPod, err := s.loadPod(filePath)
+		if err != nil {
+			log.L.Errorf("cannot load %s", filePath)
+			return events, fmt.Errorf("cannot load %s", filePath)
+		}
+		submittedPodsNum++
+		events = append(events, &submitter.SubmitEvent{Pod: newPod})
+
+		if submittedPodsNum >= uint64(s.totalPodsNum) {
+			events = append(events, &submitter.TerminateSubmitterEvent{})
+			return events, nil
+		}
+	}
+
+	return events, nil
+}
+
 func (s *mySubmitter) Submit(
 	clock clock.Clock,
 	_ algorithm.NodeLister,
 	met metrics.Metrics) ([]submitter.Event, error) {
-	return s.generateWorkloads(clock, nil, met)
+	if isGenWorkload {
+		return s.generateWorkloads(clock, met)
+	}
+	return s.loadWorkload(clock, met)
 }
 
 func (s *mySubmitter) newPod(idx uint64, prio int32, phaseNum int, secs []uint64,
@@ -141,8 +168,22 @@ func (s *mySubmitter) newPod(idx uint64, prio int32, phaseNum int, secs []uint64
 	return &pod, nil
 }
 
-func (s *mySubmitter) loadPod(fileName string) (*v1.Pod, error) {
-	return nil, nil
+func (s *mySubmitter) loadPod(filePath string) (*v1.Pod, error) {
+	d, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.L.Errorf("cannot find file %s", filePath)
+		return nil, fmt.Errorf("cannot find file %s", filePath)
+	}
+
+	pod := v1.Pod{}
+
+	err = yaml.Unmarshal(d, &pod)
+	if err != nil {
+		log.L.Errorf("cannot parse pod from file %s", filePath)
+		return nil, fmt.Errorf("cannot parse pod from file %s", filePath)
+	}
+
+	return &pod, nil
 }
 
 func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
@@ -205,7 +246,7 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 		log.L.Fatalf("error: %v", err)
 	}
 
-	err = ioutil.WriteFile(fmt.Sprintf("%s/%s-pod%d.yaml", workloadPath, clock, idx), d, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf("%s/%s@pod-%d.yaml", workloadPath, clock.ToRFC3339(), idx), d, 0644)
 	if err != nil {
 		log.L.Fatal(err)
 	}

@@ -2,7 +2,7 @@ typemeta:
   kind: Pod
   apiversion: v1
 objectmeta:
-  name: pod-0
+  name: pod-2
   generatename: ""
   namespace: default
   selflink: ""
@@ -16,15 +16,9 @@ objectmeta:
   annotations:
     simSpec: |2
 
-      - seconds: 3240
+      - seconds: 2160
         resourceUsage:
-          cpu: 1
-          memory: 0Gi
-          nvidia.com/gpu: 0
-
-      - seconds: 2700
-        resourceUsage:
-          cpu: 1
+          cpu: 2
           memory: 0Gi
           nvidia.com/gpu: 0
 

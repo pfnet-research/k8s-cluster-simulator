@@ -16,8 +16,10 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/containerd/containerd/log"
@@ -39,15 +41,41 @@ func main() {
 }
 
 // configPath is the path of the config file, defaulting to "config".
-var configPath string
-var workloadPath string
-var totalPodsNum = uint64(3)
+var (
+	configPath       string
+	isGenWorkload    = false
+	workloadPath     string
+	totalPodsNum     = uint64(3)
+	submittedPodsNum = uint64(0)
+	podMap           = make(map[string][]string)
+)
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&configPath, "config", "./config/c2node", "config file (excluding file extension)")
 	rootCmd.PersistentFlags().StringVar(
 		&workloadPath, "workload", "./config/workload", "config file (excluding file extension)")
+	if !isGenWorkload {
+		files, _ := ioutil.ReadDir(workloadPath)
+		totalPodsNum = uint64(len(files))
+		for _, f := range files {
+			fileName := string(f.Name())
+			arr := strings.Split(fileName, "@")
+			clockStr := arr[0]
+			podName := arr[1]
+			if _, ok := podMap[clockStr]; ok {
+				podMap[clockStr] = append(podMap[clockStr], podName)
+			} else {
+				strArr := []string{podName}
+				podMap[clockStr] = strArr
+			}
+		}
+	} else {
+		os.RemoveAll(workloadPath)
+		os.MkdirAll(workloadPath, 0755)
+	}
+	log.L.Infof("Submitting %d pods", totalPodsNum)
+	log.L.Infof("workload: %s", workloadPath)
 }
 
 var rootCmd = &cobra.Command{
