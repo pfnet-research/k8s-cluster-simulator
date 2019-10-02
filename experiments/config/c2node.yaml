@@ -12,7 +12,7 @@ startClock: 2019-01-01T00:00:00+09:00
 
 # Interval duration for logging metrics of the cluster, in seconds.
 # Optional (default: same as tick)
-metricsTick: 50
+metricsTick: 60
 
 # Metrics of simulated kubernetes cluster is written
 # to standard out, standard error or files at given paths.
@@ -21,7 +21,9 @@ metricsTick: 50
 metricsLogger:
 - dest: stdout
   formatter: table
-- dest: kubesim.log
+# - dest: best_kubesim.log
+- dest: over_kubesim.log
+# - dest: prop_kubesim.log
   formatter: JSON
 - dest: kubesim-hr.log
   formatter: humanReadable
@@ -42,10 +44,10 @@ cluster:
     #   effect: NoSchedule
   status:
     allocatable:
-      cpu: 4
-      memory: 8Gi
-      nvidia.com/gpu: 1
-      pods: 2
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
 - metadata:
     name: node-1
     labels:
@@ -56,7 +58,119 @@ cluster:
     # taints:
   status:
     allocatable:
-      cpu: 8
-      memory: 16Gi
-      nvidia.com/gpu: 2
-      pods: 4
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-2
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-3
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-4
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-5
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-6
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-7
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-8
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999
+- metadata:
+    name: node-9
+    labels:
+      beta.kubernetes.io/os: simulated
+    # annotations:
+  spec:
+    unschedulable: false
+    # taints:
+  status:
+    allocatable:
+      cpu: 64
+      memory: 128Gi
+      nvidia.com/gpu: 0
+      pods: 999

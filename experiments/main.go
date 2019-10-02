@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/containerd/containerd/log"
 	"github.com/pkg/errors"
@@ -40,21 +41,81 @@ func main() {
 	}
 }
 
+const (
+	BEST_FIT = "bestfit"
+	OVER_SUB = "oversub"
+	PROPOSED = "proposed"
+	GENERTIC = "generic"
+)
+
 // configPath is the path of the config file, defaulting to "config".
 var (
-	configPath       string
-	isGenWorkload    = false
+	configPath    string
+	isGenWorkload = true
+	// isGenWorkload    = false
 	workloadPath     string
-	totalPodsNum     = uint64(3)
+	targetNum        = 64
+	totalPodsNum     = uint64(640 * 5)
 	submittedPodsNum = uint64(0)
 	podMap           = make(map[string][]string)
+	// schedulerName    = "bestfit"
+	schedulerName = "default"
+	// schedulerName       = "proposed"
+	globalOverSubFactor = 4.0
+
+	meanSec    = 10.0
+	meanCpu    = 4.0
+	phasNum    = 1
+	requestCpu = 8.0
 )
 
 func init() {
+	log.L.Infof("Running KubeSim @ %s", time.Now().Format(time.RFC850))
 	rootCmd.PersistentFlags().StringVar(
 		&configPath, "config", "./config/c2node", "config file (excluding file extension)")
 	rootCmd.PersistentFlags().StringVar(
 		&workloadPath, "workload", "./config/workload", "config file (excluding file extension)")
+	rootCmd.PersistentFlags().BoolVar(
+		&isGenWorkload, "isgen", false, "generating workload")
+	rootCmd.PersistentFlags().StringVar(
+		&schedulerName, "scheduler", "default", "generating workload")
+	rootCmd.PersistentFlags().Float64Var(
+		&globalOverSubFactor, "oversub", 1.0, "generating workload")
+}
+
+var rootCmd = &cobra.Command{
+	Use:   "k8s-cluster-simulator",
+	Short: "k8s-cluster-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
+
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx := newInterruptableContext()
+
+		// 1. Create a KubeSim with a pod queue and a scheduler.
+		queue := queue.NewPriorityQueue()
+		sched := buildScheduler() // see below
+		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
+		nodes, _ := kubesim.List()
+		for _, node := range nodes {
+			predicates.NodesOverSubFactors[node.Name] = globalOverSubFactor
+		}
+		// 2. Prepare the set of podsubmit time: set<timestamp>
+
+		// 3. Register one or more pod submitters to KubeSim.
+		kubesim.AddSubmitter("MySubmitter", newMySubmitter(totalPodsNum))
+
+		// 4. Run the main loop of KubeSim.
+		//    In each execution of the loop, KubeSim
+		//      1) stores pods submitted from the registered submitters to its queue,
+		//      2) invokes scheduler with pending pods and cluster state,
+		//      3) emits cluster metrics to designated location(s) if enabled
+		//      4) progresses the simulated clock
+		if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
+			log.L.Fatal(err)
+		}
+	},
+}
+
+func buildScheduler() scheduler.Scheduler {
 	if !isGenWorkload {
 		files, _ := ioutil.ReadDir(workloadPath)
 		totalPodsNum = uint64(len(files))
@@ -74,71 +135,128 @@ func init() {
 		os.RemoveAll(workloadPath)
 		os.MkdirAll(workloadPath, 0755)
 	}
+	log.L.Infof("scheduler input %s", schedulerName)
 	log.L.Infof("Submitting %d pods", totalPodsNum)
 	log.L.Infof("workload: %s", workloadPath)
-}
+	log.L.Infof("isGenWorkload: %v", isGenWorkload)
+	log.L.Infof("cluster: %s", configPath)
+	log.L.Infof("oversub: %f", globalOverSubFactor)
+	switch schedName := strings.ToLower(schedulerName); schedName {
 
-var rootCmd = &cobra.Command{
-	Use:   "k8s-cluster-simulator",
-	Short: "k8s-cluster-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
+	case PROPOSED:
+		log.L.Infof("Scheduler: %s", PROPOSED)
+		globalOverSubFactor = 2.0
+		sched := scheduler.NewProposedScheduler(false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeExtender,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
 
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx := newInterruptableContext()
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
+		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "MostRequested",
+			Map:    priorities.MostRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
 
-		// 1. Create a KubeSim with a pod queue and a scheduler.
-		queue := queue.NewPriorityQueue()
-		sched := buildScheduler() // see below
-		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
-		// 2. Prepare the set of podsubmit time: set<timestamp>
+		return &sched
+	case OVER_SUB:
+		log.L.Infof("Scheduler: %s", OVER_SUB)
+		sched := scheduler.NewGenericScheduler(false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeExtender,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
 
-		// 3. Register one or more pod submitters to KubeSim.
-		kubesim.AddSubmitter("MySubmitter", newMySubmitter(totalPodsNum))
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
+		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "MostRequested",
+			Map:    priorities.MostRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
 
-		// 4. Run the main loop of KubeSim.
-		//    In each execution of the loop, KubeSim
-		//      1) stores pods submitted from the registered submitters to its queue,
-		//      2) invokes scheduler with pending pods and cluster state,
-		//      3) emits cluster metrics to designated location(s) if enabled
-		//      4) progresses the simulated clock
-		if err := kubesim.Run(ctx); err != nil && errors.Cause(err) != context.Canceled {
-			log.L.Fatal(err)
-		}
-	},
-}
+		return &sched
+	case BEST_FIT:
+		log.L.Infof("Scheduler: %s", BEST_FIT)
+		globalOverSubFactor = 1.0
+		sched := scheduler.NewGenericScheduler(false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeExtender,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
 
-func buildScheduler() scheduler.Scheduler {
-	// 1. Create a generic scheduler that mimics a kube-scheduler.
-	sched := scheduler.NewGenericScheduler( /* preemption disabled */ false)
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
+		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "MostRequested",
+			Map:    priorities.MostRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
 
-	// 2. Register extender(s)
-	sched.AddExtender(
-		scheduler.Extender{
-			Name:             "MyExtender",
-			Filter:           filterExtender,
-			Prioritize:       prioritizeExtender,
-			Weight:           1,
-			NodeCacheCapable: true,
-		},
-	)
+		return &sched
+	default:
+		log.L.Infof("Scheduler: DEFAULT")
+		// 1. Create a generic scheduler that mimics a kube-scheduler.
+		sched := scheduler.NewGenericScheduler( /* preemption disabled */ false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeExtender,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
 
-	// 2. Register plugin(s)
-	// Predicate
-	sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
-	// Prioritizer
-	sched.AddPrioritizer(priorities.PriorityConfig{
-		Name:   "BalancedResourceAllocation",
-		Map:    priorities.BalancedResourceAllocationMap,
-		Reduce: nil,
-		Weight: 1,
-	})
-	sched.AddPrioritizer(priorities.PriorityConfig{
-		Name:   "LeastRequested",
-		Map:    priorities.LeastRequestedPriorityMap,
-		Reduce: nil,
-		Weight: 1,
-	})
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "BalancedResourceAllocation",
+			Map:    priorities.BalancedResourceAllocationMap,
+			Reduce: nil,
+			Weight: 1,
+		})
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "LeastRequested",
+			Map:    priorities.LeastRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
 
-	return &sched
+		return &sched
+	}
 }
 
 func newInterruptableContext() context.Context {

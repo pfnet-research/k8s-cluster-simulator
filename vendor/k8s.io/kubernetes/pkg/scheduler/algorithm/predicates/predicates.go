@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/klog"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1697,4 +1697,77 @@ func (c *VolumeBindingChecker) predicate(pod *v1.Pod, meta PredicateMetadata, no
 	// All volumes bound or matching PVs found for all unbound PVCs
 	klog.V(5).Infof("All PVCs found matches for pod %v/%v, node %q", pod.Namespace, pod.Name, node.Name)
 	return true, nil, nil
+}
+
+var NodesOverSubFactors = make(map[string]float64)
+
+// PodFitsResources checks if a node has sufficient resources, such as cpu, memory, gpu, opaque int resources etc to run a pod.
+// First return value indicates whether a node has sufficient resources to run a pod while the second return value indicates the
+// predicate failure reasons if the node has insufficient resources to run the pod.
+func PodFitsResourcesOverSub(pod *v1.Pod, meta PredicateMetadata, nodeInfo *schedulernodeinfo.NodeInfo) (bool, []PredicateFailureReason, error) {
+	node := nodeInfo.Node()
+	if node == nil {
+		return false, nil, fmt.Errorf("node not found")
+	}
+
+	var predicateFails []PredicateFailureReason
+	allowedPodNumber := nodeInfo.AllowedPodNumber()
+	if len(nodeInfo.Pods())+1 > allowedPodNumber {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourcePods, 1, int64(len(nodeInfo.Pods())), int64(allowedPodNumber)))
+	}
+
+	// No extended resources should be ignored by default.
+	ignoredExtendedResources := sets.NewString()
+
+	var podRequest *schedulernodeinfo.Resource
+	// if predicateMeta, ok := meta.(*predicateMetadata); ok {
+	// 	podRequest = predicateMeta.podRequest
+	// 	if predicateMeta.ignoredExtendedResources != nil {
+	// 		ignoredExtendedResources = predicateMeta.ignoredExtendedResources
+	// 	}
+	// } else {
+	// We couldn't parse metadata - fallback to computing it.
+	podRequest = GetResourceRequest(pod)
+	// }
+	if podRequest.MilliCPU == 0 &&
+		podRequest.Memory == 0 &&
+		podRequest.EphemeralStorage == 0 &&
+		len(podRequest.ScalarResources) == 0 {
+		return len(predicateFails) == 0, predicateFails, nil
+	}
+
+	allocatable := nodeInfo.AllocatableResource()
+	oversub := NodesOverSubFactors[nodeInfo.Node().Name]
+	if float64(allocatable.MilliCPU)*oversub < float64(podRequest.MilliCPU+nodeInfo.RequestedResource().MilliCPU) {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceCPU, podRequest.MilliCPU, nodeInfo.RequestedResource().MilliCPU, allocatable.MilliCPU))
+	}
+	if float64(allocatable.Memory)*oversub < float64(podRequest.Memory+nodeInfo.RequestedResource().Memory) {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceMemory, podRequest.Memory, nodeInfo.RequestedResource().Memory, allocatable.Memory))
+	}
+	if float64(allocatable.EphemeralStorage)*oversub < float64(podRequest.EphemeralStorage+nodeInfo.RequestedResource().EphemeralStorage) {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
+	}
+
+	for rName, rQuant := range podRequest.ScalarResources {
+		if v1helper.IsExtendedResourceName(rName) {
+			// If this resource is one of the extended resources that should be
+			// ignored, we will skip checking it.
+			if ignoredExtendedResources.Has(string(rName)) {
+				continue
+			}
+		}
+		if allocatable.ScalarResources[rName] < rQuant+nodeInfo.RequestedResource().ScalarResources[rName] {
+			predicateFails = append(predicateFails, NewInsufficientResourceError(rName, podRequest.ScalarResources[rName], nodeInfo.RequestedResource().ScalarResources[rName], allocatable.ScalarResources[rName]))
+		}
+	}
+
+	if klog.V(10) {
+		if len(predicateFails) == 0 {
+			// We explicitly don't do klog.V(10).Infof() to avoid computing all the parameters if this is
+			// not logged. There is visible performance gain from it.
+			klog.Infof("Schedule Pod %+v on Node %+v is allowed, Node is running only %v out of %v Pods.",
+				podName(pod), node.Name, len(nodeInfo.Pods()), allowedPodNumber)
+		}
+	}
+	return len(predicateFails) == 0, predicateFails, nil
 }

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	math "math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -705,6 +706,10 @@ func (q *Quantity) ScaledValue(scale Scale) int64 {
 // Set sets q's value to be value.
 func (q *Quantity) Set(value int64) {
 	q.SetScaled(value, 0)
+}
+
+func (q *Quantity) Get() float64 {
+	return float64(q.i.value) * math.Pow(10.0, float64(q.i.scale))
 }
 
 // SetMilli sets q's value to be value * 1/1000.

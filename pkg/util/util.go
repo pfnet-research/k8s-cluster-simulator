@@ -76,6 +76,30 @@ func ResourceListGE(r1, r2 v1.ResourceList) bool {
 	return true
 }
 
+func ResourceListLEWithFactor(r1, r2 v1.ResourceList, factor float64) bool {
+	for r2Key, r2Val := range r2 {
+		r1Val := r1[r2Key]
+		v1 := r1Val.Get()
+		v2 := r2Val.Get() * factor
+		if v1 > v2 {
+			return false
+		}
+	}
+	return true
+}
+
+func ResourceListGEWithFactor(r1, r2 v1.ResourceList, factor float64) bool {
+	for r2Key, r2Val := range r2 {
+		r1Val := r1[r2Key]
+		v1 := r1Val.Get()
+		v2 := r2Val.Get() * factor
+		if v1 < v2 {
+			return false
+		}
+	}
+	return true
+}
+
 // PodPriority returns the priority of the given pod.
 func PodPriority(pod *v1.Pod) int32 {
 	prio := int32(scheduling.DefaultPriorityWhenNoDefaultClassExists)

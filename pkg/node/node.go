@@ -98,6 +98,7 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 	} else {
 		podStatus = pod.Ok
 	}
+	podStatus = pod.Ok // TODO(tanle) workaround for OverCapacity --> need to delete this line
 
 	// Create simulated pod
 	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name)

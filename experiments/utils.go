@@ -1,5 +1,10 @@
 package main
 
+import (
+	"math"
+	"math/rand"
+)
+
 const (
 	MaxInt8   = 1<<7 - 1
 	MinInt8   = -1 << 7
@@ -14,3 +19,10 @@ const (
 	MaxUint32 = 1<<32 - 1
 	MaxUint64 = 1<<64 - 1
 )
+
+func genNormFloat64(std, mean, min, max float64, r *rand.Rand) float64 {
+	res := r.NormFloat64()*std + mean
+	res = math.Min(res, max)
+	res = math.Max(min, res)
+	return res
+}

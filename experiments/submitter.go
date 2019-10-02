@@ -15,12 +15,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"time"
-
-	"gopkg.in/yaml.v2"
 
 	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
@@ -30,6 +31,8 @@ import (
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/submitter"
 )
 
@@ -53,8 +56,13 @@ func (s *mySubmitter) generateWorkloads(
 	clock clock.Clock,
 	met metrics.Metrics) ([]submitter.Event, error) {
 
-	// randomly generate the number of submission at time clock.
-	submissionNum := int(s.myrand.Int31n(3))
+	queueMetrics := met[metrics.QueueMetricsKey].(queue.Metrics)
+	nodesMetrics := met[metrics.NodesMetricsKey].(map[string]node.Metrics)
+	runningPodsNum := int(0)
+	for _, met := range nodesMetrics {
+		runningPodsNum += int(met.RunningPodsNum)
+	}
+	submissionNum := targetNum - queueMetrics.PendingPodsNum - runningPodsNum
 	events := make([]submitter.Event, 0, submissionNum+1)
 
 	for i := 0; i < submissionNum; i++ {
@@ -107,6 +115,7 @@ func (s *mySubmitter) Submit(
 	if isGenWorkload {
 		return s.generateWorkloads(clock, met)
 	}
+
 	return s.loadWorkload(clock, met)
 }
 
@@ -177,7 +186,13 @@ func (s *mySubmitter) loadPod(filePath string) (*v1.Pod, error) {
 
 	pod := v1.Pod{}
 
-	err = yaml.Unmarshal(d, &pod)
+	// err = yaml.Unmarshal(d, &pod)
+	// if err != nil {
+	// 	log.L.Errorf("cannot parse pod from file %s", filePath)
+	// 	return nil, fmt.Errorf("cannot parse pod from file %s", filePath)
+	// }
+
+	err = json.Unmarshal(d, &pod)
 	if err != nil {
 		log.L.Errorf("cannot parse pod from file %s", filePath)
 		return nil, fmt.Errorf("cannot parse pod from file %s", filePath)
@@ -188,10 +203,10 @@ func (s *mySubmitter) loadPod(filePath string) (*v1.Pod, error) {
 
 func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 	simSpec := ""
+	for i := 0; i < phasNum; i++ {
 
-	for i := 0; i < s.myrand.Intn(4)+1; i++ {
-		sec := 60 * s.myrand.Intn(60)
-		cpu := 1 + s.myrand.Intn(4)
+		sec := int(genNormFloat64(meanSec/2, meanSec, meanSec*0.1+1, meanSec*10, s.myrand))
+		cpu := 1 + int(genNormFloat64(meanCpu/2, meanCpu, meanCpu*0.1, meanCpu*10, s.myrand))
 		mem := 0
 		gpu := 0
 
@@ -226,14 +241,14 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 					Image: "container",
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							"cpu":            resource.MustParse("4"),
-							"memory":         resource.MustParse("4Gi"),
-							"nvidia.com/gpu": resource.MustParse("1"),
+							"cpu":            resource.MustParse(fmt.Sprintf("%d", int(requestCpu))),
+							"memory":         resource.MustParse("0Gi"),
+							"nvidia.com/gpu": resource.MustParse("0"),
 						},
 						Limits: v1.ResourceList{
-							"cpu":            resource.MustParse("6"),
-							"memory":         resource.MustParse("6Gi"),
-							"nvidia.com/gpu": resource.MustParse("1"),
+							"cpu":            resource.MustParse("999"),
+							"memory":         resource.MustParse("999Gi"),
+							"nvidia.com/gpu": resource.MustParse("0"),
 						},
 					},
 				},
@@ -241,14 +256,20 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 		},
 	}
 
-	d, err := yaml.Marshal(&pod)
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetIndent("", "\t")
+	err := encoder.Encode(pod)
 	if err != nil {
-		log.L.Fatalf("error: %v", err)
+		return nil
 	}
-
-	err = ioutil.WriteFile(fmt.Sprintf("%s/%s@pod-%d.yaml", workloadPath, clock.ToRFC3339(), idx), d, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("%s/%s@pod-%d.json", workloadPath, clock.ToRFC3339(), idx), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		log.L.Fatal(err)
+		return nil
+	}
+	_, err = file.Write(buffer.Bytes())
+	if err != nil {
+		return nil
 	}
 
 	return &pod

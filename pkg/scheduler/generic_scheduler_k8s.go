@@ -57,9 +57,13 @@ func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (stri
 	}
 
 	maxScores := findMaxScores(priorities)
-	idx := int(sched.lastNodeIndex % uint64(len(maxScores)))
-	sched.lastNodeIndex++
+	// idx := int(sched.lastNodeIndex % uint64(len(maxScores)))
+	// sched.lastNodeIndex++
 
+	// return priorities[maxScores[idx]].Host, nil
+	// TanLe: Fix the issue for best-fit: do not allow round-robin
+	idx := len(maxScores) - 1
+	// log.L.Infof("Pick host %v with score: ", priorities[maxScores[idx]].Host, priorities[maxScores[idx]].Score)
 	return priorities[maxScores[idx]].Host, nil
 }
 

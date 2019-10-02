@@ -145,9 +145,11 @@ func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
 func (k *KubeSim) Run(ctx context.Context) error {
 	preMetricsClock := k.clock
 	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
+
 	if err != nil {
 		return err
 	}
+	scheduler.GlobalMetrics = met
 
 	submitterAddedEver := len(k.submitters) > 0
 
@@ -177,8 +179,9 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			scheduler.GlobalMetrics = met
 
-			if k.clock.Sub(preMetricsClock) > k.metricsTick {
+			if k.clock.Sub(preMetricsClock) >= k.metricsTick {
 				preMetricsClock = k.clock
 				if err = k.writeMetrics(&met); err != nil {
 					return err
