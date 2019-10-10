@@ -19,11 +19,14 @@ runSim(){
     --oversub=$oversub \
     &> run_${1}.out
 }
-rm -rf *.out
+#rm -rf *.out
 runSim $BEST_FIT false
 runSim $OVER_SUB false &
 runSim $PROPOSED false &
 wait
 echo "Simulation tooks $SECONDS seconds"
 echo "==================FINISHED=================="
+
+echo "==================Plotting=================="
 python plotResults.py
+echo "==================FINISHED=================="

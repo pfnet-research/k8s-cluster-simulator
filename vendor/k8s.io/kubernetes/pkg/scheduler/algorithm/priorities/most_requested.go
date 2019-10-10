@@ -17,6 +17,7 @@ limitations under the License.
 package priorities
 
 import (
+	schedulerapi "k8s.io/kubernetes/pkg/scheduler/api"
 	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
 
@@ -51,6 +52,5 @@ func mostRequestedScore(requested, capacity int64) int64 {
 	// 	return 0
 	// }
 
-	// return (requested * schedulerapi.MaxPriority) / capacity
-	return (requested * 1000000) / capacity //TODO(TanLe) fix the rounding issue for best-fit
+	return (requested * schedulerapi.MaxPriority) / capacity
 }

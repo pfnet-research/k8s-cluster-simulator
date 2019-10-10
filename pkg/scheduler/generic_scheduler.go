@@ -96,7 +96,6 @@ func (sched *GenericScheduler) Schedule(
 			return []Event{}, err
 		}
 		log.L.Debugf("Trying to schedule pod %s", podKey)
-
 		// ... try to bind the pod to a node.
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, pendingPods)
 
@@ -194,12 +193,14 @@ func (sched *GenericScheduler) scheduleOne(
 
 	// Prioritize nodes that have passed the filtering phase.
 	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap, podQueue)
+	log.L.Infof("prios: %v", prios)
 	if err != nil {
 		return result, err
 	}
 
 	// Select the node that has the highest score.
 	host, err := sched.selectHost(prios)
+	log.L.Infof("host: %v", host)
 
 	return core.ScheduleResult{
 		SuggestedHost:  host,
@@ -227,6 +228,10 @@ func (sched *GenericScheduler) filter(
 	filtered, failedPredicateMap, err := filterWithPlugins(pod, sched.predicates, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return []*v1.Node{}, core.FailedPredicateMap{}, err
+	}
+	nodeNames := make([]string, 0, len(filtered))
+	for _, node := range filtered {
+		nodeNames = append(nodeNames, node.Name)
 	}
 
 	if l.IsDebugEnabled() {

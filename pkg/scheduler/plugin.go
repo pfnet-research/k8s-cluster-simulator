@@ -96,7 +96,9 @@ func filterWithPlugins(
 				cancel()
 				atomic.AddInt32(&filteredLen, -1)
 			} else {
-				filtered[length-1] = nodes[i]
+				//TanLe fix randomly list node
+				// filtered[length-1] = nodes[i]
+				filtered[i] = nodes[i]
 			}
 		} else {
 			predicateResultLock.Lock()
@@ -109,7 +111,20 @@ func filterWithPlugins(
 		return []*v1.Node{}, core.FailedPredicateMap{}, errors.CreateAggregateFromMessageCountMap(errs)
 	}
 
-	return filtered[:filteredLen], failedPredicateMap, nil
+	//TanLe fix randomly list node
+	res := make([]*v1.Node, filteredLen)
+	i := int32(0)
+	j := int32(0)
+	for i < nodesNum && j < filteredLen {
+		if filtered[i] != nil {
+			res[j] = filtered[i]
+			j++
+		}
+		i++
+	}
+
+	// return filtered[:filteredLen], failedPredicateMap, nil
+	return res, failedPredicateMap, nil
 }
 
 func prioritizeWithPlugins(

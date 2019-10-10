@@ -1,0 +1,4 @@
+1. Unconsistent simulation resutls:
+    - Cause: Since the completion times of jobs are different and the order of nodes is randomized
+    - Solution: put the nodes in the order for every scheduling.
+2. 

@@ -17,6 +17,7 @@ package kubesim
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/containerd/containerd/log"
@@ -46,6 +47,7 @@ type KubeSim struct {
 	clock clock.Clock
 
 	nodes       map[string]*node.Node
+	nodeNames   []string //TanLe fixed randomly list nodes.
 	pendingPods queue.PodQueue
 	boundPods   map[string]*pod.Pod
 
@@ -74,6 +76,13 @@ func NewKubeSim(
 	}
 
 	nodes, err := buildCluster(conf)
+	//TanLe fix randomly list nodes
+	nodeNames := make([]string, 0, len(nodes))
+	for name := range nodes {
+		nodeNames = append(nodeNames, name)
+	}
+	sort.Strings(nodeNames)
+
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +102,7 @@ func NewKubeSim(
 		clock: clk,
 
 		nodes:       nodes,
+		nodeNames:   nodeNames, //TanLe fixed randomly list nodes.
 		pendingPods: queue,
 		boundPods:   map[string]*pod.Pod{},
 
@@ -200,9 +210,10 @@ func (k *KubeSim) Run(ctx context.Context) error {
 // List implements "k8s.io/pkg/scheduler/algorithm".NodeLister interface.
 // Never returns an error.
 func (k *KubeSim) List() ([]*v1.Node, error) {
+	//TanLe fixed randomly list nodes
 	nodes := make([]*v1.Node, 0, len(k.nodes))
-	for _, node := range k.nodes {
-		nodes = append(nodes, node.ToV1())
+	for _, name := range k.nodeNames {
+		nodes = append(nodes, k.nodes[name].ToV1())
 	}
 	return nodes, nil
 }

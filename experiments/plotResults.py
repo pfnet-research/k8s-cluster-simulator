@@ -15,9 +15,9 @@ def loadLog(filepath) :
     overBookNodes = []
 
     with open(filepath) as fp:
-        line = fp.readline()
+        content = fp.readlines()
         i = 0
-        while line:
+        for line in content:
             data = json.loads(line)
             nodeDict = data['Nodes']
             busyNode = 0
@@ -60,7 +60,7 @@ def loadLog(filepath) :
             overloadNodes.append(overloadNode) 
             overBookNodes.append(overBookNode)
 
-            line = fp.readline()
+            # line = fp.readline()
             i=i+1
     fp.close()
 
@@ -69,14 +69,14 @@ def loadLog(filepath) :
 busyNodesBest, overloadNodesBest, overBookNodesBest, cpuUsagesBest, cpuAllocatablesBest = loadLog('kubesim_bestfit.log')
 busyNodesOver, overloadNodesOver, overBookNodesOver, cpuUsagesOver, cpuAllocatablesOver = loadLog('kubesim_oversub.log')
 busyNodesProp, overloadNodesProp, overBookNodesProp, cpuUsagesProp, cpuAllocatablesProp = loadLog('kubesim_proposed.log')
-
+print("Overload nodes's num: oversub: "+str(sum(overloadNodesOver)) + " proposed: "+str(sum(overloadNodesProp)))
 ## resource usage
 ############# PLOTTING ##############
 Y_MAX = 10
 tick = 1
 figPath = "./figs/"
 FIG_ONE_COL = (8,6)
-plots = [True, True, True]
+plots = [True, False, False]
 ## plot utilization: number of busy nodes.
 if(plots[0]):
     fig_util = plt.figure(figsize=FIG_ONE_COL)
@@ -102,7 +102,7 @@ if(plots[1]):
     # plt.ylim(0,Y_MAX)
 
     fig_util.savefig(figPath+"perf.pdf", bbox_inches='tight')
-    print("Overload nodes's num: oversub: "+str(sum(overloadNodesOver)) + " proposed: "+str(sum(overloadNodesProp)))
+    
 ## plot performance: number of overload nodes.
 if(plots[2]):
     fig_overbook = plt.figure(figsize=FIG_ONE_COL)

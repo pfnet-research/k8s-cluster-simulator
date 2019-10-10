@@ -55,7 +55,7 @@ var (
 	// isGenWorkload    = false
 	workloadPath     string
 	targetNum        = 64
-	totalPodsNum     = uint64(640 * 5)
+	totalPodsNum     = uint64(640)
 	submittedPodsNum = uint64(0)
 	podMap           = make(map[string][]string)
 	// schedulerName    = "bestfit"
@@ -78,9 +78,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(
 		&isGenWorkload, "isgen", false, "generating workload")
 	rootCmd.PersistentFlags().StringVar(
-		&schedulerName, "scheduler", "default", "generating workload")
+		&schedulerName, "scheduler", "default", "scheduler name")
 	rootCmd.PersistentFlags().Float64Var(
-		&globalOverSubFactor, "oversub", 1.0, "generating workload")
+		&globalOverSubFactor, "oversub", 1.0, "over sub factor")
 }
 
 var rootCmd = &cobra.Command{
