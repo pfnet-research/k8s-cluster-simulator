@@ -15,12 +15,10 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"os"
 	"time"
 
 	"github.com/containerd/containerd/log"
@@ -256,21 +254,6 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 		},
 	}
 
-	buffer := new(bytes.Buffer)
-	encoder := json.NewEncoder(buffer)
-	encoder.SetIndent("", "\t")
-	err := encoder.Encode(pod)
-	if err != nil {
-		return nil
-	}
-	file, err := os.OpenFile(fmt.Sprintf("%s/%s@pod-%d.json", workloadPath, clock.ToRFC3339(), idx), os.O_RDWR|os.O_CREATE, 0755)
-	if err != nil {
-		return nil
-	}
-	_, err = file.Write(buffer.Bytes())
-	if err != nil {
-		return nil
-	}
-
+	WritePodAsJson(pod, workloadPath, clock)
 	return &pod
 }

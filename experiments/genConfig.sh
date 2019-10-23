@@ -7,6 +7,7 @@ cpu=$3
 mem=$4
 tick=$5
 metricsTick=$6
+clock="$7"
 
 echo """# Log level defined by sirupsen/logrus.
 # Optional (info, debug)
@@ -18,7 +19,7 @@ tick: $tick
 
 # Start time at which the simulation starts, in RFC3339 format.
 # Optional (default: now)
-startClock: 2019-01-01T00:00:00+09:00
+startClock: $clock
 
 # Interval duration for logging metrics of the cluster, in seconds.
 # Optional (default: same as tick)

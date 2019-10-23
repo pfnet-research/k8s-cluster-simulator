@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -33,6 +34,7 @@ import (
 	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
+	"k8s.io/client-go/util/workqueue"
 )
 
 func main() {
@@ -50,10 +52,12 @@ const (
 
 // configPath is the path of the config file, defaulting to "config".
 var (
-	configPath    string
-	isGenWorkload = true
+	configPath     string
+	isGenWorkload  = true
+	isConvertTrace = false
 	// isGenWorkload    = false
 	workloadPath     string
+	tracePath        string
 	targetNum        = 64
 	totalPodsNum     = uint64(640)
 	submittedPodsNum = uint64(0)
@@ -63,10 +67,13 @@ var (
 	// schedulerName       = "proposed"
 	globalOverSubFactor = 4.0
 
-	meanSec    = 10.0
-	meanCpu    = 4.0
-	phasNum    = 1
-	requestCpu = 8.0
+	meanSec             = 10.0
+	meanCpu             = 4.0
+	phasNum             = 1
+	requestCpu          = 8.0
+	startClock          = "2019-01-01T00:00:00+09:00"
+	startTimestampTrace = "0"
+	nodeCap             = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
 )
 
 func init() {
@@ -76,11 +83,19 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&workloadPath, "workload", "./config/workload", "config file (excluding file extension)")
 	rootCmd.PersistentFlags().BoolVar(
-		&isGenWorkload, "isgen", false, "generating workload")
+		&isGenWorkload, "isgen", true, "generating workload")
 	rootCmd.PersistentFlags().StringVar(
 		&schedulerName, "scheduler", "default", "scheduler name")
 	rootCmd.PersistentFlags().Float64Var(
 		&globalOverSubFactor, "oversub", 1.0, "over sub factor")
+	rootCmd.PersistentFlags().BoolVar(
+		&isConvertTrace, "istrace", false, "convert trace's csv to json")
+	rootCmd.PersistentFlags().StringVar(
+		&tracePath, "trace", "./data/sample/tasks", "config file (excluding file extension)")
+	rootCmd.PersistentFlags().StringVar(
+		&startClock, "clock", "2019-01-01T00:00:00+09:00", "start clock")
+	rootCmd.PersistentFlags().StringVar(
+		&startTimestampTrace, "trace-start", "0", "start of time stamp in the trace")
 }
 
 var rootCmd = &cobra.Command{
@@ -93,6 +108,9 @@ var rootCmd = &cobra.Command{
 		// 1. Create a KubeSim with a pod queue and a scheduler.
 		queue := queue.NewPriorityQueue()
 		sched := buildScheduler() // see below
+		if sched == nil {
+			return
+		}
 		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
 		nodes, _ := kubesim.List()
 		for _, node := range nodes {
@@ -115,8 +133,44 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+const workerNum = 16
+
+func convertTrace2Workload(tracePath string, workloadPath string) {
+	files, _ := ioutil.ReadDir(tracePath)
+	startTimestamp, _ := strconv.Atoi(startTimestampTrace)
+	// generate json in a serial manner
+	// for _, f := range files {
+	// 	fileName := string(f.Name())
+	// 	strs := strings.Split(fileName, "_")
+	// 	timestamp, _ := strconv.Atoi(strs[0])
+	// 	pod := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], 5)
+	// 	clock, _ := BuildClock(startClock, int64(timestamp-startTimestamp))
+	// 	WritePodAsJson(*pod, workloadPath, clock)
+	// }
+
+	// Generate json files in parrallel
+	fileNum := len(files)
+	ctx, _ := context.WithCancel(context.Background())
+	workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
+		fileName := string(files[i].Name())
+		strs := strings.Split(fileName, "_")
+		timestamp, _ := strconv.Atoi(strs[0])
+		pod := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], 5)
+		clock, _ := BuildClock(startClock, int64(timestamp-startTimestamp))
+		WritePodAsJson(*pod, workloadPath, clock)
+	})
+}
+
 func buildScheduler() scheduler.Scheduler {
+	if isGenWorkload || isConvertTrace {
+		os.RemoveAll(workloadPath)
+		os.MkdirAll(workloadPath, 0755)
+	}
 	if !isGenWorkload {
+		if isConvertTrace {
+			convertTrace2Workload(tracePath, workloadPath)
+		}
+
 		files, _ := ioutil.ReadDir(workloadPath)
 		totalPodsNum = uint64(len(files))
 		for _, f := range files {
@@ -131,18 +185,18 @@ func buildScheduler() scheduler.Scheduler {
 				podMap[clockStr] = strArr
 			}
 		}
-	} else {
-		os.RemoveAll(workloadPath)
-		os.MkdirAll(workloadPath, 0755)
 	}
+
 	log.L.Infof("scheduler input %s", schedulerName)
 	log.L.Infof("Submitting %d pods", totalPodsNum)
 	log.L.Infof("workload: %s", workloadPath)
 	log.L.Infof("isGenWorkload: %v", isGenWorkload)
+	log.L.Infof("isConvertTrace: %v", isConvertTrace)
+	log.L.Infof("trace: %v", tracePath)
 	log.L.Infof("cluster: %s", configPath)
 	log.L.Infof("oversub: %f", globalOverSubFactor)
-	switch schedName := strings.ToLower(schedulerName); schedName {
 
+	switch schedName := strings.ToLower(schedulerName); schedName {
 	case PROPOSED:
 		log.L.Infof("Scheduler: %s", PROPOSED)
 		globalOverSubFactor = 2.0
