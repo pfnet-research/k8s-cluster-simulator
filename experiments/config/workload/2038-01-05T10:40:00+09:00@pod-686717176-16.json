@@ -1,0 +1,34 @@
+{
+	"kind": "Pod",
+	"apiVersion": "v1",
+	"metadata": {
+		"name": "pod-686717176-16",
+		"namespace": "default",
+		"creationTimestamp": null,
+		"annotations": {
+			"simSpec": "\n- seconds: 1430\n  resourceUsage:\n    cpu: 2m\n    memory: 60Mi\n    nvidia.com/gpu: 0\n"
+		}
+	},
+	"spec": {
+		"containers": [
+			{
+				"name": "container",
+				"image": "container",
+				"resources": {
+					"limits": {
+						"cpu": "999",
+						"memory": "999Gi",
+						"nvidia.com/gpu": "0"
+					},
+					"requests": {
+						"cpu": "399m",
+						"memory": "203Mi",
+						"nvidia.com/gpu": "0"
+					}
+				}
+			}
+		],
+		"priority": 1
+	},
+	"status": {}
+}

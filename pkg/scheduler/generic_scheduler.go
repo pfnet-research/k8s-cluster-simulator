@@ -193,14 +193,12 @@ func (sched *GenericScheduler) scheduleOne(
 
 	// Prioritize nodes that have passed the filtering phase.
 	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap, podQueue)
-	log.L.Infof("prios: %v", prios)
 	if err != nil {
 		return result, err
 	}
 
 	// Select the node that has the highest score.
 	host, err := sched.selectHost(prios)
-	log.L.Infof("host: %v", host)
 
 	return core.ScheduleResult{
 		SuggestedHost:  host,

@@ -1,0 +1,34 @@
+{
+	"kind": "Pod",
+	"apiVersion": "v1",
+	"metadata": {
+		"name": "pod-494787089-6",
+		"namespace": "default",
+		"creationTimestamp": null,
+		"annotations": {
+			"simSpec": "\n- seconds: 50\n  resourceUsage:\n    cpu: 0m\n    memory: 0Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 8m\n    memory: 1Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1665m\n    memory: 1753Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1048m\n    memory: 2308Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1015m\n    memory: 2355Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 0m\n    memory: 242Mi\n    nvidia.com/gpu: 0\n\n- seconds: 555\n  resourceUsage:\n    cpu: 0m\n    memory: 2Mi\n    nvidia.com/gpu: 0\n\n- seconds: 75\n  resourceUsage:\n    cpu: 0m\n    memory: 1Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1265m\n    memory: 1464Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 776m\n    memory: 2132Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 653m\n    memory: 2431Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 589m\n    memory: 2472Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 543m\n    memory: 2479Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 0m\n    memory: 1520Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 752m\n    memory: 1612Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 611m\n    memory: 1803Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 597m\n    memory: 1815Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 553m\n    memory: 1828Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 598m\n    memory: 1863Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 651m\n    memory: 2011Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 533m\n    memory: 2199Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 0m\n    memory: 1593Mi\n    nvidia.com/gpu: 0\n\n- seconds: 615\n  resourceUsage:\n    cpu: 0m\n    memory: 0Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1447m\n    memory: 1053Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1121m\n    memory: 2284Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1043m\n    memory: 2415Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 0m\n    memory: 1148Mi\n    nvidia.com/gpu: 0\n\n- seconds: 10\n  resourceUsage:\n    cpu: 0m\n    memory: 1Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 125m\n    memory: 14Mi\n    nvidia.com/gpu: 0\n\n- seconds: 5\n  resourceUsage:\n    cpu: 1820m\n    memory: 2187Mi\n    nvidia.com/gpu: 0\n"
+		}
+	},
+	"spec": {
+		"containers": [
+			{
+				"name": "container",
+				"image": "container",
+				"resources": {
+					"limits": {
+						"cpu": "999",
+						"memory": "999Gi",
+						"nvidia.com/gpu": "0"
+					},
+					"requests": {
+						"cpu": "6046m",
+						"memory": "4175Mi",
+						"nvidia.com/gpu": "0"
+					}
+				}
+			}
+		],
+		"priority": 1
+	},
+	"status": {}
+}

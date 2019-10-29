@@ -53,7 +53,7 @@ const (
 // configPath is the path of the config file, defaulting to "config".
 var (
 	configPath     string
-	isGenWorkload  = true
+	isGenWorkload  = false
 	isConvertTrace = false
 	// isGenWorkload    = false
 	workloadPath     string
@@ -83,7 +83,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&workloadPath, "workload", "./config/workload", "config file (excluding file extension)")
 	rootCmd.PersistentFlags().BoolVar(
-		&isGenWorkload, "isgen", true, "generating workload")
+		&isGenWorkload, "isgen", false, "generating workload")
 	rootCmd.PersistentFlags().StringVar(
 		&schedulerName, "scheduler", "default", "scheduler name")
 	rootCmd.PersistentFlags().Float64Var(

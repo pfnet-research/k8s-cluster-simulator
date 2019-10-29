@@ -72,7 +72,6 @@ func ConvertTraceToPod(path string, csvFile string, startTimestamp string, cpuFa
 	r := csv.NewReader(bufio.NewReader(f))
 	// read first line
 	firstLine, err := r.Read()
-	fmt.Printf("%s", firstLine[1])
 	if err == nil {
 		cpu, _ := strconv.ParseFloat(firstLine[1], 64)
 		mem, _ := strconv.ParseFloat(firstLine[2], 64)
@@ -88,8 +87,8 @@ func ConvertTraceToPod(path string, csvFile string, startTimestamp string, cpuFa
 		if err == io.EOF {
 			break
 		}
-		cpu, _ := strconv.ParseFloat(line[0], 64)
-		mem, _ := strconv.ParseFloat(line[1], 64)
+		cpu, _ := strconv.ParseFloat(line[2], 64)
+		mem, _ := strconv.ParseFloat(line[3], 64)
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))
 		if phaseNum > 0 && cpuUsage == cpuUsages[phaseNum-1] && memusage == memUsages[phaseNum-1] {

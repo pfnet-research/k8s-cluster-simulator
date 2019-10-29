@@ -1,4 +1,5 @@
 import json
+import re
 import matplotlib.pyplot as plt
 
 LOG_FILE = '/Users/tanle/go/src/github.com/pfnet-research/k8s-cluster-simulator/experiments/kubesim_bestfit.log'
@@ -33,17 +34,17 @@ def loadLog(filepath) :
                 usageDict = node['TotalResourceUsage']
                 for rsName in usageDict:
                     if(rsName==cpuStr):
-                        cpuUsage = int(usageDict[rsName])
+                        cpuUsage = formatQuatity(usageDict[rsName])
 
                 allocatableDict = node['Allocatable']    
                 for rsName in allocatableDict:
                     if(rsName==cpuStr):
-                        cpuAllocatable = int(allocatableDict[rsName])
+                        cpuAllocatable = formatQuatity(allocatableDict[rsName])
                 
                 requestDict = node['TotalResourceRequest']    
                 for rsName in requestDict:
                     if(rsName==cpuStr):
-                        cpuRequest = int(requestDict[rsName])
+                        cpuRequest = formatQuatity(requestDict[rsName])
 
                 if(cpuUsage > cpuAllocatable):
                     overloadNode = overloadNode+1
@@ -65,6 +66,18 @@ def loadLog(filepath) :
     fp.close()
 
     return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuAllocatables
+
+def formatQuatity(str):
+    strArray = re.split('(\d+)', str)
+    val = float(strArray[1])
+    scaleStr = strArray[2]
+    if scaleStr != "":
+        if(scaleStr == "m"):
+            val = val/1000        
+        elif (scaleStr == "Mi"):
+            val = val/1024
+
+    return val
 
 busyNodesBest, overloadNodesBest, overBookNodesBest, cpuUsagesBest, cpuAllocatablesBest = loadLog('kubesim_bestfit.log')
 busyNodesOver, overloadNodesOver, overBookNodesOver, cpuUsagesOver, cpuAllocatablesOver = loadLog('kubesim_oversub.log')
