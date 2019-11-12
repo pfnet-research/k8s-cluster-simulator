@@ -119,3 +119,10 @@ func HigherResourceRequest(pod1, pod2 interface{}) bool {
 	r2 := GetResourceRequest(pod2.(*v1.Pod))
 	return r1.MilliCPU > r2.MilliCPU
 }
+
+// LowerResourceRequest returns higher resource demand.
+func LowerResourceRequest(pod1, pod2 interface{}) bool {
+	r1 := GetResourceRequest(pod1.(*v1.Pod))
+	r2 := GetResourceRequest(pod2.(*v1.Pod))
+	return r1.MilliCPU < r2.MilliCPU
+}

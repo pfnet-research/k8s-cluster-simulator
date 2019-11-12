@@ -6,7 +6,7 @@
 		"namespace": "default",
 		"creationTimestamp": null,
 		"annotations": {
-			"simSpec": "\n- seconds: 10\n  resourceUsage:\n    cpu: 4\n    memory: 0Gi\n    nvidia.com/gpu: 0\n"
+			"simSpec": "\n- seconds: 7\n  resourceUsage:\n    cpu: 5\n    memory: 0Gi\n    nvidia.com/gpu: 0\n"
 		}
 	},
 	"spec": {

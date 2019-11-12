@@ -14,7 +14,7 @@ tick=1
 metricsTick=1
 runSim(){
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-01T00:00:10+09:00"
+    end="2019-02-01T00:00:10+09:00"
     startTrace="600000000"
     ./gen_config.sh $1 $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start"
     go run $(go list ./...) --config="./config/cluster_$1" \
@@ -30,7 +30,7 @@ runSim(){
     &> run_${1}.out
 }
 #rm -rf *.out
-runSim $ONE_SHOT false false
+runSim $ONE_SHOT true false
 runSim $WORST_FIT false false &
 runSim $OVER_SUB false false &
 # runSim $PROPOSED false false &

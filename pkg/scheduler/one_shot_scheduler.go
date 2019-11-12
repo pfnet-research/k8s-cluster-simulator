@@ -131,7 +131,7 @@ func (sched *OneShotScheduler) Schedule(
 		result, ok := scheduleMap[pod.Name]
 
 		if !ok {
-			updatePodStatusSchedulingFailure(clock, pod, err)
+			updatePodStatusSchedulingFailure(clock, pod, fmt.Errorf("current load is too high"))
 			pendingPods.Push(pod)
 			continue
 		}
@@ -197,20 +197,35 @@ func (sched *OneShotScheduler) scheduleAll(
 		sortablePods.Items = append(sortablePods.Items, p)
 	}
 	sortablePods.Sort()
-	sortableNodes := kutil.SortableList{CompFunc: LowerResourceAvailableNode}
-	for _, n := range nodeMetricsArray {
-		sortableNodes.Items = append(sortableNodes.Items, n)
-	}
-	sortableNodes.Sort()
 
-	for i, pod := range sortablePods.Items {
-		result := core.ScheduleResult{
-			SuggestedHost:  sortableNodes.Items[i%nodeNum].(*NodeMetrics).Name,
-			EvaluatedNodes: nodeNum,
-			FeasibleNodes:  1,
+	for _, pod := range sortablePods.Items {
+		min := kutil.GetResourceRequest(pod.(*v1.Pod))
+		min.Add(nodeMetricsArray[0].Metrics.TotalResourceUsage)
+		host := nodeMetricsArray[0].Name
+		cap := nodeinfo.NewResource(nodeMetricsArray[0].Metrics.Allocatable)
+		idx := 0
+		for i, n := range nodeMetricsArray {
+			temp := kutil.GetResourceRequest(pod.(*v1.Pod))
+			temp.Add(n.Metrics.TotalResourceUsage)
+			// log.L.Infof("min %v temp %v", min, temp)
+			if temp.MilliCPU < min.MilliCPU {
+				min = temp
+				host = n.Name
+				idx = i
+			}
 		}
-		scheduleMap[pod.(*v1.Pod).Name] = result
+
+		if min.MilliCPU <= cap.MilliCPU {
+			result := core.ScheduleResult{
+				SuggestedHost:  host,
+				EvaluatedNodes: nodeNum,
+				FeasibleNodes:  1,
+			}
+			scheduleMap[pod.(*v1.Pod).Name] = result
+			nodeMetricsArray[idx].Metrics.TotalResourceUsage = util.ResourceListSum(nodeMetricsArray[idx].Metrics.TotalResourceUsage, util.PodTotalResourceRequests(pod.(*v1.Pod)))
+		}
 	}
+
 	return scheduleMap, nil
 }
 

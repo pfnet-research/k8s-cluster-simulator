@@ -6,6 +6,8 @@ cpuStr = 'cpu'
 
 def loadLog(filepath) :
     cpuUsages = []
+    maxCpuUsages = []
+    cpuRequests = []
     memUsages = []
     gpuUsages = []
     cpuAllocatables = []
@@ -23,27 +25,35 @@ def loadLog(filepath) :
             busyNode = 0
             overloadNode = 0
             overBookNode = 0
+            totalCpuUsage = 0
+            totalCapacity = 0
+            maxCpuUsage = 0
+            totalCpuRequest = 0
             for nodeName, node in nodeDict.items():
                 cpuUsage = 0
                 cpuAllocatable = 0
-                cpuRequest = 0
-                
+                cpuRequest = 0                
                 runningPodsNum = int(node['RunningPodsNum'])
 
                 usageDict = node['TotalResourceUsage']
                 for rsName in usageDict:
                     if(rsName==cpuStr):
                         cpuUsage = formatQuatity(usageDict[rsName])
+                        totalCpuUsage = totalCpuUsage+ cpuUsage
+                        if cpuUsage > maxCpuUsage:
+                            maxCpuUsage = cpuUsage
 
                 allocatableDict = node['Allocatable']    
                 for rsName in allocatableDict:
                     if(rsName==cpuStr):
                         cpuAllocatable = formatQuatity(allocatableDict[rsName])
+                        totalCapacity = totalCapacity + cpuAllocatable
                 
                 requestDict = node['TotalResourceRequest']    
                 for rsName in requestDict:
                     if(rsName==cpuStr):
                         cpuRequest = formatQuatity(requestDict[rsName])
+                        totalCpuRequest = totalCpuRequest + cpuRequest
 
                 if(cpuUsage > cpuAllocatable):
                     overloadNode = overloadNode+1
@@ -54,17 +64,19 @@ def loadLog(filepath) :
                 if(runningPodsNum > 0):
                     busyNode = busyNode + 1
 
-            cpuUsages.append(cpuUsage)
-            cpuAllocatables.append(cpuAllocatable)
+            cpuUsages.append(totalCpuUsage)
+            cpuAllocatables.append(totalCapacity)
             busyNodes.append(busyNode)
             overloadNodes.append(overloadNode) 
             overBookNodes.append(overBookNode)
+            maxCpuUsages.append(maxCpuUsage)
+            cpuRequests.append(totalCpuRequest)
 
             # line = fp.readline()
             i=i+1
     fp.close()
 
-    return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuAllocatables
+    return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuRequests, maxCpuUsages, cpuAllocatables
 
 def formatQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -78,37 +90,80 @@ def formatQuatity(str):
 
     return val
 
-busyNodesBest, overloadNodesBest, overBookNodesBest, cpuUsagesBest, cpuAllocatablesBest = loadLog('kubesim_bestfit.log')
-busyNodesOver, overloadNodesOver, overBookNodesOver, cpuUsagesOver, cpuAllocatablesOver = loadLog('kubesim_oversub.log')
-busyNodesProp, overloadNodesProp, overBookNodesProp, cpuUsagesProp, cpuAllocatablesProp = loadLog('kubesim_proposed.log')
-print("Overload nodes's num: oversub: "+str(sum(overloadNodesOver)) + " proposed: "+str(sum(overloadNodesProp)))
+methods = ["oneshot","worstfit","oversub"]
+# methods = {"oneshot","worstfit"}
+methodsNum = len(methods)
+busyNodes = []
+overloadNodes = []
+overbookNodes = []
+cpuUsages = []
+maxCpuUsages = []
+cpuAllocatables = []
+cpuRequests = []
+
+for m in methods:
+    b, ol, ob, u, ur, mu, a = loadLog("kubesim_"+m+".log")
+    busyNodes.append(b)
+    overloadNodes.append(ol)
+    overbookNodes.append(ob)
+    cpuUsages.append(u)
+    maxCpuUsages.append(mu)
+    cpuAllocatables.append(a)
+    cpuRequests.append(ur)
+
+# busyNodesBest, overloadNodesBest, overBookNodesBest, cpuUsagesBest, cpuAllocatablesBest = loadLog('kubesim_bestfit.log')
+# busyNodesOver, overloadNodesOver, overBookNodesOver, cpuUsagesOver, cpuAllocatablesOver = loadLog('kubesim_oversub.log')
+# busyNodesProp, overloadNodesProp, overBookNodesProp, cpuUsagesProp, cpuAllocatablesProp = loadLog('kubesim_proposed.log')
+
+# print("Overload nodes's num: oversub: "+str(sum(overloadNodesOver)) + " proposed: "+str(sum(overloadNodesProp)))
 ## resource usage
 ############# PLOTTING ##############
-Y_MAX = 10
+
 tick = 1
-figPath = "./figs/"
-FIG_ONE_COL = (8,6)
+figPath = "/ssd/projects/cluster/figs/"
+FIG_ONE_COL = (4,3)
 plots = [True, False, False]
 ## plot utilization: number of busy nodes.
+cap = 64
 if(plots[0]):
+    Y_MAX = cap*1.5
     fig_util = plt.figure(figsize=FIG_ONE_COL)
-    plt.plot(range(0,len(busyNodesBest)*tick,tick), busyNodesBest)
-    plt.plot(range(0,len(busyNodesOver)*tick,tick), busyNodesOver)
-    plt.plot(range(0,len(busyNodesProp)*tick,tick), busyNodesProp)
-    plt.legend(['bestfit', 'oversub', 'proposed'], loc='best')
+    max_len = 0
+    for i in range(methodsNum):
+        plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i])
+        if max_len < len(maxCpuUsages[i]):
+            max_len = len(maxCpuUsages[i])
+    
+    plt.plot(range(0,max_len*tick,tick), [cap] * max_len)
+    legends = methods
+    legends.append('capacity')
+    plt.legend(legends, loc='best')
     plt.xlabel('time (seconds)')
-    plt.ylabel('Num. busy nodes')
+    plt.ylabel('max usage (cpu cores)')
     plt.ylim(0,Y_MAX)
 
     fig_util.savefig(figPath+"util.pdf", bbox_inches='tight')
 
+if False:
+    Y_MAX = cap*20
+    fig_util = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i])
+    
+    plt.legend(methods, loc='best')
+    plt.xlabel('time (seconds)')
+    plt.ylabel('total cpu request')
+    plt.ylim(0,Y_MAX)
+
+    fig_util.savefig(figPath+"request.pdf", bbox_inches='tight')
+
 ## plot performance: number of overload nodes.
-if(plots[1]):
+if False:
     fig_perform = plt.figure(figsize=FIG_ONE_COL)
-    plt.plot(range(0,len(overloadNodesBest)*tick,tick), overloadNodesBest)
-    plt.plot(range(0,len(overloadNodesOver)*tick,tick), overloadNodesOver)
-    plt.plot(range(0,len(overloadNodesProp)*tick,tick), overloadNodesProp)
-    plt.legend(['bestfit', 'oversub', 'proposed'], loc='best')
+    for i in range(methodsNum):
+        plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i])
+
+    plt.legend(methods, loc='best')
     plt.xlabel('time (seconds)')
     plt.ylabel('Num. overload nodes')
     # plt.ylim(0,Y_MAX)
@@ -116,18 +171,17 @@ if(plots[1]):
     fig_util.savefig(figPath+"perf.pdf", bbox_inches='tight')
     
 ## plot performance: number of overload nodes.
-if(plots[2]):
+if False:
     fig_overbook = plt.figure(figsize=FIG_ONE_COL)
-    plt.plot(range(0,len(overBookNodesBest)*tick,tick), overBookNodesBest)
-    plt.plot(range(0,len(overBookNodesOver)*tick,tick), overBookNodesOver)
-    plt.plot(range(0,len(overBookNodesProp)*tick,tick), overBookNodesProp)
-    plt.legend(['bestfit', 'oversub', 'proposed'], loc='best')
+    for i in range(methodsNum):
+        plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i])
+
+    plt.legend(methods, loc='best')
     plt.xlabel('time (seconds)')
     plt.ylabel('Num. overbook nodes')
     # plt.ylim(0,Y_MAX)
 
     fig_util.savefig(figPath+"overbook.pdf", bbox_inches='tight')
-
 
 ## show figures
 plt.show()

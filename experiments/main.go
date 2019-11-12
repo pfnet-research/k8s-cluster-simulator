@@ -60,8 +60,8 @@ var (
 	// isGenWorkload    = false
 	workloadPath     string
 	tracePath        string
-	targetNum        = 64
-	totalPodsNum     = uint64(640)
+	targetNum        = 64 * 4
+	totalPodsNum     = uint64(64 * 50)
 	submittedPodsNum = uint64(0)
 	podMap           = make(map[string][]string)
 	// schedulerName    = "bestfit"
@@ -71,6 +71,7 @@ var (
 
 	meanSec             = 10.0
 	meanCpu             = 4.0
+	cpuStd              = 3.0
 	phasNum             = 1
 	requestCpu          = 8.0
 	startClockStr       = "2019-01-01T00:00:00+09:00"
@@ -240,7 +241,7 @@ func buildScheduler() scheduler.Scheduler {
 		return &sched
 	case ONE_SHOT:
 		log.L.Infof("Scheduler: %s", ONE_SHOT)
-		globalOverSubFactor = 2.0
+		globalOverSubFactor = 1.0
 		sched := scheduler.NewOneShotScheduler(false)
 		// 2. Register extender(s)
 		sched.AddExtender(
@@ -255,7 +256,7 @@ func buildScheduler() scheduler.Scheduler {
 
 		// 2. Register plugin(s)
 		// Predicate
-		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
+		// sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "MostRequested",

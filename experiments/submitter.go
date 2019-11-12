@@ -215,7 +215,7 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 	for i := 0; i < phasNum; i++ {
 
 		sec := int(genNormFloat64(meanSec/2, meanSec, meanSec*0.1+1, meanSec*10, s.myrand))
-		cpu := 1 + int(genNormFloat64(meanCpu/2, meanCpu, meanCpu*0.1, meanCpu*10, s.myrand))
+		cpu := 1 + int(genNormFloat64(cpuStd, meanCpu, meanCpu*0.1, meanCpu*10, s.myrand))
 		mem := 0
 		gpu := 0
 
