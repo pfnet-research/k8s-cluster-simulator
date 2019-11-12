@@ -45,9 +45,10 @@ func leastRequestedScore(requested, capacity int64) int64 {
 	if capacity == 0 {
 		return 0
 	}
-	if requested > capacity {
-		return 0
-	}
+	// TanLe: remove the following lines for oversub
+	// if requested > capacity {
+	// 	return 0
+	// }
 
 	return ((capacity - requested) * int64(schedulerapi.MaxPriority)) / capacity
 }

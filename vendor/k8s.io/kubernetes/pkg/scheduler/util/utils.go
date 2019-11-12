@@ -19,10 +19,11 @@ package util
 import (
 	"sort"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 	"k8s.io/kubernetes/pkg/features"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
 
 // GetContainerPorts returns the used host ports of Pods: if 'port' was used, a 'port:true' pair
@@ -96,4 +97,25 @@ func (l *SortableList) Sort() {
 // SortableList, but expects those arguments to be *v1.Pod.
 func HigherPriorityPod(pod1, pod2 interface{}) bool {
 	return GetPodPriority(pod1.(*v1.Pod)) > GetPodPriority(pod2.(*v1.Pod))
+}
+
+func GetResourceRequest(pod *v1.Pod) *nodeinfo.Resource {
+	result := &nodeinfo.Resource{}
+	for _, container := range pod.Spec.Containers {
+		result.Add(container.Resources.Requests)
+	}
+
+	// take max_resource(sum_pod, any_init_container)
+	for _, container := range pod.Spec.InitContainers {
+		result.SetMaxResource(container.Resources.Requests)
+	}
+
+	return result
+}
+
+// HigherResourceRequest returns higher resource demand.
+func HigherResourceRequest(pod1, pod2 interface{}) bool {
+	r1 := GetResourceRequest(pod1.(*v1.Pod))
+	r2 := GetResourceRequest(pod2.(*v1.Pod))
+	return r1.MilliCPU > r2.MilliCPU
 }

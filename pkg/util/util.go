@@ -64,6 +64,20 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 	return sum
 }
 
+// ResourceListSub returns the substraction r1-r2
+func ResourceListSub(r1, r2 v1.ResourceList) v1.ResourceList {
+	sum := r1.DeepCopy()
+	for r2Key, r2Val := range r2 {
+		if r1Val, ok := sum[r2Key]; ok {
+			r1Val.Sub(r2Val)
+			sum[r2Key] = r1Val
+		} else {
+			sum[r2Key] = r2Val
+		}
+	}
+	return sum
+}
+
 // ResourceListGE returns true when r1 >= r2, false otherwise.
 func ResourceListGE(r1, r2 v1.ResourceList) bool {
 	for r2Key, r2Val := range r2 {

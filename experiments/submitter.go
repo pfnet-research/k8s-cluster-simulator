@@ -39,14 +39,16 @@ type mySubmitter struct {
 	totalPodsNum uint64
 	myrand       *rand.Rand
 	tick         time.Duration
+	endClock     clock.Clock
 }
 
-func newMySubmitter(totalPodsNum uint64) *mySubmitter {
+func newMySubmitter(totalPodsNum uint64, endClock clock.Clock) *mySubmitter {
 	return &mySubmitter{
 		podIdx:       0,
 		totalPodsNum: totalPodsNum,
 		myrand:       rand.New(rand.NewSource(time.Now().UnixNano())),
 		tick:         time.Duration(10), //TODO: get tick from viper.config
+		endClock:     endClock,
 	}
 }
 
@@ -110,6 +112,15 @@ func (s *mySubmitter) Submit(
 	clock clock.Clock,
 	_ algorithm.NodeLister,
 	met metrics.Metrics) ([]submitter.Event, error) {
+	// terminate the simulation before end time
+
+	if s.endClock.Before(clock) {
+		log.L.Infof("=========== Terminate simumation ========== @ %v", clock.ToRFC3339())
+		events := make([]submitter.Event, 0, 1)
+		events = append(events, &submitter.TerminateSubmitterEvent{})
+		return events, nil
+	}
+
 	if isGenWorkload {
 		return s.generateWorkloads(clock, met)
 	}

@@ -70,8 +70,6 @@ func (sched *ProposedScheduler) AddPrioritizer(prioritizer priorities.PriorityCo
 	sched.prioritizers = append(sched.prioritizers, prioritizer)
 }
 
-var GlobalMetrics metrics.Metrics
-
 // Schedule implements Scheduler interface.
 // Schedules pods in one-by-one manner by using registered extenders and plugins.
 func (sched *ProposedScheduler) Schedule(
@@ -97,7 +95,6 @@ func (sched *ProposedScheduler) Schedule(
 			predicates.NodesOverSubFactors[nodeName] = 1.0
 		}
 	}
-	log.L.Infof("oversub map: %v", predicates.NodesOverSubFactors)
 
 	results := []Event{}
 	for {

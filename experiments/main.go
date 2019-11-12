@@ -44,10 +44,12 @@ func main() {
 }
 
 const (
-	BEST_FIT = "bestfit"
-	OVER_SUB = "oversub"
-	PROPOSED = "proposed"
-	GENERTIC = "generic"
+	BEST_FIT  = "bestfit"
+	WOSRT_FIT = "worstfit"
+	OVER_SUB  = "oversub"
+	ONE_SHOT  = "oneshot"
+	PROPOSED  = "proposed"
+	GENERTIC  = "generic"
 )
 
 // configPath is the path of the config file, defaulting to "config".
@@ -71,7 +73,8 @@ var (
 	meanCpu             = 4.0
 	phasNum             = 1
 	requestCpu          = 8.0
-	startClock          = "2019-01-01T00:00:00+09:00"
+	startClockStr       = "2019-01-01T00:00:00+09:00"
+	endClockStr         = "3019-01-01T00:00:00+09:00"
 	startTimestampTrace = "0"
 	nodeCap             = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
 )
@@ -93,9 +96,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&tracePath, "trace", "./data/sample/tasks", "config file (excluding file extension)")
 	rootCmd.PersistentFlags().StringVar(
-		&startClock, "clock", "2019-01-01T00:00:00+09:00", "start clock")
+		&startClockStr, "start", "2019-01-01T00:00:00+09:00", "start clock")
 	rootCmd.PersistentFlags().StringVar(
-		&startTimestampTrace, "trace-start", "0", "start of time stamp in the trace")
+		&endClockStr, "end", "3019-01-01T00:00:00+09:00", "end clock")
+	rootCmd.PersistentFlags().StringVar(
+		&startTimestampTrace, "trace-start", "600000000", "start of time stamp in the trace")
 }
 
 var rootCmd = &cobra.Command{
@@ -119,7 +124,11 @@ var rootCmd = &cobra.Command{
 		// 2. Prepare the set of podsubmit time: set<timestamp>
 
 		// 3. Register one or more pod submitters to KubeSim.
-		kubesim.AddSubmitter("MySubmitter", newMySubmitter(totalPodsNum))
+		endClock, err := BuildClock(endClockStr, 0)
+		if err != nil {
+			log.L.Fatal(err)
+		}
+		kubesim.AddSubmitter("MySubmitter", newMySubmitter(totalPodsNum, endClock))
 
 		// 4. Run the main loop of KubeSim.
 		//    In each execution of the loop, KubeSim
@@ -138,26 +147,31 @@ const workerNum = 16
 func convertTrace2Workload(tracePath string, workloadPath string) {
 	files, _ := ioutil.ReadDir(tracePath)
 	startTimestamp, _ := strconv.Atoi(startTimestampTrace)
+	startTimestamp = startTimestamp / 1000000
 	// generate json in a serial manner
 	// for _, f := range files {
 	// 	fileName := string(f.Name())
 	// 	strs := strings.Split(fileName, "_")
 	// 	timestamp, _ := strconv.Atoi(strs[0])
 	// 	pod := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], 5)
-	// 	clock, _ := BuildClock(startClock, int64(timestamp-startTimestamp))
+	// 	clock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 	// 	WritePodAsJson(*pod, workloadPath, clock)
 	// }
 
 	// Generate json files in parrallel
 	fileNum := len(files)
+	if fileNum > int(totalPodsNum) {
+		fileNum = int(totalPodsNum)
+	}
 	ctx, _ := context.WithCancel(context.Background())
 	workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
 		fileName := string(files[i].Name())
 		strs := strings.Split(fileName, "_")
 		timestamp, _ := strconv.Atoi(strs[0])
+		timestamp = timestamp / 1000000
 		pod := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], 5)
-		clock, _ := BuildClock(startClock, int64(timestamp-startTimestamp))
-		WritePodAsJson(*pod, workloadPath, clock)
+		startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+		WritePodAsJson(*pod, workloadPath, startClock)
 	})
 }
 
@@ -224,6 +238,33 @@ func buildScheduler() scheduler.Scheduler {
 		})
 
 		return &sched
+	case ONE_SHOT:
+		log.L.Infof("Scheduler: %s", ONE_SHOT)
+		globalOverSubFactor = 2.0
+		sched := scheduler.NewOneShotScheduler(false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeExtender,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
+
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
+		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "MostRequested",
+			Map:    priorities.MostRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
+
+		return &sched
 	case OVER_SUB:
 		log.L.Infof("Scheduler: %s", OVER_SUB)
 		sched := scheduler.NewGenericScheduler(false)
@@ -243,8 +284,9 @@ func buildScheduler() scheduler.Scheduler {
 		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "MostRequested",
-			Map:    priorities.MostRequestedPriorityMap,
+			Name: "LeastRequested",
+			// Map:    priorities.MostRequestedPriorityMap,
+			Map:    priorities.LeastRequestedPriorityMap,
 			Reduce: nil,
 			Weight: 1,
 		})
@@ -272,6 +314,33 @@ func buildScheduler() scheduler.Scheduler {
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "MostRequested",
 			Map:    priorities.MostRequestedPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
+
+		return &sched
+	case WOSRT_FIT:
+		log.L.Infof("Scheduler: %s", WOSRT_FIT)
+		globalOverSubFactor = 1.0
+		sched := scheduler.NewGenericScheduler(false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeExtender,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
+
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
+		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "LeastRequested",
+			Map:    priorities.LeastRequestedPriorityMap,
 			Reduce: nil,
 			Weight: 1,
 		})

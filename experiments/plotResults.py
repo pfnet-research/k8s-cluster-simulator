@@ -2,7 +2,6 @@ import json
 import re
 import matplotlib.pyplot as plt
 
-LOG_FILE = '/Users/tanle/go/src/github.com/pfnet-research/k8s-cluster-simulator/experiments/kubesim_bestfit.log'
 cpuStr = 'cpu'
 
 def loadLog(filepath) :
