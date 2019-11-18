@@ -30,12 +30,12 @@ metricsTick: $metricsTick
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- dest: stdout
-  formatter: table
 - dest: $log_file
   formatter: JSON
-- dest: kubesim-hr-${scheduler}.log
-  formatter: humanReadable
+#- dest: kubesim-hr-${scheduler}.log
+#  formatter: humanReadable
+#- dest: stdout
+#  formatter: table
 
 # Write configuration of each node.
 cluster:

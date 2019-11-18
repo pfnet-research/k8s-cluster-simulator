@@ -112,7 +112,8 @@ func init() {
 		&maxTaskLengthSeconds, "max-task-length", 1, "max-task-length in seconds")
 	rootCmd.PersistentFlags().Uint64Var(
 		&totalPodsNum, "total-pods-num", 1, "totalPodsNum")
-
+	rootCmd.PersistentFlags().IntVar(
+		&workloadSubsetFactor, "subset-factor", 1, "subset factor of workload trace")
 }
 
 var rootCmd = &cobra.Command{
@@ -178,10 +179,10 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	if parralel {
 		ctx, _ := context.WithCancel(context.Background())
 		workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
-			if i*workloadSubsetFactor >= fileNum {
+			if i >= fileNum*workloadSubsetFactor {
 				return
 			}
-			fileName := string(sortableList.Items[i].(string))
+			fileName := string(sortableList.Items[i*workloadSubsetFactor].(string))
 			strs := strings.Split(fileName, "_")
 			timestamp, _ := strconv.Atoi(strs[0])
 			timestamp = timestamp / 1000000
@@ -243,6 +244,7 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("cluster: %s", configPath)
 	log.L.Infof("oversub: %f", globalOverSubFactor)
 	log.L.Infof("maxTaskLengthSeconds: %d", maxTaskLengthSeconds)
+	log.L.Infof("workloadSubsetFactor: %v", workloadSubsetFactor)
 	log.L.Infof("tick: %d", tick)
 	log.L.Infof("start: %v", startClockStr)
 	log.L.Infof("endClockStr: %v", endClockStr)

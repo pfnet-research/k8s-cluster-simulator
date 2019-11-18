@@ -12,16 +12,17 @@ cpuPerNode=64
 memPerNode=128
 tick=60
 metricsTick=60
-maxTaskLengthSeconds=720000 # seconds.
-totalPodNumber=500000
+maxTaskLengthSeconds=3600 # seconds.
+totalPodNumber=10000
+workloadSubsetFactor=10
 isDebug=true
 path="/ssd/projects/google-trace-data"
 runSim(){
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-31T00:00:00+09:00"
     startTrace="600000000"
-    ./gen_config.sh $1 $path $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start"
-    go run $(go list ./...) --config="$path/config/cluster_$1" \
+    ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start"
+    go run $(go list ./...) --config="./config/cluster_$1" \
     --workload="$path/workload"  \
     --scheduler="$1" \
     --isgen=$2 \
@@ -34,6 +35,7 @@ runSim(){
     --tick="$tick" \
     --max-task-length="$maxTaskLengthSeconds" \
     --total-pods-num=$totalPodNumber \
+    --subset-factor=$workloadSubsetFactor\
     &> run_${1}.out
 }
 #rm -rf *.out
@@ -49,9 +51,8 @@ SECONDS=0
 runSim $ONE_SHOT false false
 echo "$ONE_SHOT took $SECONDS seconds"
 
-wait
-echo "==================FINISHED=================="
-
+SECONDS=0 
 echo "==================Plotting=================="
 python plotResults.py
+echo "plotResults.py took $SECONDS seconds"
 echo "==================FINISHED=================="

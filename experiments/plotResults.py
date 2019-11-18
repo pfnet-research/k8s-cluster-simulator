@@ -10,6 +10,11 @@ from data_utils import *
 
 cpuStr = 'cpu'
 
+show=False
+loads = [False, False, False, False, False, True, False]
+plots = [True, False, False]
+
+
 def loadLog(filepath) :
     cpuUsages = []
     maxCpuUsages = []
@@ -70,16 +75,23 @@ def loadLog(filepath) :
                 if(runningPodsNum > 0):
                     busyNode = busyNode + 1
 
-            cpuUsages.append(totalCpuUsage)
-            cpuAllocatables.append(totalCapacity)
-            busyNodes.append(busyNode)
-            overloadNodes.append(overloadNode) 
-            overBookNodes.append(overBookNode)
-            maxCpuUsages.append(maxCpuUsage)
-            cpuRequests.append(totalCpuRequest)
+            if (loads[0]):
+                cpuUsages.append(totalCpuUsage)
+            if (loads[1]):
+                cpuAllocatables.append(totalCapacity)
+            if (loads[2]):
+                busyNodes.append(busyNode)
+            if (loads[3]):
+                overloadNodes.append(overloadNode) 
+            if (loads[4]):
+                overBookNodes.append(overBookNode)
+            if (loads[5]):
+                maxCpuUsages.append(maxCpuUsage)
+            if (loads[6]):
+                cpuRequests.append(totalCpuRequest)
 
-            # line = fp.readline()
             i=i+1
+
     fp.close()
 
     return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuRequests, maxCpuUsages, cpuAllocatables
@@ -117,18 +129,9 @@ for m in methods:
     cpuAllocatables.append(a)
     cpuRequests.append(ur)
 
-# busyNodesBest, overloadNodesBest, overBookNodesBest, cpuUsagesBest, cpuAllocatablesBest = loadLog('kubesim_bestfit.log')
-# busyNodesOver, overloadNodesOver, overBookNodesOver, cpuUsagesOver, cpuAllocatablesOver = loadLog('kubesim_oversub.log')
-# busyNodesProp, overloadNodesProp, overBookNodesProp, cpuUsagesProp, cpuAllocatablesProp = loadLog('kubesim_proposed.log')
-
-# print("Overload nodes's num: oversub: "+str(sum(overloadNodesOver)) + " proposed: "+str(sum(overloadNodesProp)))
-## resource usage
 ############# PLOTTING ##############
 
 tick = 1
-figPath = "/ssd/projects/cluster/figs/"
-FIG_ONE_COL = (4,3)
-plots = [True, False, False]
 ## plot utilization: number of busy nodes.
 cap = 64
 if(plots[0]):
@@ -149,7 +152,7 @@ if(plots[0]):
     plt.suptitle("Max Cpu Usage")
     plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(figPath+"util.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"util.pdf", bbox_inches='tight')
 
 if False:
     Y_MAX = cap*20
@@ -163,7 +166,7 @@ if False:
     plt.ylim(0,Y_MAX)
     plt.suptitle("Total Cpu Request")
 
-    fig_util.savefig(figPath+"request.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"request.pdf", bbox_inches='tight')
 
 ## plot performance: number of overload nodes.
 if False:
@@ -177,7 +180,7 @@ if False:
     plt.suptitle("Overload")
     # plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(figPath+"perf.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"perf.pdf", bbox_inches='tight')
     
 ## plot performance: number of overload nodes.
 if False:
@@ -191,7 +194,8 @@ if False:
     plt.suptitle("Overbook")
     # plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(figPath+"overbook.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"overbook.pdf", bbox_inches='tight')
 
 ## show figures
-plt.show()
+if show:
+    plt.show()
