@@ -1,6 +1,12 @@
+import sys
 import json
 import re
 import matplotlib.pyplot as plt
+
+sys.path.insert(0, './include')
+from common import *
+from utils import *
+from data_utils import *
 
 cpuStr = 'cpu'
 
@@ -138,8 +144,9 @@ if(plots[0]):
     legends = methods
     legends.append('capacity')
     plt.legend(legends, loc='best')
-    plt.xlabel('time (seconds)')
-    plt.ylabel('max usage (cpu cores)')
+    plt.xlabel('time (minutes)')
+    plt.ylabel(STR_CPU_CORES)
+    plt.suptitle("Max Cpu Usage")
     plt.ylim(0,Y_MAX)
 
     fig_util.savefig(figPath+"util.pdf", bbox_inches='tight')
@@ -151,9 +158,10 @@ if False:
         plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i])
     
     plt.legend(methods, loc='best')
-    plt.xlabel('time (seconds)')
-    plt.ylabel('total cpu request')
+    plt.xlabel(STR_TIME_MINS)
+    plt.ylabel(STR_CPU_CORES)
     plt.ylim(0,Y_MAX)
+    plt.suptitle("Total Cpu Request")
 
     fig_util.savefig(figPath+"request.pdf", bbox_inches='tight')
 
@@ -164,8 +172,9 @@ if False:
         plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i])
 
     plt.legend(methods, loc='best')
-    plt.xlabel('time (seconds)')
-    plt.ylabel('Num. overload nodes')
+    plt.xlabel(STR_TIME_MINS)
+    plt.ylabel(STR_NODES)
+    plt.suptitle("Overload")
     # plt.ylim(0,Y_MAX)
 
     fig_util.savefig(figPath+"perf.pdf", bbox_inches='tight')
@@ -177,8 +186,9 @@ if False:
         plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i])
 
     plt.legend(methods, loc='best')
-    plt.xlabel('time (seconds)')
-    plt.ylabel('Num. overbook nodes')
+    plt.xlabel(STR_TIME_MINS)
+    plt.ylabel(STR_NODES)
+    plt.suptitle("Overbook")
     # plt.ylim(0,Y_MAX)
 
     fig_util.savefig(figPath+"overbook.pdf", bbox_inches='tight')

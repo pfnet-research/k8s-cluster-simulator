@@ -28,13 +28,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
 	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
-	"k8s.io/client-go/util/workqueue"
+	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 )
 
 func main() {
@@ -58,26 +59,29 @@ var (
 	isGenWorkload  = false
 	isConvertTrace = false
 	// isGenWorkload    = false
-	workloadPath     string
-	tracePath        string
-	targetNum        = 64 * 4
-	totalPodsNum     = uint64(64 * 50)
-	submittedPodsNum = uint64(0)
-	podMap           = make(map[string][]string)
+	workloadPath         string
+	tracePath            string
+	targetNum            = 64 * 4
+	totalPodsNum         = uint64(10)
+	workloadSubsetFactor = int(1)
+	submittedPodsNum     = uint64(0)
+	podMap               = make(map[string][]string)
 	// schedulerName    = "bestfit"
 	schedulerName = "default"
 	// schedulerName       = "proposed"
 	globalOverSubFactor = 4.0
 
-	meanSec             = 10.0
-	meanCpu             = 4.0
-	cpuStd              = 3.0
-	phasNum             = 1
-	requestCpu          = 8.0
-	startClockStr       = "2019-01-01T00:00:00+09:00"
-	endClockStr         = "3019-01-01T00:00:00+09:00"
-	startTimestampTrace = "0"
-	nodeCap             = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
+	meanSec              = 10.0
+	meanCpu              = 4.0
+	cpuStd               = 3.0
+	phasNum              = 1
+	requestCpu           = 8.0
+	startClockStr        = "2019-01-01T00:00:00+09:00"
+	endClockStr          = "3019-01-01T00:00:00+09:00"
+	startTimestampTrace  = "0"
+	tick                 = 1
+	maxTaskLengthSeconds = 120 // seconds
+	nodeCap              = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
 )
 
 func init() {
@@ -102,6 +106,13 @@ func init() {
 		&endClockStr, "end", "3019-01-01T00:00:00+09:00", "end clock")
 	rootCmd.PersistentFlags().StringVar(
 		&startTimestampTrace, "trace-start", "600000000", "start of time stamp in the trace")
+	rootCmd.PersistentFlags().IntVar(
+		&tick, "tick", 1, "over sub factor")
+	rootCmd.PersistentFlags().IntVar(
+		&maxTaskLengthSeconds, "max-task-length", 1, "max-task-length in seconds")
+	rootCmd.PersistentFlags().Uint64Var(
+		&totalPodsNum, "total-pods-num", 1, "totalPodsNum")
+
 }
 
 var rootCmd = &cobra.Command{
@@ -143,37 +154,57 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-const workerNum = 16
+const workerNum = 32
 
 func convertTrace2Workload(tracePath string, workloadPath string) {
 	files, _ := ioutil.ReadDir(tracePath)
+	fileNum := len(files)
+	sortableList := kutil.SortableList{CompFunc: TaskInChronologicalOrder}
+	for i := 0; i < fileNum; i++ {
+		sortableList.Items = append(sortableList.Items, files[i].Name())
+	}
+	sortableList.Sort()
+	log.L.Infof("Total number of files in the trace folder: %v", len(files))
 	startTimestamp, _ := strconv.Atoi(startTimestampTrace)
-	startTimestamp = startTimestamp / 1000000
-	// generate json in a serial manner
-	// for _, f := range files {
-	// 	fileName := string(f.Name())
-	// 	strs := strings.Split(fileName, "_")
-	// 	timestamp, _ := strconv.Atoi(strs[0])
-	// 	pod := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], 5)
-	// 	clock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
-	// 	WritePodAsJson(*pod, workloadPath, clock)
-	// }
+	startTimestamp = startTimestamp / MICRO_SECONDS
 
 	// Generate json files in parrallel
-	fileNum := len(files)
+
 	if fileNum > int(totalPodsNum) {
 		fileNum = int(totalPodsNum)
 	}
-	ctx, _ := context.WithCancel(context.Background())
-	workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
-		fileName := string(files[i].Name())
-		strs := strings.Split(fileName, "_")
-		timestamp, _ := strconv.Atoi(strs[0])
-		timestamp = timestamp / 1000000
-		pod := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], 5)
-		startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
-		WritePodAsJson(*pod, workloadPath, startClock)
-	})
+	parralel := true
+
+	if parralel {
+		ctx, _ := context.WithCancel(context.Background())
+		workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
+			if i*workloadSubsetFactor >= fileNum {
+				return
+			}
+			fileName := string(sortableList.Items[i].(string))
+			strs := strings.Split(fileName, "_")
+			timestamp, _ := strconv.Atoi(strs[0])
+			timestamp = timestamp / 1000000
+			pod, err := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds)
+			if err == nil {
+				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+				WritePodAsJson(*pod, workloadPath, startClock)
+			}
+		})
+	} else {
+		for i := 0; i < fileNum*workloadSubsetFactor; i += workloadSubsetFactor {
+			fileName := sortableList.Items[i].(string)
+			strs := strings.Split(fileName, "_")
+			timestamp, _ := strconv.Atoi(strs[0])
+			timestamp = timestamp / 1000000
+			pod, err := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds/tick)
+			if err == nil {
+				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+				WritePodAsJson(*pod, workloadPath, startClock)
+			}
+		}
+	}
+
 }
 
 func buildScheduler() scheduler.Scheduler {
@@ -200,6 +231,7 @@ func buildScheduler() scheduler.Scheduler {
 				podMap[clockStr] = strArr
 			}
 		}
+		log.L.Infof("Total number of pods in the workload folder: %v", totalPodsNum)
 	}
 
 	log.L.Infof("scheduler input %s", schedulerName)
@@ -210,6 +242,10 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("trace: %v", tracePath)
 	log.L.Infof("cluster: %s", configPath)
 	log.L.Infof("oversub: %f", globalOverSubFactor)
+	log.L.Infof("maxTaskLengthSeconds: %d", maxTaskLengthSeconds)
+	log.L.Infof("tick: %d", tick)
+	log.L.Infof("start: %v", startClockStr)
+	log.L.Infof("endClockStr: %v", endClockStr)
 
 	switch schedName := strings.ToLower(schedulerName); schedName {
 	case PROPOSED:

@@ -104,6 +104,9 @@ func (sched *OneShotScheduler) Schedule(
 	// compute pods vs. nodes.
 	pods := GetPodList(pendingPods)
 	podNum := len(pods)
+	if podNum == 0 {
+		return []Event{}, nil
+	}
 	// do the mapping.
 	scheduleMap, _ := sched.scheduleAll(pods, nodeLister, nodeInfoMap)
 
