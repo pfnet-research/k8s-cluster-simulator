@@ -1,13 +1,13 @@
 
 scheduler=$1
 log_file="kubesim_$scheduler.log"
-filePath="config/cluster_$scheduler.yaml"
-node_num=$2
-cpu=$3
-mem=$4
-tick=$5
-metricsTick=$6
-clock="$7"
+filePath="$2/cluster_$scheduler.yaml"
+node_num=$3
+cpu=$4
+mem=$5
+tick=$6
+metricsTick=$7
+clock="$8"
 
 echo """# Log level defined by sirupsen/logrus.
 # Optional (info, debug)

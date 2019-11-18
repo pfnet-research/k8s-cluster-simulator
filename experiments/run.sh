@@ -12,21 +12,22 @@ cpuPerNode=64
 memPerNode=128
 tick=60
 metricsTick=60
-maxTaskLengthSeconds=7200 # seconds.
+maxTaskLengthSeconds=720000 # seconds.
 totalPodNumber=500000
 isDebug=true
+path="/ssd/projects/google-trace-data"
 runSim(){
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-31T00:00:00+09:00"
     startTrace="600000000"
-    ./gen_config.sh $1 $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start"
-    go run $(go list ./...) --config="/ssd/projects/google-trace-data/config/cluster_$1" \
-    --workload="/ssd/projects/google-trace-data/workload"  \
+    ./gen_config.sh $1 $path $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start"
+    go run $(go list ./...) --config="$path/config/cluster_$1" \
+    --workload="$path/workload"  \
     --scheduler="$1" \
     --isgen=$2 \
     --oversub=$oversub \
     --istrace=$3 \
-    --trace="/ssd/projects/google-trace-data/tasks" \
+    --trace="$path/tasks" \
     --start="$start" \
     --end="$end" \
     --trace-start="$startTrace" \
