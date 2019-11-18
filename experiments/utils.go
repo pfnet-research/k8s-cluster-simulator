@@ -209,11 +209,11 @@ func TaskInChronologicalOrder(taskName1, taskName2 interface{}) bool {
 	if a1 == a2 {
 		j1, _ := strconv.Atoi(strArr1[1])
 		j2, _ := strconv.Atoi(strArr2[1])
-		if j1 == j2 {
-			t1, _ := strconv.Atoi(strArr1[2])
-			t2, _ := strconv.Atoi(strArr2[2])
-			return t1 < t2
-		}
+		// if j1 == j2 {
+		// 	t1, _ := strconv.Atoi(strArr1[2])
+		// 	t2, _ := strconv.Atoi(strArr2[2])
+		// 	return t1 < t2
+		// }
 		return j1 < j2
 	}
 	return a1 < a2

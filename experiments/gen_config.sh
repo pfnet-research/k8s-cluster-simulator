@@ -1,7 +1,7 @@
 
 scheduler=$1
 log_file="kubesim_$scheduler.log"
-filePath="$2/cluster_$scheduler.yaml"
+filePath="$2/config/cluster_$scheduler.yaml"
 node_num=$3
 cpu=$4
 mem=$5
