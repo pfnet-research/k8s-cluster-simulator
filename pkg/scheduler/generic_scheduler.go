@@ -70,6 +70,7 @@ func (sched *GenericScheduler) AddPrioritizer(prioritizer priorities.PriorityCon
 
 // Schedule implements Scheduler interface.
 // Schedules pods in one-by-one manner by using registered extenders and plugins.
+// schedule入口
 func (sched *GenericScheduler) Schedule(
 	clock clock.Clock,
 	pendingPods queue.PodQueue,
@@ -156,6 +157,7 @@ var _ = Scheduler(&GenericScheduler{})
 // scheduleOne makes scheduling decision for the given pod and nodes.
 // Returns core.ErrNoNodesAvailable if nodeLister lists zero nodes, or core.FitError if the given
 // pod does not fit in any nodes.
+// 顾名思义 每次调用单个pod
 func (sched *GenericScheduler) scheduleOne(
 	pod *v1.Pod,
 	nodeLister algorithm.NodeLister,

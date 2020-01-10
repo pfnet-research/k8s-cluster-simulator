@@ -142,6 +142,7 @@ func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
 // Run executes the main loop, which invokes submitters and the scheduler, and binds pods to the
 // selected nodes.
 // This method blocks until ctx is done or this KubeSim finishes processing all pods.
+// 开始运行循环
 func (k *KubeSim) Run(ctx context.Context) error {
 	preMetricsClock := k.clock
 	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
