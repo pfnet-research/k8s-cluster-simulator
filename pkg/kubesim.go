@@ -181,6 +181,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 
 			if k.clock.Sub(preMetricsClock) > k.metricsTick {
 				preMetricsClock = k.clock
+				// 此处查看metricsWriters
 				if err = k.writeMetrics(&met); err != nil {
 					return err
 				}
@@ -272,9 +273,14 @@ func buildCluster(conf *config.Config) (map[string]*node.Node, error) {
 	return nodes, nil
 }
 
+// 返回writers
+// writers是writer数组
 func buildMetricsWriters(conf *config.Config) ([]metrics.Writer, error) {
 	writers := []metrics.Writer{}
 
+	// 返回fileWriters
+	// fileWriters是writer数组
+	// writer由目标文件和格式后字符串formatter组成
 	fileWriters, err := config.BuildMetricsLogger(conf.MetricsLogger)
 	if err != nil {
 		return []metrics.Writer{}, err
