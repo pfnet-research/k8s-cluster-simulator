@@ -1,37 +1,23 @@
 package client
 
 import (
-	"context"
-	"log"
-	"net"
-
-	"google.golang.org/grpc"
-	pb "github.com/qrluo96/k8s-cluster-simulator/protos"
+	pb "simulator/protos"
 )
 
-const (
-	port = ":50051"
-)
+var Connect pb.SimRPCClient
 
-// server is used to implement helloworld.GreeterServer.
-type server struct {
-	pb.UnimplementedGreeterServer
-}
+func establishConnection() {
+	address = "localhost:50051"
 
-// SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	log.Printf("Received: %v", in.GetName())
-	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
-}
-
-func main() {
-	lis, err := net.Listen("tcp", port)
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("did not connect: %v", err)
 	}
-	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	defer conn.Close()
+	Connect = pb.NewSimRPCClient(conn)
+
+	var metric pb.Metrics
+	metric.clock = "test clock"
+	metric.nodes = "test node"
+
 }

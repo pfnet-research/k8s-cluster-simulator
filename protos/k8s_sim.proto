@@ -20,7 +20,7 @@ message Metrics {
 }
 
 message Clock {
-    string clock_Key = 1;
+    string clock_metrics_Key = 1;
 }
 
 message Nodes {

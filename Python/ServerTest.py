@@ -9,8 +9,8 @@ import k8s_sim_pb2_grpc
 class simRPCServicer(k8s_sim_pb2_grpc.simRPCServicer):
     def RecordMetrics(self, request, context):
         metrics = request
-        clock = metrics.clock.clock_Key
-        node = metrics.node.nodes_metrics_key
+        clock = metrics.clock.clock_metrics_Key
+        node = metrics.nodes.nodes_metrics_key
         pods = metrics.pods.pods_metrics_key
         queue = metrics.queue.queue_metrics_key
 
@@ -19,7 +19,7 @@ class simRPCServicer(k8s_sim_pb2_grpc.simRPCServicer):
         print(pods)
         print(queue)
 
-        return 1
+        return k8s_sim_pb2.Result(result=1)
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

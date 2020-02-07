@@ -30,7 +30,8 @@ import (
 	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
-	"github.com/qrluo96/k8s-cluster-simulator/pkg/client"
+
+	pb "simulator/pkg/client"
 )
 
 func main() {
