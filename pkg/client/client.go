@@ -9,6 +9,7 @@ import (
 	pb "simulator/protos"
 )
 
+
 var Client pb.SimRPCClient
 
 var (
@@ -18,7 +19,8 @@ var (
 	serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
 )
 
-func sendMetric(client pb.SimRPCClient, metric *pb.Metrics) {
+// SendMetric comment.
+func SendMetric(client pb.SimRPCClient, metric *pb.Metrics) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := Client.RecordMetrics(ctx, metric)

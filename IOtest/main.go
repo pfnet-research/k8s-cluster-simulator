@@ -23,14 +23,17 @@ import (
 	"github.com/containerd/containerd/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
+	clientPkg "simulator/pkg/client"
+	pb "simulator/protos"
+
 	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
-	// clientPkg "simulator/pkg/client"
 )
 
 func main() {
@@ -53,6 +56,22 @@ var rootCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := newInterruptableContext()
+
+		// 0. Establish the connection
+		address := "localhost:50051"
+
+		conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			log.L.Fatal("did not connect: %v", err)
+		}
+		defer conn.Close()
+		clientPkg.Client = pb.NewSimRPCClient(conn)
+
+		// connection test
+		var metric pb.Metrics
+		clientPkg.InitMetric(&metric, "test clock", "test node")
+
+		clientPkg.SendMetric(clientPkg.Client, &metric)
 
 		// 1. Create a KubeSim with a pod queue and a scheduler.
 		queue := queue.NewPriorityQueue()
