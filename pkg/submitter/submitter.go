@@ -18,8 +18,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
+	"simulator/pkg/clock"
+	"simulator/pkg/metrics"
 )
 
 // Submitter defines the submitter interface.

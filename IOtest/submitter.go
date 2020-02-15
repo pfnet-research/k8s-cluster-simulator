@@ -24,10 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/submitter"
+	"simulator/pkg/clock"
+	"simulator/pkg/metrics"
+	"simulator/pkg/queue"
+	"simulator/pkg/submitter"
 )
 
 type mySubmitter struct {

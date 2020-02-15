@@ -27,10 +27,10 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	l "github.com/pfnet-research/k8s-cluster-simulator/pkg/log"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	"simulator/pkg/clock"
+	l "simulator/pkg/log"
+	"simulator/pkg/queue"
+	"simulator/pkg/util"
 )
 
 // GenericScheduler makes scheduling decision for each given pod in the one-by-one manner.

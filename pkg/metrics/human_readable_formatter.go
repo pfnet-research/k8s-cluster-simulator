@@ -17,9 +17,9 @@ package metrics
 import (
 	"fmt"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
+	"simulator/pkg/node"
+	"simulator/pkg/pod"
+	"simulator/pkg/queue"
 )
 
 // HumanReadableFormatter is a Foramtter that formats metrics in a human-readable style.

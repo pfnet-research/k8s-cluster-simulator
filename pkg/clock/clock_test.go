@@ -20,7 +20,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
+	"simulator/pkg/clock"
 )
 
 func TestClockNewClockAndToMetaV1(t *testing.T) {

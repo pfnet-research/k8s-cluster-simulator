@@ -19,9 +19,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	"simulator/pkg/clock"
+	"simulator/pkg/pod"
+	"simulator/pkg/util"
 )
 
 // Node represents a simulated computing node.

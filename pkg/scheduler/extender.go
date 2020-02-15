@@ -26,7 +26,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 
-	l "github.com/pfnet-research/k8s-cluster-simulator/pkg/log"
+	l "simulator/pkg/log"
 )
 
 // Extender reperesents a scheduler extender.

@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	"simulator/pkg/util"
 )
 
 func resourceListEq(r1, r2 v1.ResourceList) bool {

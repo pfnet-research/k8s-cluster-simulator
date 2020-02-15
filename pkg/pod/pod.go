@@ -21,8 +21,8 @@ import (
 	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	"simulator/pkg/clock"
+	"simulator/pkg/util"
 )
 
 // Pod represents a simulated pod.

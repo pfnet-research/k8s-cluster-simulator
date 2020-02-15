@@ -46,9 +46,9 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
-	l "github.com/pfnet-research/k8s-cluster-simulator/pkg/log"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	l "simulator/pkg/log"
+	"simulator/pkg/queue"
+	"simulator/pkg/util"
 )
 
 func (sched *GenericScheduler) selectHost(priorities api.HostPriorityList) (string, error) {

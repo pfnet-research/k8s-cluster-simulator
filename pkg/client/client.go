@@ -21,7 +21,7 @@ var (
 )
 
 // SendFormattedMetrics a test function for sending metrics to server
-func SendFormattedMetrics(client pb.SimRPCClient, met *metrics.Metrics, metricsWriters *[]metrics.Writer) {
+func SendFormattedMetrics(client pb.SimRPCClient, met *metrics.Metrics, metricsWriters []metrics.Writer) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	stream, err := client.RecordFormattedMetrics(ctx)
@@ -29,8 +29,8 @@ func SendFormattedMetrics(client pb.SimRPCClient, met *metrics.Metrics, metricsW
 		log.Fatalf("%v.RecordFormattedMetrics(_) = _, %v", client, err)
 	}
 	for _, writer := range metricsWriters {
-		metric = writer.Formatter(met)
-		if err := stream.Send(metric); err != nil {
+		var metric = pb.FormattedMetrics{FormattedMetrics: writer.ToString(met)}
+		if err := stream.Send(&metric); err != nil {
 			log.Fatalf("%v.Send(%v) = %v", stream, metric, err)
 		}
 	}

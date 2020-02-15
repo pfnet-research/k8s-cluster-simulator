@@ -31,9 +31,9 @@ import (
 	clientPkg "simulator/pkg/client"
 	pb "simulator/protos"
 
-	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg/kubesim"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
+	kubesim "simulator/pkg/kubesim"
+	"simulator/pkg/queue"
+	"simulator/pkg/scheduler"
 )
 
 func main() {

@@ -15,11 +15,11 @@
 package metrics
 
 import (
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	"simulator/pkg/clock"
+	"simulator/pkg/node"
+	"simulator/pkg/pod"
+	"simulator/pkg/queue"
+	"simulator/pkg/util"
 )
 
 // Metrics represents a metrics at one time point, in the following structure.
@@ -82,4 +82,5 @@ type Formatter interface {
 type Writer interface {
 	// Write writes the given metrics to some location(s).
 	Write(metrics *Metrics) error
+	ToString(metrics *Metrics) string
 }
