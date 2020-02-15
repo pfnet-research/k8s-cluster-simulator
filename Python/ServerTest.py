@@ -21,6 +21,11 @@ class simRPCServicer(k8s_sim_pb2_grpc.simRPCServicer):
 
         return k8s_sim_pb2.Result(result=1)
 
+    def RecordFormattedMetrics(self, request_iterator, context):
+        for formattedMetric in request_iterator:
+            print(formattedMetric)
+        return k8s_sim_pb2.Result(result=1)
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     k8s_sim_pb2_grpc.add_simRPCServicer_to_server(

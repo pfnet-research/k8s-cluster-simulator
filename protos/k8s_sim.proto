@@ -8,10 +8,17 @@ package simRPC;
 // Interface exported by the server.
 service simRPC {
     rpc RecordMetrics(Metrics) returns (Result) {}
+
+      // A client-to-server streaming RPC.
+    rpc RecordFormattedMetrics(stream FormattedMetrics) returns (Result) {}
 }
 
 // 测试
 // 返回四个关键值的str
+message FormattedMetrics {
+    string formatted_metrics = 1;
+}
+
 message Metrics {
     Clock   clock = 1;
     Nodes   nodes = 2;

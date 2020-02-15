@@ -26,6 +26,45 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // 测试
 // 返回四个关键值的str
+type FormattedMetrics struct {
+	FormattedMetrics     string   `protobuf:"bytes,1,opt,name=formatted_metrics,json=formattedMetrics,proto3" json:"formatted_metrics,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FormattedMetrics) Reset()         { *m = FormattedMetrics{} }
+func (m *FormattedMetrics) String() string { return proto.CompactTextString(m) }
+func (*FormattedMetrics) ProtoMessage()    {}
+func (*FormattedMetrics) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4c18405e8fba6db3, []int{0}
+}
+
+func (m *FormattedMetrics) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FormattedMetrics.Unmarshal(m, b)
+}
+func (m *FormattedMetrics) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FormattedMetrics.Marshal(b, m, deterministic)
+}
+func (m *FormattedMetrics) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FormattedMetrics.Merge(m, src)
+}
+func (m *FormattedMetrics) XXX_Size() int {
+	return xxx_messageInfo_FormattedMetrics.Size(m)
+}
+func (m *FormattedMetrics) XXX_DiscardUnknown() {
+	xxx_messageInfo_FormattedMetrics.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FormattedMetrics proto.InternalMessageInfo
+
+func (m *FormattedMetrics) GetFormattedMetrics() string {
+	if m != nil {
+		return m.FormattedMetrics
+	}
+	return ""
+}
+
 type Metrics struct {
 	Clock                *Clock   `protobuf:"bytes,1,opt,name=clock,proto3" json:"clock,omitempty"`
 	Nodes                *Nodes   `protobuf:"bytes,2,opt,name=nodes,proto3" json:"nodes,omitempty"`
@@ -40,7 +79,7 @@ func (m *Metrics) Reset()         { *m = Metrics{} }
 func (m *Metrics) String() string { return proto.CompactTextString(m) }
 func (*Metrics) ProtoMessage()    {}
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c18405e8fba6db3, []int{0}
+	return fileDescriptor_4c18405e8fba6db3, []int{1}
 }
 
 func (m *Metrics) XXX_Unmarshal(b []byte) error {
@@ -100,7 +139,7 @@ func (m *Clock) Reset()         { *m = Clock{} }
 func (m *Clock) String() string { return proto.CompactTextString(m) }
 func (*Clock) ProtoMessage()    {}
 func (*Clock) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c18405e8fba6db3, []int{1}
+	return fileDescriptor_4c18405e8fba6db3, []int{2}
 }
 
 func (m *Clock) XXX_Unmarshal(b []byte) error {
@@ -139,7 +178,7 @@ func (m *Nodes) Reset()         { *m = Nodes{} }
 func (m *Nodes) String() string { return proto.CompactTextString(m) }
 func (*Nodes) ProtoMessage()    {}
 func (*Nodes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c18405e8fba6db3, []int{2}
+	return fileDescriptor_4c18405e8fba6db3, []int{3}
 }
 
 func (m *Nodes) XXX_Unmarshal(b []byte) error {
@@ -178,7 +217,7 @@ func (m *Pods) Reset()         { *m = Pods{} }
 func (m *Pods) String() string { return proto.CompactTextString(m) }
 func (*Pods) ProtoMessage()    {}
 func (*Pods) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c18405e8fba6db3, []int{3}
+	return fileDescriptor_4c18405e8fba6db3, []int{4}
 }
 
 func (m *Pods) XXX_Unmarshal(b []byte) error {
@@ -217,7 +256,7 @@ func (m *Queue) Reset()         { *m = Queue{} }
 func (m *Queue) String() string { return proto.CompactTextString(m) }
 func (*Queue) ProtoMessage()    {}
 func (*Queue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c18405e8fba6db3, []int{4}
+	return fileDescriptor_4c18405e8fba6db3, []int{5}
 }
 
 func (m *Queue) XXX_Unmarshal(b []byte) error {
@@ -256,7 +295,7 @@ func (m *Result) Reset()         { *m = Result{} }
 func (m *Result) String() string { return proto.CompactTextString(m) }
 func (*Result) ProtoMessage()    {}
 func (*Result) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c18405e8fba6db3, []int{5}
+	return fileDescriptor_4c18405e8fba6db3, []int{6}
 }
 
 func (m *Result) XXX_Unmarshal(b []byte) error {
@@ -285,6 +324,7 @@ func (m *Result) GetResult() int32 {
 }
 
 func init() {
+	proto.RegisterType((*FormattedMetrics)(nil), "simRPC.FormattedMetrics")
 	proto.RegisterType((*Metrics)(nil), "simRPC.Metrics")
 	proto.RegisterType((*Clock)(nil), "simRPC.Clock")
 	proto.RegisterType((*Nodes)(nil), "simRPC.Nodes")
@@ -296,24 +336,27 @@ func init() {
 func init() { proto.RegisterFile("k8s_sim.proto", fileDescriptor_4c18405e8fba6db3) }
 
 var fileDescriptor_4c18405e8fba6db3 = []byte{
-	// 272 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x51, 0xbd, 0x4e, 0x84, 0x40,
-	0x10, 0x16, 0x05, 0x8c, 0xa3, 0xdc, 0xe9, 0x16, 0x86, 0x58, 0x11, 0x6c, 0x2e, 0x16, 0xc4, 0x70,
-	0x8d, 0x85, 0xdd, 0x95, 0x17, 0xcd, 0x39, 0x2f, 0x40, 0x22, 0x6c, 0x41, 0x38, 0xdc, 0x93, 0x81,
-	0xe2, 0x5e, 0xc5, 0xa7, 0x35, 0x33, 0xcb, 0xea, 0x91, 0xd0, 0xed, 0x7e, 0x3f, 0xf3, 0x7d, 0xbb,
-	0x03, 0x51, 0xf3, 0x42, 0x05, 0xd5, 0x6d, 0x76, 0xe8, 0x4c, 0x6f, 0x54, 0x48, 0x75, 0x8b, 0xbb,
-	0x4d, 0xfa, 0xe3, 0xc1, 0xe5, 0x9b, 0xee, 0xbb, 0xba, 0x24, 0xf5, 0x08, 0x41, 0xb9, 0x37, 0x65,
-	0x13, 0x7b, 0x89, 0xb7, 0xba, 0xce, 0xa3, 0xcc, 0x6a, 0xb2, 0x0d, 0x83, 0x68, 0x39, 0x16, 0x7d,
-	0x99, 0x4a, 0x53, 0x7c, 0x3e, 0x15, 0xbd, 0x33, 0x88, 0x96, 0x53, 0x09, 0xf8, 0x07, 0x53, 0x51,
-	0x7c, 0x21, 0x9a, 0x1b, 0xa7, 0xd9, 0x99, 0x8a, 0x50, 0x18, 0x1e, 0xf3, 0x3d, 0xe8, 0x41, 0xc7,
-	0xfe, 0x74, 0xcc, 0x07, 0x83, 0x68, 0xb9, 0x74, 0x0d, 0x81, 0x64, 0xab, 0x27, 0xb8, 0x93, 0xf4,
-	0xa2, 0xb5, 0x55, 0x8b, 0xad, 0x3e, 0x4a, 0xcb, 0x2b, 0x5c, 0x0a, 0x31, 0x3e, 0x61, 0xab, 0x8f,
-	0x6c, 0x92, 0x2e, 0x6c, 0x92, 0x36, 0x7f, 0xa6, 0xe6, 0xdf, 0x24, 0xc4, 0x89, 0xe9, 0x19, 0x7c,
-	0x2e, 0xa7, 0x56, 0x70, 0xcb, 0xf5, 0x66, 0x2c, 0x0b, 0xc6, 0xa7, 0x31, 0xd2, 0x95, 0x63, 0xa4,
-	0xed, 0x5c, 0x8c, 0x10, 0x27, 0xa6, 0x04, 0x42, 0xd4, 0x34, 0xec, 0x7b, 0x75, 0x0f, 0x61, 0x27,
-	0x27, 0x91, 0x06, 0x38, 0xde, 0xf2, 0x57, 0x18, 0x37, 0xa3, 0x72, 0x88, 0x50, 0x97, 0xa6, 0xab,
-	0xdc, 0x7a, 0x96, 0xee, 0x8f, 0x46, 0xe0, 0x61, 0xe1, 0x00, 0x3b, 0x33, 0x3d, 0xfb, 0x0c, 0x65,
-	0xb9, 0xeb, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc2, 0xf8, 0x8d, 0x92, 0xed, 0x01, 0x00, 0x00,
+	// 316 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x52, 0xcd, 0x4e, 0xb3, 0x40,
+	0x14, 0xfd, 0xf8, 0x04, 0x8c, 0x57, 0x69, 0xe9, 0x2c, 0x1a, 0xe2, 0x8a, 0xe0, 0x86, 0x68, 0x42,
+	0x0c, 0xdd, 0xb8, 0x73, 0xd1, 0xa4, 0x9b, 0x46, 0x53, 0xe7, 0x05, 0x88, 0xc2, 0x34, 0x21, 0x14,
+	0xa7, 0x32, 0xb0, 0xe8, 0xde, 0xa7, 0xf0, 0x69, 0xcd, 0xbd, 0xc3, 0xd4, 0xd2, 0x76, 0x07, 0xe7,
+	0xe7, 0x9e, 0x73, 0x67, 0x06, 0xbc, 0xea, 0x49, 0x65, 0xaa, 0xac, 0x93, 0x6d, 0x23, 0x5b, 0xc9,
+	0x5c, 0x55, 0xd6, 0x7c, 0x35, 0x8f, 0x9e, 0xc1, 0x5f, 0xc8, 0xa6, 0x7e, 0x6f, 0x5b, 0x51, 0xbc,
+	0x88, 0xb6, 0x29, 0x73, 0xc5, 0x1e, 0x60, 0xb2, 0x36, 0x58, 0x56, 0x6b, 0x30, 0xb0, 0x42, 0x2b,
+	0xbe, 0xe2, 0xfe, 0xfa, 0x48, 0x1c, 0xfd, 0x58, 0x70, 0x69, 0x8c, 0x77, 0xe0, 0xe4, 0x1b, 0x99,
+	0x57, 0x24, 0xbe, 0x4e, 0xbd, 0x44, 0x87, 0x24, 0x73, 0x04, 0xb9, 0xe6, 0x50, 0xf4, 0x29, 0x0b,
+	0xa1, 0x82, 0xff, 0x43, 0xd1, 0x2b, 0x82, 0x5c, 0x73, 0x2c, 0x04, 0x7b, 0x2b, 0x0b, 0x15, 0x5c,
+	0x90, 0xe6, 0xc6, 0x68, 0x56, 0xb2, 0x50, 0x9c, 0x18, 0x1c, 0xf3, 0xd5, 0x89, 0x4e, 0x04, 0xf6,
+	0x70, 0xcc, 0x1b, 0x82, 0x5c, 0x73, 0xd1, 0x0c, 0x1c, 0xca, 0x66, 0xf7, 0x30, 0xa1, 0x74, 0xb3,
+	0x4e, 0xb6, 0x14, 0xbb, 0x7e, 0xa5, 0x31, 0x11, 0xfd, 0x0a, 0x4b, 0xb1, 0x43, 0x13, 0x75, 0x41,
+	0x13, 0xb5, 0xd9, 0x9b, 0xaa, 0x3f, 0x13, 0x11, 0x07, 0xa6, 0x47, 0xb0, 0xb1, 0x1c, 0x8b, 0xc1,
+	0xc7, 0x7a, 0x67, 0x2c, 0x23, 0xc4, 0x87, 0x31, 0xd4, 0x15, 0x63, 0xa8, 0xed, 0xb9, 0x18, 0x22,
+	0x0e, 0x4c, 0x21, 0xb8, 0x5c, 0xa8, 0x6e, 0xd3, 0xb2, 0x29, 0xb8, 0x0d, 0x7d, 0x91, 0xd4, 0xe1,
+	0xfd, 0x5f, 0xfa, 0x6d, 0x41, 0x7f, 0xb7, 0x2c, 0x05, 0x8f, 0x8b, 0x5c, 0x36, 0xfb, 0x8b, 0x1d,
+	0x9b, 0x43, 0xea, 0x81, 0xdb, 0x91, 0x01, 0xf4, 0xd0, 0xe8, 0x1f, 0x5b, 0xc0, 0x54, 0x7b, 0x4e,
+	0x5e, 0x45, 0x60, 0xb4, 0xc7, 0xcc, 0xe9, 0x94, 0xd8, 0xfa, 0x70, 0xe9, 0x99, 0xcd, 0x7e, 0x03,
+	0x00, 0x00, 0xff, 0xff, 0x03, 0x8c, 0xc2, 0x5d, 0x77, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -329,6 +372,8 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SimRPCClient interface {
 	RecordMetrics(ctx context.Context, in *Metrics, opts ...grpc.CallOption) (*Result, error)
+	// A client-to-server streaming RPC.
+	RecordFormattedMetrics(ctx context.Context, opts ...grpc.CallOption) (SimRPC_RecordFormattedMetricsClient, error)
 }
 
 type simRPCClient struct {
@@ -348,9 +393,45 @@ func (c *simRPCClient) RecordMetrics(ctx context.Context, in *Metrics, opts ...g
 	return out, nil
 }
 
+func (c *simRPCClient) RecordFormattedMetrics(ctx context.Context, opts ...grpc.CallOption) (SimRPC_RecordFormattedMetricsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_SimRPC_serviceDesc.Streams[0], "/simRPC.simRPC/RecordFormattedMetrics", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &simRPCRecordFormattedMetricsClient{stream}
+	return x, nil
+}
+
+type SimRPC_RecordFormattedMetricsClient interface {
+	Send(*FormattedMetrics) error
+	CloseAndRecv() (*Result, error)
+	grpc.ClientStream
+}
+
+type simRPCRecordFormattedMetricsClient struct {
+	grpc.ClientStream
+}
+
+func (x *simRPCRecordFormattedMetricsClient) Send(m *FormattedMetrics) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *simRPCRecordFormattedMetricsClient) CloseAndRecv() (*Result, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Result)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // SimRPCServer is the server API for SimRPC service.
 type SimRPCServer interface {
 	RecordMetrics(context.Context, *Metrics) (*Result, error)
+	// A client-to-server streaming RPC.
+	RecordFormattedMetrics(SimRPC_RecordFormattedMetricsServer) error
 }
 
 // UnimplementedSimRPCServer can be embedded to have forward compatible implementations.
@@ -359,6 +440,9 @@ type UnimplementedSimRPCServer struct {
 
 func (*UnimplementedSimRPCServer) RecordMetrics(ctx context.Context, req *Metrics) (*Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecordMetrics not implemented")
+}
+func (*UnimplementedSimRPCServer) RecordFormattedMetrics(srv SimRPC_RecordFormattedMetricsServer) error {
+	return status.Errorf(codes.Unimplemented, "method RecordFormattedMetrics not implemented")
 }
 
 func RegisterSimRPCServer(s *grpc.Server, srv SimRPCServer) {
@@ -383,6 +467,32 @@ func _SimRPC_RecordMetrics_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SimRPC_RecordFormattedMetrics_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SimRPCServer).RecordFormattedMetrics(&simRPCRecordFormattedMetricsServer{stream})
+}
+
+type SimRPC_RecordFormattedMetricsServer interface {
+	SendAndClose(*Result) error
+	Recv() (*FormattedMetrics, error)
+	grpc.ServerStream
+}
+
+type simRPCRecordFormattedMetricsServer struct {
+	grpc.ServerStream
+}
+
+func (x *simRPCRecordFormattedMetricsServer) SendAndClose(m *Result) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *simRPCRecordFormattedMetricsServer) Recv() (*FormattedMetrics, error) {
+	m := new(FormattedMetrics)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 var _SimRPC_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "simRPC.simRPC",
 	HandlerType: (*SimRPCServer)(nil),
@@ -392,6 +502,12 @@ var _SimRPC_serviceDesc = grpc.ServiceDesc{
 			Handler:    _SimRPC_RecordMetrics_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "RecordFormattedMetrics",
+			Handler:       _SimRPC_RecordFormattedMetrics_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "k8s_sim.proto",
 }

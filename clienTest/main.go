@@ -9,8 +9,6 @@ import (
 	pb "simulator/protos"
 )
 
-// var Client pb.SimRPCClient
-
 func main() {
 	address := "localhost:50051"
 

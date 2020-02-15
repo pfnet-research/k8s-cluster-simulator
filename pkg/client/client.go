@@ -7,8 +7,9 @@ import (
 	"time"
 
 	pb "simulator/protos"
-)
 
+	"simulator/pkg/metrics"
+)
 
 var Client pb.SimRPCClient
 
@@ -18,6 +19,27 @@ var (
 	serverAddr         = flag.String("server_addr", "localhost:10000", "The server address in the format of host:port")
 	serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
 )
+
+// SendFormattedMetrics a test function for sending metrics to server
+func SendFormattedMetrics(client pb.SimRPCClient, met *metrics.Metrics, metricsWriters *[]metrics.Writer) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	stream, err := client.RecordFormattedMetrics(ctx)
+	if err != nil {
+		log.Fatalf("%v.RecordFormattedMetrics(_) = _, %v", client, err)
+	}
+	for _, writer := range metricsWriters {
+		metric = writer.Formatter(met)
+		if err := stream.Send(metric); err != nil {
+			log.Fatalf("%v.Send(%v) = %v", stream, metric, err)
+		}
+	}
+	reply, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
+	}
+	log.Printf("Route summary: %d", reply)
+}
 
 // SendMetric comment.
 func SendMetric(client pb.SimRPCClient, metric *pb.Metrics) {

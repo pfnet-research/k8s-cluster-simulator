@@ -43,6 +43,7 @@ const (
 // BuildMetrics builds a Metrics at the given clock.
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue) (Metrics, error) {
 	metrics := make(map[string]interface{})
+	// the value of Clock is string
 	metrics[ClockKey] = clock.ToRFC3339()
 
 	nodesMetrics := make(map[string]node.Metrics)
@@ -61,8 +62,11 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 		}
 	}
 
+	// map[string]node.Metrics()
 	metrics[NodesMetricsKey] = nodesMetrics
+	// map[string]pod.Metrics()
 	metrics[PodsMetricsKey] = podsMetrics
+	// int PendingPodsNum
 	metrics[QueueMetricsKey] = queue.Metrics()
 
 	return metrics, nil

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Modified by Qirui
+
 package metrics
 
 import (
@@ -68,6 +70,14 @@ func (w *FileWriter) Write(metrics *Metrics) error {
 	_, err = w.file.Write([]byte{'\n'})
 
 	return err
+}
+
+// ToString return the string of the metrics
+// Temporary function for data transfer
+func (w *FileWriter) ToString(metrics *Metrics) string {
+	str, _ := w.formatter.Format(metrics)
+
+	return str
 }
 
 var _ = Writer(&FileWriter{})

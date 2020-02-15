@@ -165,6 +165,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 		default:
 			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
 
+			// send current data to server
+
 			if k.submit(met) != nil {
 				return err
 			}
@@ -383,6 +385,9 @@ func (k *KubeSim) schedule() error {
 		}
 		nodeInfoMap[name] = info
 	}
+
+	// TODO: send the cluster info to server
+	// info format k.clock, k.pendingPods, k.nodeInfoMap
 
 	// The scheduler makes scheduling decision.
 	events, err := k.scheduler.Schedule(k.clock, k.pendingPods, k, nodeInfoMap)
