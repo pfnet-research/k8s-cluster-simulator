@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
@@ -38,6 +39,9 @@ import (
 	"simulator/pkg/scheduler"
 	"simulator/pkg/submitter"
 	"simulator/pkg/util"
+
+	clientPkg "simulator/pkg/client"
+	pb "simulator/protos"
 )
 
 // KubeSim represents a simulated kubernetes cluster.
@@ -54,12 +58,14 @@ type KubeSim struct {
 
 	metricsWriters []metrics.Writer
 	metricsTick    time.Duration
+
+	conn *grpc.ClientConn
 }
 
 // NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
 // Returns error if the configuration failed.
 func NewKubeSim(
-	conf *config.Config, queue queue.PodQueue, sched scheduler.Scheduler,
+	conf *config.Config, queue queue.PodQueue, sched scheduler.Scheduler, conn *grpc.ClientConn,
 ) (*KubeSim, error) {
 
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
@@ -101,6 +107,8 @@ func NewKubeSim(
 
 		metricsTick:    time.Duration(metricsTick) * time.Second,
 		metricsWriters: metricsWriters,
+
+		conn: conn,
 	}, nil
 }
 
@@ -109,14 +117,14 @@ func NewKubeSim(
 // Returns error if the configuration failed.
 func NewKubeSimFromConfigPath(
 	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
-) (*KubeSim, error) {
+	conn *grpc.ClientConn) (*KubeSim, error) {
 
 	conf, err := readConfig(confPath)
 	if err != nil {
 		return nil, errors.Errorf("Error reading config: %s", err.Error())
 	}
 
-	return NewKubeSim(conf, queue, sched)
+	return NewKubeSim(conf, queue, sched, conn)
 }
 
 // NewKubeSimFromConfigPathOrDie creates a new KubeSim with config from confPath (excluding file
@@ -124,9 +132,9 @@ func NewKubeSimFromConfigPath(
 // If an error occurs during the initialization, it panics and stops the execution.
 func NewKubeSimFromConfigPathOrDie(
 	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
-) *KubeSim {
+	conn *grpc.ClientConn) *KubeSim {
 
-	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, sched)
+	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, sched, conn)
 	if err != nil {
 		log.L.Fatal(err)
 	}
@@ -144,6 +152,8 @@ func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
 // This method blocks until ctx is done or this KubeSim finishes processing all pods.
 // 开始运行循环
 func (k *KubeSim) Run(ctx context.Context) error {
+	clientPkg.Client = pb.NewSimRPCClient(k.conn)
+
 	preMetricsClock := k.clock
 	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
 	if err != nil {
@@ -166,6 +176,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
 
 			// send current data to server
+			clientPkg.SendFormattedMetrics(&met, k.metricsWriters)
 
 			if k.submit(met) != nil {
 				return err

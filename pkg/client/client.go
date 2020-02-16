@@ -21,24 +21,37 @@ var (
 )
 
 // SendFormattedMetrics a test function for sending metrics to server
-func SendFormattedMetrics(client pb.SimRPCClient, met *metrics.Metrics, metricsWriters []metrics.Writer) {
+func SendFormattedMetrics(met *metrics.Metrics, metricsWriters []metrics.Writer) {
+	var formatter = metrics.JSONFormatter{}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	stream, err := client.RecordFormattedMetrics(ctx)
+
+	var str, _ = formatter.Format(met)
+	var metric = pb.FormattedMetrics{FormattedMetrics: str}
+
+	r, err := Client.RecordFormattedMetrics(ctx, &metric)
 	if err != nil {
-		log.Fatalf("%v.RecordFormattedMetrics(_) = _, %v", client, err)
+		log.Fatalf("could not greet: %v", err)
 	}
-	for _, writer := range metricsWriters {
-		var metric = pb.FormattedMetrics{FormattedMetrics: writer.ToString(met)}
-		if err := stream.Send(&metric); err != nil {
-			log.Fatalf("%v.Send(%v) = %v", stream, metric, err)
-		}
-	}
-	reply, err := stream.CloseAndRecv()
-	if err != nil {
-		log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
-	}
-	log.Printf("Route summary: %d", reply)
+	log.Printf("Greeting: %d", r.GetResult())
+
+	// stream, err := client.RecordFormattedMetrics(ctx)
+	// if err != nil {
+	// 	log.Fatalf("%v.RecordFormattedMetrics(_) = _, %v", client, err)
+	// }
+
+	// var str, _ = formatter.Format(met)
+	// var metric = pb.FormattedMetrics{FormattedMetrics: str}
+	// if err := stream.Send(&metric); err != nil {
+	// 	log.Fatalf("%v.Send(%v) = %v", stream, metric, err)
+	// }
+
+	// reply, err := stream.CloseAndRecv()
+	// if err != nil {
+	// 	log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
+	// }
+	// log.Printf("Return: %d", reply)
 }
 
 // SendMetric comment.

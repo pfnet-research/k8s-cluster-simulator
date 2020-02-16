@@ -82,5 +82,4 @@ type Formatter interface {
 type Writer interface {
 	// Write writes the given metrics to some location(s).
 	Write(metrics *Metrics) error
-	ToString(metrics *Metrics) string
 }

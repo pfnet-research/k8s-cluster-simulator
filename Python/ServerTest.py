@@ -1,4 +1,5 @@
 from concurrent import futures
+import json
 import logging
 
 import grpc
@@ -21,9 +22,15 @@ class simRPCServicer(k8s_sim_pb2_grpc.simRPCServicer):
 
         return k8s_sim_pb2.Result(result=1)
 
-    def RecordFormattedMetrics(self, request_iterator, context):
-        for formattedMetric in request_iterator:
-            print(formattedMetric)
+    def RecordFormattedMetrics(self, request, context):
+        metric = request
+        formattedMetrics = metric.formatted_metrics
+
+        temp = json.loads(formattedMetrics)
+
+        print(temp)
+        print("\n")
+
         return k8s_sim_pb2.Result(result=1)
 
 def serve():

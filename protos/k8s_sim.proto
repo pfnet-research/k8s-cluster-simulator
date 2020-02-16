@@ -10,7 +10,7 @@ service simRPC {
     rpc RecordMetrics(Metrics) returns (Result) {}
 
       // A client-to-server streaming RPC.
-    rpc RecordFormattedMetrics(stream FormattedMetrics) returns (Result) {}
+    rpc RecordFormattedMetrics(FormattedMetrics) returns (Result) {}
 }
 
 // 测试

@@ -72,12 +72,4 @@ func (w *FileWriter) Write(metrics *Metrics) error {
 	return err
 }
 
-// ToString return the string of the metrics
-// Temporary function for data transfer
-func (w *FileWriter) ToString(metrics *Metrics) string {
-	str, _ := w.formatter.Format(metrics)
-
-	return str
-}
-
 var _ = Writer(&FileWriter{})

@@ -19,7 +19,7 @@ class simRPCStub(object):
         request_serializer=k8s__sim__pb2.Metrics.SerializeToString,
         response_deserializer=k8s__sim__pb2.Result.FromString,
         )
-    self.RecordFormattedMetrics = channel.stream_unary(
+    self.RecordFormattedMetrics = channel.unary_unary(
         '/simRPC.simRPC/RecordFormattedMetrics',
         request_serializer=k8s__sim__pb2.FormattedMetrics.SerializeToString,
         response_deserializer=k8s__sim__pb2.Result.FromString,
@@ -37,7 +37,7 @@ class simRPCServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def RecordFormattedMetrics(self, request_iterator, context):
+  def RecordFormattedMetrics(self, request, context):
     """A client-to-server streaming RPC.
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -52,7 +52,7 @@ def add_simRPCServicer_to_server(servicer, server):
           request_deserializer=k8s__sim__pb2.Metrics.FromString,
           response_serializer=k8s__sim__pb2.Result.SerializeToString,
       ),
-      'RecordFormattedMetrics': grpc.stream_unary_rpc_method_handler(
+      'RecordFormattedMetrics': grpc.unary_unary_rpc_method_handler(
           servicer.RecordFormattedMetrics,
           request_deserializer=k8s__sim__pb2.FormattedMetrics.FromString,
           response_serializer=k8s__sim__pb2.Result.SerializeToString,

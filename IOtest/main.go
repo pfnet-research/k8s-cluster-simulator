@@ -28,9 +28,6 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
-	clientPkg "simulator/pkg/client"
-	pb "simulator/protos"
-
 	kubesim "simulator/pkg/kubesim"
 	"simulator/pkg/queue"
 	"simulator/pkg/scheduler"
@@ -65,18 +62,11 @@ var rootCmd = &cobra.Command{
 			log.L.Fatal("did not connect: %v", err)
 		}
 		defer conn.Close()
-		clientPkg.Client = pb.NewSimRPCClient(conn)
-
-		// connection test
-		var metric pb.Metrics
-		clientPkg.InitMetric(&metric, "test clock", "test node")
-
-		clientPkg.SendMetric(clientPkg.Client, &metric)
 
 		// 1. Create a KubeSim with a pod queue and a scheduler.
 		queue := queue.NewPriorityQueue()
 		sched := buildScheduler() // see below
-		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
+		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched, conn)
 
 		// 2. Register one or more pod submitters to KubeSim.
 		numOfSubmittingPods := 8
